@@ -1,0 +1,38 @@
+# =======================
+# Flutter & Dart
+# =======================
+.dart_tool/
+.packages
+.pub/
+build/
+windows/flutter/ephemeral/
+windows/flutter/.plugin_symlinks/
+*.iml
+*.lock
+flutter_*.log
+*.dart_tool
+
+# =======================
+# Generated Files (Drift & Riverpod)
+# Note: In offline repositories without CI build steps, generated files like *.g.dart can be kept or ignored.
+# Here we ignore standard build outputs and temporary cache.
+# =======================
+.env
+*.local
+*.log
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+LawOffice_Backups/
+
+# =======================
+# OS & Editors
+# =======================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+*.code-workspace
