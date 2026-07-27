@@ -71,7 +71,9 @@ class Win32Window {
   // Called when Destroy is called.
   virtual void OnDestroy();
 
- public:
+ private:
+  friend class WindowClassRegistrar;
+
   // OS callback called by message pump. Handles the WM_NCCREATE message which
   // is passed when the non-client area is being created and enables automatic
   // non-client DPI scaling so that the non-client area automatically
@@ -82,13 +84,12 @@ class Win32Window {
                                   WPARAM const wparam,
                                   LPARAM const lparam) noexcept;
 
-  // Retrieves a class instance pointer for |window|.
+  // Retrieves a class instance pointer for |window|
   static Win32Window* GetThisFromHandle(HWND const window) noexcept;
 
   // Update the window frame's theme to match the system theme.
   static void UpdateTheme(HWND const window);
 
- private:
   bool quit_on_close_ = false;
 
   // window handle for top level window.
