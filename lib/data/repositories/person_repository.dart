@@ -136,6 +136,7 @@ class PersonRepository {
       PowersOfAttorneyCompanion.insert(
         sourceType: 'delegate',
         poaType: 0,
+        category: const Value('judicial'),
         poaNumber: const Value('POA-2026-001'),
         poaDate: Value(DateTime.now().subtract(const Duration(days: 20))),
         delegateBranch: const Value('دمشق'),

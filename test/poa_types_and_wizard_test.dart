@@ -80,6 +80,7 @@ void main() {
         poaDate: Value(DateTime(2026, 3, 1)),
         sourceType: 'notary',
         poaType: PoaType.special.index,
+        category: const Value('notarial'),
         scopeText: Value(PoaUsage.firstInstance.label),
         status: Value(PoaStatus.active.dbValue),
       ),

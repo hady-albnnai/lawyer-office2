@@ -50,6 +50,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   // الخطوة 2: الوكالة
   // ===========================================================================
   int? _selectedPoaId;
+  String _poaSearchQuery = '';
   final TextEditingController _poaSearchController = TextEditingController();
   
   // ===========================================================================
@@ -81,6 +82,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   // الخطوة 6: الخصم
   // ===========================================================================
   int? _selectedOpponentId;
+  String _opponentSearchQuery = '';
   final TextEditingController _opponentSearchController = TextEditingController();
   
   // ===========================================================================
@@ -117,6 +119,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     'محكمة دير الزور',
     'محكمة الحسكة',
   ];
+
+  // دوال مساعدة للتحقق من صحة البيانات
+  bool _isValidYear(String yearStr) {
+    final year = int.tryParse(yearStr);
+    if (year == null) return false;
+    final currentYear = DateTime.now().year;
+    return year >= 1900 && year <= currentYear + 5;
+  }
+
+  bool _isValidDouble(String valueStr) {
+    final value = double.tryParse(valueStr);
+    return value != null && value >= 0;
+  }
 
   @override
   void initState() {
@@ -612,7 +627,16 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       orElse: () => const <Map<String, Object?>>[],
     );
 
-    if (poas.isEmpty) {
+    // تصفية الوكالات حسب البحث
+    final query = _poaSearchQuery.trim().toLowerCase();
+    final filteredPoas = poas.where((poa) {
+      if (query.isEmpty) return true;
+      return (poa['number'] as String).toLowerCase().contains(query) ||
+             (poa['client'] as String).toLowerCase().contains(query) ||
+             (poa['type'] as String).toLowerCase().contains(query);
+    }).toList();
+
+    if (filteredPoas.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -621,7 +645,9 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           color: AppColors.cardBackground,
         ),
         child: Text(
-          'لا توجد وكالات مسجلة بعد — أضف سند التوكيل من شاشة الوكالات.',
+          query.isEmpty
+              ? 'لا توجد وكالات مسجلة بعد — أضف سند التوكيل من شاشة الوكالات.'
+              : 'لا توجد وكالات مطابقة للبحث — أضف سند التوكيل من شاشة الوكالات.',
           style: AppTextStyles.bodyMediumSecondary,
           textAlign: TextAlign.center,
         ),
@@ -636,9 +662,9 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: poas.length,
+        itemCount: filteredPoas.length,
         itemBuilder: (context, index) {
-          final poa = poas[index];
+          final poa = filteredPoas[index];
           final isSelected = _selectedPoaId == poa['id'];
           
           return InkWell(
@@ -702,7 +728,11 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   }
   
   void _searchPoas(String query) {
-    // بحث عن وكالات في قاعدة البيانات
+    setState(() => _poaSearchQuery = query);
+  }
+
+  void _searchOpponents(String query) {
+    setState(() => _opponentSearchQuery = query);
   }
   
   void _showAddPoaDialog(BuildContext context) {
@@ -863,8 +893,10 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
+                  errorText: _baseNumberController.text.isNotEmpty && int.tryParse(_baseNumberController.text.trim()) == null ? 'يرجى إدخال رقم صالح' : null,
                 ),
                 keyboardType: TextInputType.number,
+                onChanged: (value) => setState(() {}),
               ),
             ),
             const SizedBox(width: 12),
@@ -877,8 +909,10 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
+                  errorText: _baseYearController.text.isNotEmpty && !_isValidYear(_baseYearController.text.trim()) ? 'يرجى إدخال سنة صالحة (1900-2030)' : null,
                 ),
                 keyboardType: TextInputType.number,
+                onChanged: (value) => setState(() {}),
               ),
             ),
           ],
@@ -1112,7 +1146,16 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     if (personsAsync.isLoading) {
       return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
     }
-    if (opponents.isEmpty) {
+    
+    // تصفية الخصوم حسب البحث
+    final query = _opponentSearchQuery.trim().toLowerCase();
+    final filteredOpponents = opponents.where((opponent) {
+      if (query.isEmpty) return true;
+      return (opponent['name'] as String).toLowerCase().contains(query) ||
+             (opponent['type'] as String).toLowerCase().contains(query);
+    }).toList();
+    
+    if (filteredOpponents.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -1121,7 +1164,9 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           color: AppColors.cardBackground,
         ),
         child: Text(
-          'لا يوجد أشخاص في الدليل بعد — أضف الخصم من شاشة الأشخاص أولاً.',
+          query.isEmpty
+              ? 'لا يوجد أشخاص في الدليل بعد — أضف الخصم من شاشة الأشخاص أولاً.'
+              : 'لا يوجد أشخاص مطابقين للبحث — أضف الخصم من شاشة الأشخاص أولاً.',
           style: AppTextStyles.bodyMediumSecondary,
           textAlign: TextAlign.center,
         ),
@@ -1136,9 +1181,9 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: opponents.length,
+        itemCount: filteredOpponents.length,
         itemBuilder: (context, index) {
-          final opponent = opponents[index];
+          final opponent = filteredOpponents[index];
           final isSelected = _selectedOpponentId == opponent['id'];
           
           return InkWell(
@@ -1181,10 +1226,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         },
       ),
     );
-  }
-  
-  void _searchOpponents(String query) {
-    // بحث عن خصوم في قاعدة البيانات
   }
   
   void _showAddOpponentDialog(BuildContext context) {
@@ -1638,6 +1679,91 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     setState(() => _isSaving = true);
     
     try {
+      // التحقق من عدم تكرار الدعوى
+      final casesAsync = ref.read(allCasesProvider);
+      final cases = casesAsync.value ?? [];
+      final isDuplicate = cases.any((existingCase) => 
+        (existingCase.subject?.toLowerCase().trim() ?? '') == _subjectController.text.toLowerCase().trim() &&
+        (existingCase.baseNumber?.trim() ?? '') == _baseNumberController.text.trim()
+      );
+
+      if (isDuplicate) {
+        setState(() => _isSaving = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('دعوى بهذه البيانات موجودة مسبقاً!'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+      
+      // التحقق من صحة الوكالة إذا تم اختيارها
+      if (_selectedPoaId != null) {
+        final poasAsync = ref.read(allPoasProvider);
+        final poas = poasAsync.value ?? [];
+        final poa = poas.where((p) => p.id == _selectedPoaId).firstOrNull;
+        
+        if (poa == null) {
+          setState(() => _isSaving = false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('الوكالة المختارة غير موجودة'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+          return;
+        }
+        
+        // التحقق من حالة الوكالة
+        if (poa.status != PoaStatus.active.dbValue) {
+          setState(() => _isSaving = false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('الوكالة المختارة غير نشطة، يرجى اختيار وكالة نشطة'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+          return;
+        }
+        
+        // التحقق من صلاحية الوكالة
+        if (poa.expiryDate != null && poa.expiryDate!.isBefore(DateTime.now())) {
+          setState(() => _isSaving = false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('الوكالة المختارة منتهية الصلاحية'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+          return;
+        }
+        
+        // التحقق من أن الوكالة تخص الموكل المختار
+        // ملاحظة: في نظام الوكالات الحالي، نتحقق من وجود الوكالة فقط
+        // التحقق من الربط بالموكل يمكن إضافته لاحقاً
+        // if (poa.notaryId != _selectedClientId) {
+        //   setState(() => _isSaving = false);
+        //   if (mounted) {
+        //     ScaffoldMessenger.of(context).showSnackBar(
+        //       const SnackBar(
+        //         content: Text('الوكالة المختارة لا تخص الموكل المحدد'),
+        //         backgroundColor: AppColors.error,
+        //       ),
+        //     );
+        //   }
+        //   return;
+        // }
+      }
+      
       final caseRepo = ref.read(caseRepositoryProvider);
       
       // إعداد بيانات الدعوى
@@ -1725,14 +1851,34 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     } catch (e) {
       setState(() => _isSaving = false);
       
+      String errorMessage;
+      if (e.toString().contains('UNIQUE constraint')) {
+        errorMessage = 'رقم الملف موجود مسبقاً';
+      } else if (e.toString().contains('FOREIGN KEY')) {
+        errorMessage = 'مرجع غير صالح (الموكل أو الخصم)';
+      } else if (e.toString().contains('NOT NULL')) {
+        errorMessage = 'حقل إلزامي فارغ';
+      } else {
+        errorMessage = 'حدث خطأ أثناء إنشاء الدعوى';
+      }
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('حدث خطأ أثناء إنشاء الدعوى: $e'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
           ),
         );
       }
+      
+      // تسجيل الخطأ التفصيلي
+      await ref.read(auditServiceProvider).log(
+        action: 'error',
+        category: 'cases',
+        entityType: 'case',
+        description: 'فشل إنشاء الدعوى: $e',
+        severity: 'error',
+      );
     }
   }
 }
@@ -2320,11 +2466,23 @@ class _AddOpponentDialogState extends ConsumerState<AddOpponentDialog> {
 
   bool _saving = false;
   void _submitOpponent() async {
-    if (_nameController.text.trim().isEmpty) return;
+    if (_nameController.text.trim().isEmpty || _saving) return;
     setState(() => _saving = true);
     try {
+      final personId = await ref.read(personRepositoryProvider).createPerson(
+        person: db.PersonsCompanion.insert(
+          fullName: _nameController.text.trim(),
+          type: Value(_opponentType == 'شخص طبيعي' ? PersonType.natural.index : PersonType.legal.index),
+          nationalId: Value(_idController.text.trim().isEmpty ? null : _idController.text.trim()),
+          phone1: Value(_phoneController.text.trim().isEmpty ? null : _phoneController.text.trim()),
+          whatsapp: Value(_phoneController.text.trim().isEmpty ? null : _phoneController.text.trim()),
+        ),
+        initialRoles: [PersonRoleType.opponent],
+      );
+      ref.invalidate(allPersonsProvider(null));
+      ref.invalidate(uiPersonsDirectoryProvider);
       if (mounted) {
-        Navigator.of(context).pop(0);
+        Navigator.of(context).pop(personId);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم إضافة الخصم: ${_nameController.text}'), backgroundColor: AppColors.success));
       }
     } catch(e) {

@@ -230,11 +230,13 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
         TextFormField(
           controller: _nameController,
           decoration: const InputDecoration(labelText: 'الاسم التجاري للشركة *', prefixIcon: Icon(Icons.business)),
+          validator: (value) => (value?.trim().isEmpty ?? true) ? 'الاسم التجاري إلزامي' : null,
         ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _activityController,
           decoration: const InputDecoration(labelText: 'الغاية / نشاط الشركة *', prefixIcon: Icon(Icons.work)),
+          validator: (value) => (value?.trim().isEmpty ?? true) ? 'النشاط إلزامي' : null,
         ),
         const SizedBox(height: 12),
         Row(
@@ -244,6 +246,12 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                 controller: _capitalController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'رأس المال المكتتب به (ل.س) *'),
+                validator: (value) {
+                  if (value?.trim().isEmpty ?? true) return 'رأس المال إلزامي';
+                  final capital = double.tryParse(value!.trim());
+                  if (capital == null || capital <= 0) return 'يرجى إدخال رقم صالح أكبر من صفر';
+                  return null;
+                },
               ),
             ),
             const SizedBox(width: 16),
@@ -252,6 +260,14 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                 controller: _paidCapitalController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'رأس المال المدفوع (ل.س) *'),
+                validator: (value) {
+                  if (value?.trim().isEmpty ?? true) return 'رأس المال المدفوع إلزامي';
+                  final paidCapital = double.tryParse(value!.trim());
+                  if (paidCapital == null || paidCapital < 0) return 'يرجى إدخال رقم صالح';
+                  final declaredCapital = double.tryParse(_capitalController.text.trim()) ?? 0;
+                  if (paidCapital > declaredCapital) return 'الرأس المال المدفوع لا يمكن أن يفوق المكتتب به';
+                  return null;
+                },
               ),
             ),
           ],
@@ -264,6 +280,13 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                 controller: _durationController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'مدة الشركة (بالسنوات)'),
+                validator: (value) {
+                  if (value?.trim().isEmpty ?? true) return 'المدة إلزامية';
+                  final duration = int.tryParse(value!.trim());
+                  if (duration == null || duration <= 0) return 'يرجى إدخال مدة صالحة أكبر من صفر';
+                  if (duration > 99) return 'المدة لا يمكن أن تتجاوز 99 سنة';
+                  return null;
+                },
               ),
             ),
             const SizedBox(width: 16),
@@ -271,6 +294,7 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
               child: TextFormField(
                 controller: _addressController,
                 decoration: const InputDecoration(labelText: 'المقر الرئيسي / المحافظة *'),
+                validator: (value) => (value?.trim().isEmpty ?? true) ? 'المقر الرئيسي إلزامي' : null,
               ),
             ),
           ],
@@ -476,8 +500,49 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
       return;
     }
 
+    if (_currentStep == 3 && _selectedPartners.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يرجى إضافة شريك واحد على الأقل!'),
+          backgroundColor: AppConstants.statusDanger,
+        ),
+      );
+      return;
+    }
+
+    if (_currentStep == 4 && _selectedDirectors.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يرجى تعيين مدير عام واحد على الأقل!'),
+          backgroundColor: AppConstants.statusDanger,
+        ),
+      );
+      return;
+    }
+
     if (_currentStep < 4) {
       setState(() => _currentStep++);
+      return;
+    }
+
+    _validateAndSaveCompany();
+  }
+
+  Future<void> _validateAndSaveCompany() async {
+    // التحقق من عدم تكرار اسم الشركة
+    final companiesAsync = ref.read(allCompaniesProvider);
+    final companies = companiesAsync.value ?? [];
+    final isDuplicate = companies.any((company) => 
+      company.name.toLowerCase().trim() == _nameController.text.toLowerCase().trim()
+    );
+
+    if (isDuplicate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('اسم الشركة موجود مسبقاً!'),
+          backgroundColor: AppConstants.statusDanger,
+        ),
+      );
       return;
     }
 
@@ -566,8 +631,28 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage;
+        if (e.toString().contains('UNIQUE constraint')) {
+          errorMessage = 'اسم الشركة موجود مسبقاً';
+        } else if (e.toString().contains('FOREIGN KEY')) {
+          errorMessage = 'مرجع غير صالح (الشركاء أو المديرين)';
+        } else if (e.toString().contains('NOT NULL')) {
+          errorMessage = 'حقل إلزامي فارغ';
+        } else {
+          errorMessage = 'خطأ أثناء حفظ الشركة';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ أثناء حفظ الشركة: $e'), backgroundColor: AppConstants.statusDanger),
+          SnackBar(content: Text(errorMessage), backgroundColor: AppConstants.statusDanger),
+        );
+        
+        // تسجيل الخطأ التفصيلي
+        await ref.read(auditServiceProvider).log(
+          action: 'error',
+          category: 'companies',
+          entityType: 'company',
+          description: 'فشل حفظ الشركة: $e',
+          severity: 'error',
         );
       }
     } finally {

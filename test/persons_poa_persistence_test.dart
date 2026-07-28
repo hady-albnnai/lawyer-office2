@@ -36,6 +36,7 @@ void main() {
         PowersOfAttorneyCompanion.insert(
           sourceType: 'notary',
           poaType: PoaType.general.index,
+          category: const Value('notarial'),
           poaNumber: const Value('POA-1'),
         ),
       );

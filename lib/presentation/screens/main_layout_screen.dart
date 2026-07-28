@@ -52,6 +52,7 @@ class MainShellScreen extends ConsumerWidget {
     if (location.startsWith('/templates') || location.startsWith('/contracts/templates')) selectedRoute = '/templates';
     else if (location == '/files' && currentUri.queryParameters['status'] == 'completed') selectedRoute = '/files?status=completed';
     else if (location == '/files') selectedRoute = '/files?status=active';
+    else if (location.startsWith('/files/agencies')) selectedRoute = '/files/agencies';
     else if (location.startsWith('/archive-intake')) selectedRoute = '/archive-intake';
     else if (location.startsWith('/cases') || location.startsWith('/companies') || location.startsWith('/contracts') || location.startsWith('/procedures') || location.startsWith('/poa') || location.startsWith('/persons') || location.startsWith('/archive')) selectedRoute = '/files';
     else if (location.startsWith('/work-orders') || location.startsWith('/tasks')) selectedRoute = '/work-orders';

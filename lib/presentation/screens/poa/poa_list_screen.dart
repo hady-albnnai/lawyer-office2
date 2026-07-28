@@ -526,6 +526,7 @@ class _AddAgencyDialogState extends ConsumerState<AddAgencyDialog> {
               poaType: _type.index,
               poaNumber: Value(_numberController.text.trim()),
               poaDate: Value(_issuedAt),
+              category: Value(_source == AgencySource.notary ? 'notarial' : 'judicial'),
               delegateBranch: Value(_branchController.text.trim().isEmpty ? 'دمشق' : _branchController.text.trim()),
               scopeText: Value(scope),
               status: Value(widget.archiveContext?.isClosed == true ? 'archived' : 'active'),

@@ -13,6 +13,7 @@ import '../screens/work_center/daily_work_center_screen.dart';
 import '../screens/documents/documents_screen.dart';
 import '../screens/documents/document_viewer.dart';
 import '../screens/files/files_screen.dart';
+import '../screens/files/agency_files_screen.dart';
 import '../screens/finance/finance_screen.dart';
 import '../screens/legal_library/legal_library_screen.dart';
 import '../screens/main_layout_screen.dart';
@@ -76,6 +77,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/agenda', name: 'agenda', builder: (_, __) => const AgendaScreen()),
           GoRoute(path: '/new-work', redirect: (_, __) => '/today'),
           GoRoute(path: '/files', name: 'files', builder: (_, state) => FilesScreen(initialStatus: state.uri.queryParameters['status'])),
+          GoRoute(path: '/files/agencies', name: 'files-agencies', builder: (_, state) => AgencyFilesScreen(initialStatus: state.uri.queryParameters['status'])),
           GoRoute(path: '/persons', name: 'persons', builder: (_, __) => const PersonsScreen()),
           GoRoute(path: '/poa', name: 'poa', builder: (_, state) => PoaListScreen(archiveContext: ArchiveEntryContext.fromQuery(state.uri.queryParameters))),
           GoRoute(path: '/work-orders', name: 'work-orders', builder: (_, __) => const WorkOrdersScreen()),
@@ -132,6 +134,7 @@ String? _requiredPermissionForLocation(String loc) {
   if (loc.startsWith('/legal-library')) return PermissionKeys.libraryView;
   if (loc.startsWith('/search-reports')) return PermissionKeys.searchView;
   if (loc.startsWith('/poa')) return PermissionKeys.poaView;
+  if (loc.startsWith('/files/agencies')) return PermissionKeys.poaView;
   if (loc.startsWith('/persons')) return PermissionKeys.personsView;
   if (loc.startsWith('/cases/create')) return PermissionKeys.casesCreateNew;
   if (loc.startsWith('/cases')) return PermissionKeys.casesView;

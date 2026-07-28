@@ -174,6 +174,52 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                const Text('2.5. التواريخ:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectStartDate(context),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            labelText: 'تاريخ البدء *',
+                            prefixIcon: const Icon(Icons.calendar_today),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            '${_startDate.year}/${_startDate.month}/${_startDate.day}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectEndDate(context),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            labelText: 'تاريخ الانتهاء *',
+                            prefixIcon: const Icon(Icons.calendar_today),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            errorText: _endDate.isBefore(_startDate) ? 'تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء' : null,
+                          ),
+                          child: Text(
+                            '${_endDate.year}/${_endDate.month}/${_endDate.day}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
                 const Text('3. القيم المالية والإبرام:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
                 const SizedBox(height: 12),
                 Row(
@@ -183,6 +229,12 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                         controller: _valueController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(labelText: 'القيمة المالية الإجمالية *'),
+                        validator: (value) {
+                          if (value?.trim().isEmpty ?? true) return 'القيمة المالية إلزامية';
+                          final numericValue = double.tryParse(value!.trim());
+                          if (numericValue == null || numericValue < 0) return 'يرجى إدخال قيمة صالحة أكبر من أو تساوي صفر';
+                          return null;
+                        },
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -316,6 +368,30 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
     }
   }
 
+  Future<void> _selectStartDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(DateTime.now().year + 10),
+    );
+    if (picked != null && mounted) {
+      setState(() => _startDate = picked);
+    }
+  }
+
+  Future<void> _selectEndDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _endDate,
+      firstDate: _startDate.add(const Duration(days: 1)),
+      lastDate: DateTime(DateTime.now().year + 20),
+    );
+    if (picked != null && mounted) {
+      setState(() => _endDate = picked);
+    }
+  }
+
   Future<void> _saveContract() async {
     final permissions = ref.read(permissionServiceProvider);
     if (!permissions.can(PermissionKeys.contractsCreate)) {
@@ -333,6 +409,23 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
     }
     if (!_formKey.currentState!.validate() || _party1PersonId == null || _party2PersonId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى اختيار الأطراف المتعاقدة وتعبئة الحقول المطلوبة!'), backgroundColor: AppConstants.statusDanger));
+      return;
+    }
+    
+    if (_endDate.isBefore(_startDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء!'), backgroundColor: AppConstants.statusDanger));
+      return;
+    }
+
+    // التحقق من عدم تكرار العقد
+    final contractsAsync = ref.read(allContractsProvider);
+    final contracts = contractsAsync.value ?? [];
+    final isDuplicate = contracts.any((contract) => 
+      contract.title.toLowerCase().trim() == _titleController.text.toLowerCase().trim()
+    );
+
+    if (isDuplicate) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('عقد بهذا العنوان موجود مسبقاً!'), backgroundColor: AppConstants.statusDanger));
       return;
     }
 
@@ -400,7 +493,27 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ أثناء تنظيم العقد: $e'), backgroundColor: AppConstants.statusDanger));
+        String errorMessage;
+        if (e.toString().contains('UNIQUE constraint')) {
+          errorMessage = 'العقد موجود مسبقاً';
+        } else if (e.toString().contains('FOREIGN KEY')) {
+          errorMessage = 'مرجع غير صالح (الأطراف)';
+        } else if (e.toString().contains('NOT NULL')) {
+          errorMessage = 'حقل إلزامي فارغ';
+        } else {
+          errorMessage = 'خطأ أثناء تنظيم العقد';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: AppConstants.statusDanger));
+        
+        // تسجيل الخطأ التفصيلي
+        await ref.read(auditServiceProvider).log(
+          action: 'error',
+          category: 'contracts',
+          entityType: 'contract',
+          description: 'فشل حفظ العقد: $e',
+          severity: 'error',
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

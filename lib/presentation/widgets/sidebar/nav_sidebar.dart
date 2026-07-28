@@ -345,6 +345,7 @@ List<SidebarItemModel> getDefaultSidebarItems() {
       children: [
         SidebarItemModel(id: 'of_active', label: 'الملفات الجارية', icon: Icons.pending_actions, route: '/files?status=active', badge: 'active'),
         SidebarItemModel(id: 'of_completed', label: 'الملفات المنتهية', icon: Icons.inventory_2_outlined, route: '/files?status=completed', badge: 'closed'),
+        SidebarItemModel(id: 'of_agencies', label: 'ملفات الوكالات', icon: Icons.verified_user_outlined, route: '/files/agencies'),
         SidebarItemModel(id: 'of_needs', label: 'تحتاج استكمال', icon: Icons.warning_amber_outlined, route: '/files?status=active', badge: 'needs'),
         SidebarItemModel(id: 'of_archive_intake', label: 'إدخال الأرشيف القديم', icon: Icons.archive_outlined, route: '/archive-intake'),
       ],

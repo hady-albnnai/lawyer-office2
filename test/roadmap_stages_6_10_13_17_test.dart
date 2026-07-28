@@ -126,6 +126,7 @@ void main() {
           PowersOfAttorneyCompanion.insert(
             sourceType: 'notary',
             poaType: PoaType.general.index,
+            category: const Value('notarial'),
             status: Value(PoaStatus.revoked.dbValue),
           ),
         );
