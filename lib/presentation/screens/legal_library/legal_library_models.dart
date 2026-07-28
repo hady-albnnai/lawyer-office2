@@ -2,6 +2,7 @@
 ///
 /// واجهة seed قابلة للاختبار مع أقسام القوانين، الاجتهادات، مجلة المحامون،
 /// المبادئ، المفضلة، والبحث، مع ربط المواد بملفات المكتب.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

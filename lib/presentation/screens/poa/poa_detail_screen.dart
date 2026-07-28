@@ -8,7 +8,6 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme.dart';
 import '../documents/document_viewer.dart';
-import '../persons/person_detail_screen.dart';
 import '../persons/person_models.dart';
 
 /// شاشة تفاصيل وكالة قضائية أو قانونية ضمن المرحلة 6.

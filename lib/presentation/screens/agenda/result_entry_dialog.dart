@@ -1,5 +1,6 @@
 /// حوار تسجيل نتيجة عمل (معالج الإدخال الموحد - Unified Result Wizard)
 /// بناءً على الخطة الماسية لإعادة الهيكلة 2026
+library;
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';

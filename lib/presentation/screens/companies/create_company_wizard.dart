@@ -8,7 +8,6 @@ import '../../../data/database/database.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../widgets/archive_context_banner.dart';
-import 'company_detail_screen.dart';
 
 /// معالج تأسيس شركة جديدة أو أرشفة شركة قائمة (CreateCompanyWizard V6.2)
 class CreateCompanyWizard extends ConsumerStatefulWidget {

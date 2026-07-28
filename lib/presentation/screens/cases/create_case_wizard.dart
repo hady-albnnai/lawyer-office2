@@ -4,6 +4,7 @@
 /// معالج من 8 خطوات إلزامية
 /// 
 /// آخر تحديث: 2026-07-09
+library;
 
 import 'dart:io';
 
@@ -17,7 +18,6 @@ import '../../../core/auth/permission_catalog.dart';
 import '../../../core/enums/app_enums.dart';
 
 import '../../../data/database/database.dart' as db;
-import '../../../data/repositories/case_repository.dart';
 import '../../../data/services/conflict_of_interest_service.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
@@ -126,11 +126,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     if (year == null) return false;
     final currentYear = DateTime.now().year;
     return year >= 1900 && year <= currentYear + 5;
-  }
-
-  bool _isValidDouble(String valueStr) {
-    final value = double.tryParse(valueStr);
-    return value != null && value >= 0;
   }
 
   @override

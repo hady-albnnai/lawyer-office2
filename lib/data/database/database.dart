@@ -4,7 +4,6 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../../core/constants/app_constants.dart';
-import '../../core/enums/app_enums.dart';
 import 'schema.dart';
 import 'daos/case_dao.dart';
 import 'daos/person_dao.dart';
@@ -72,7 +71,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? _openDatabase());
 
   /// للاختبارات: قاعدة ذاكرة اختيارية.
-  AppDatabase.forTesting(QueryExecutor e) : super(e);
+  AppDatabase.forTesting(super.e);
 
   @override
   int get schemaVersion => 3;
@@ -462,7 +461,7 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('DELETE FROM $table;');
       }
 
-      final tableNames = tables.map((t) => "'" + t + "'").join(',');
+      final tableNames = tables.map((t) => "'$t'").join(',');
       await customStatement('DELETE FROM sqlite_sequence WHERE name IN ($tableNames);');
     });
   }

@@ -1,4 +1,5 @@
 /// شاشة المكتبة القانونية السورية - المرحلة 9.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -461,6 +462,7 @@ class _AddLegalItemDialogState extends ConsumerState<AddLegalItemDialog> {
       _fileName,
       _text,
     ]) {
+      c.dispose();
     }
     super.dispose();
   }

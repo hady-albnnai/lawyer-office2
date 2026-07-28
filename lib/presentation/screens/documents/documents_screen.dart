@@ -13,7 +13,7 @@ import 'package:go_router/go_router.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import 'document_models.dart' as doc_models;
-import 'document_models.dart' show DocumentItem, DocumentType, documentsProvider, documentsFutureProvider, inferFileType;
+import 'document_models.dart' show DocumentItem, DocumentType, documentsProvider, documentsFutureProvider;
 import 'document_viewer.dart';
 
 class DocumentsScreen extends ConsumerWidget {

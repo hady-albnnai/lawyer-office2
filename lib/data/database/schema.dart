@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart';
-import '../../core/enums/app_enums.dart';
 
 // ============================================================================
 // 1. جداول النظام والإعدادات (System & Core Tables)

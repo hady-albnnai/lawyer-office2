@@ -2,6 +2,7 @@
 ///
 /// طبقة واجهة seed قابلة للاختبار فوق SharedPreferences/CryptoUtils،
 /// مع سجل نشاط ونسخ احتياطي ومهلة قفل وقوائم مرجعية.
+library;
 
 import 'dart:convert';
 

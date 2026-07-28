@@ -8,7 +8,6 @@ import '../../../data/database/database.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../widgets/archive_context_banner.dart';
-import 'procedure_detail_screen.dart';
 
 /// شاشة تسجيل معاملة وإجراء إداري جديد مع توليد الـ Checklist التلقائي (CreateProcedureScreen V6.2)
 class CreateProcedureScreen extends ConsumerStatefulWidget {
@@ -29,7 +28,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
   final _titleController = TextEditingController();
   final _transNumController = TextEditingController();
   final _deptController = TextEditingController(text: 'محكمة الصلح / السجل المدني');
-  DateTime _startDate = DateTime.now();
+  final DateTime _startDate = DateTime.now();
   DateTime? _nextDate = DateTime.now().add(const Duration(days: 3));
 
   bool _isSaving = false;

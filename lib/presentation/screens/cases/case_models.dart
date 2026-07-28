@@ -2,6 +2,7 @@
 ///
 /// هذه النماذج مستقلة عن طبقة قاعدة البيانات الحالية وتستخدمها شاشات المرحلة 5
 /// لعرض وإدارة الدعوى بواجهة عربية RTL مع ثيم موحد.
+library;
 
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';

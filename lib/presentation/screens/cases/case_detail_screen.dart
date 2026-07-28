@@ -3,6 +3,7 @@
 /// تنفذ ملف الدعوى الكامل بتسعة تبويبات: الملخص، الأطراف، المراحل، الجلسات،
 /// المستندات، المالية، النواقص، الخط الزمني، والإنهاء. تعتمد الشاشة على
 /// Riverpod لإدارة حالة الدعوى وتستخدم AppTheme/AppColors/AppTextStyles فقط.
+library;
 
 import 'dart:io';
 
@@ -270,7 +271,7 @@ class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
   CaseDetailNotifier(Case? caseItem, List<DocumentItem> allDocuments)
       : super(_initialState(caseItem, allDocuments));
 
-  CaseDetailNotifier._(CaseDetailState state) : super(state);
+  CaseDetailNotifier._(super.state);
 
   /// إنشاء الحالة من بيانات المستودع الحقيقي (Drift)
   factory CaseDetailNotifier.fromRepository(
@@ -1010,8 +1011,6 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
   }
 
   Widget _buildStatusBar(CaseDetailState state) {
-    final caseItem = state.caseItem!;
-    final nextSession = state.nextSession;
     final statusColor = state.isTerminated
         ? AppColors.error
         : state.openDeficienciesCount > 0
@@ -1069,8 +1068,6 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
   }
 
   Widget _buildSummaryTab(CaseDetailState state) {
-    final caseItem = state.caseItem!;
-    final nextSession = state.nextSession;
     final progress = state.isTerminated ? 1.0 : (state.sessions.length > 5 ? 0.8 : (state.sessions.length / 10).clamp(0.1, 0.9));
 
     return SingleChildScrollView(

@@ -1,8 +1,8 @@
 /// محرك إدارة التخزين المحلي والمرفقات وقوالب Word (FileStorageService)
 /// التحديث الماسي (المرحلة 10.1): File-Level Encryption (تشفير المرفقات بصيغة .enc)
+library;
 
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:encrypt/encrypt.dart' as enc;

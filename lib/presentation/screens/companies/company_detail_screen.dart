@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
-import 'package:file_picker/file_picker.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/enums/app_enums.dart';
 import '../../../data/database/database.dart';
@@ -312,10 +310,10 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
                       subtitle: Text('الحالة: ${statusEnum.label} • الموعد المحدد: ${p.scheduledDate?.toString().substring(0, 10) ?? "---"}'),
                       trailing: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: isDone ? Colors.grey : AppConstants.statusSuccess),
-                        child: Text(isDone ? 'مكتملة ✓' : 'إتمام المرحلة'),
                         onPressed: isDone ? null : () async {
                           // إتمام المرحلة
                         },
+                        child: Text(isDone ? 'مكتملة ✓' : 'إتمام المرحلة'),
                       ),
                     ),
                   );

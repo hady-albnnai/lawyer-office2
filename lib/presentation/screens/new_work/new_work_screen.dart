@@ -1,4 +1,5 @@
 /// شاشة عمل جديد — مسارات إنشاء حقيقية (لا Placeholder).
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,10 +10,6 @@ import '../../providers/auth_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme.dart';
-import '../admin_procedures/create_procedure_screen.dart';
-import '../cases/create_case_wizard.dart';
-import '../companies/create_company_wizard.dart';
-import '../contracts/create_contract_screen.dart';
 import '../work_orders/work_order_dialogs.dart';
 
 class NewWorkScreen extends ConsumerWidget {

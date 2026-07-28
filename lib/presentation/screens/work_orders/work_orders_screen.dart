@@ -1,4 +1,5 @@
 /// شاشة أوامر العمل — قائمة من SQLite مع إجراءات حقيقية.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

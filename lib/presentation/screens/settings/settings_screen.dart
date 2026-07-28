@@ -1,4 +1,5 @@
 /// شاشة الإعدادات والأمان والنسخ - المرحلة 10.
+library;
 
 import 'dart:convert';
 import 'dart:io';
@@ -36,11 +37,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   void initState() {
     super.initState();
     _tabs = TabController(length: 6, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override
@@ -1055,68 +1051,6 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
   }
 }
 
-class _ActivityTab extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(settingsHubProvider);
-    final logs = state.filteredActivity;
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            decoration: const InputDecoration(
-              hintText: 'بحث في سجل النشاط...',
-              prefixIcon: Icon(Icons.search),
-            ),
-            onChanged: (v) => ref.read(settingsHubProvider.notifier).setActivityFilter(v),
-          ),
-        ),
-        Expanded(
-          child: logs.isEmpty
-              ? Center(child: Text('لا أحداث', style: AppTextStyles.bodyMediumSecondary))
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: logs.length,
-                  itemBuilder: (context, index) {
-                    final e = logs[index];
-                    return Card(
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.primaryNavy.withOpacity(0.1),
-                          child: Icon(_iconFor(e.action), color: AppColors.primaryNavy),
-                        ),
-                        title: Text('${e.action} • ${e.tableName}', style: AppTextStyles.labelLarge),
-                        subtitle: Text(
-                          '${e.details}\n${e.userRef} • ${e.timestamp.toString().substring(0, 16)}',
-                          style: AppTextStyles.bodySmallSecondary,
-                        ),
-                        isThreeLine: true,
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  IconData _iconFor(String action) {
-    switch (action) {
-      case 'login':
-        return Icons.login;
-      case 'export':
-        return Icons.backup;
-      case 'import':
-        return Icons.restore;
-      case 'insert':
-        return Icons.add_circle_outline;
-      default:
-        return Icons.edit;
-    }
-  }
-}
-
 class _UsersRolesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1416,7 +1350,13 @@ class _UsersRolesTab extends ConsumerWidget {
                     title: Text(p.label),
                     subtitle: Text(p.description),
                     secondary: p.sensitive ? Icon(Icons.warning_amber, color: AppColors.warning) : null,
-                    onChanged: (v) => setDialog(() { if (v == true) selected.add(p.key); else selected.remove(p.key); }),
+                    onChanged: (v) => setDialog(() {
+                      if (v == true) {
+                        selected.add(p.key);
+                      } else {
+                        selected.remove(p.key);
+                      }
+                    }),
                   )),
                 ],
               );

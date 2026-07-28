@@ -2,6 +2,7 @@
 ///
 /// هذه النماذج تعرض سجل الأشخاص والوكالات بشكل مستقل وقابل للاختبار، مع
 /// إمكانية ربطها لاحقاً بمستودعات Drift الحالية دون تغيير واجهات العرض.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

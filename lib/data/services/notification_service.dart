@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:local_notifier/local_notifier.dart';
 
 /// خدمة الإشعارات الذكية للأجندة
 class NotificationService {
@@ -107,22 +110,42 @@ class NotificationService {
     );
   }
 
-  /// دالة مساعدة لإرسال الإشعار
+  /// الإشعارات المعروضة حالياً (لإغلاقها لاحقاً)
+  final List<LocalNotification> _active = [];
+
+  bool get _desktopSupported =>
+      !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
+  /// دالة مساعدة لإرسال الإشعار عبر نظام التشغيل
   Future<void> _showNotification({
     required String title,
     required String body,
   }) async {
+    if (!_desktopSupported) {
+      debugPrint('إشعار (منصة غير مدعومة): $title - $body');
+      return;
+    }
     try {
-      // TODO: ربطها بـ local_notifier عند تفعيل إشعارات سطح المكتب
-      debugPrint('إشعار: $title - $body');
+      final notification = LocalNotification(title: title, body: body);
+      notification.onClose = (reason) => _active.remove(notification);
+      _active.add(notification);
+      await notification.show();
     } catch (e) {
+      // لا نُسقط العملية الأساسية بسبب فشل الإشعار
       debugPrint('خطأ في إرسال الإشعار: $e');
     }
   }
 
-  /// إغلاق جميع الإشعارات
+  /// إغلاق جميع الإشعارات المعروضة
   Future<void> closeAllNotifications() async {
-    // تنفيذ بسيط - يمكن توسيعه لاحقاً
+    for (final n in List<LocalNotification>.from(_active)) {
+      try {
+        await n.close();
+      } catch (_) {
+        // تجاهل: الإشعار قد يكون أُغلق من المستخدم
+      }
+    }
+    _active.clear();
   }
 }
 

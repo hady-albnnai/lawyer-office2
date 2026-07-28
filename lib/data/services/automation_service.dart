@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/database.dart';
 import '../database/daos/task_dao.dart';
+import '../../presentation/providers/app_providers.dart';
 
 /// خدمة الأتمتة الذكية للمواعيد المتكررة
 DateTime? _asDate(Object? v) {

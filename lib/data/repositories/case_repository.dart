@@ -298,7 +298,8 @@ class CaseRepository {
       await (_caseDao.update(_caseDao.db.cases)..where((t) => t.id.equals(caseId))).write(
         CasesCompanion(
           status: const Value('closed'),
-          notes: Value('تم إنهاء الدعوى ($terminationReason). ملخص الحكم/القرار: $summary' + (docPath != null ? ' | مرفق: $docPath' : '')),
+          notes: Value('تم إنهاء الدعوى ($terminationReason). ملخص الحكم/القرار: $summary'
+              '${docPath != null ? ' | مرفق: $docPath' : ''}'),
           updatedAt: Value(DateTime.now()),
         ),
       );

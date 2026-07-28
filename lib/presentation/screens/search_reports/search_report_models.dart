@@ -3,6 +3,7 @@
 /// محرك بحث موحد قابل للاختبار يغطي الدعاوى والعقود والشركات والإجراءات
 /// والأشخاص والوكالات والمستندات وأوامر العمل والمالية وبنود المكتبة.
 /// التقارير تولَّد من نفس مصادر seed/providers الحالية offline.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -1,5 +1,6 @@
 /// شاشة الأجندة الموحدة (Unified Agenda)
 /// دمج الجلسات والمهام في تقويم تفاعلي واحد بناءً على الخطة الماسية
+library;
 
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter/material.dart';
@@ -1470,7 +1471,7 @@ class AgendaScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('سجل التغييرات'),
-        content: Container(
+        content: SizedBox(
           height: 200,
           child: Center(
             child: Column(

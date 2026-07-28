@@ -1,5 +1,6 @@
 /// لوحة اليوم الذكية (Smart Dashboard) - Split Layout
 /// بناءً على الخطة الماسية لإعادة الهيكلة 2026
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +12,6 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme.dart';
 import '../agenda/result_entry_dialog.dart';
-import '../work_orders/work_order_dialogs.dart';
 import '../work_orders/work_order_models.dart';
 import '../cases/case_models.dart';
 

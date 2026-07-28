@@ -3,13 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../providers/app_providers.dart';
-import '../cases/case_detail_screen.dart';
-import '../contracts/contract_detail_screen.dart';
-import '../companies/company_detail_screen.dart';
-import '../admin_procedures/procedure_detail_screen.dart';
-import '../persons/person_detail_screen.dart';
 import '../persons/person_models.dart';
-import '../poa/poa_detail_screen.dart';
 
 /// شاشة البحث المتقدم الفوري والشامل في كل ملفات وأرشيف المكتب (AdvancedSearchScreen V6.2)
 class AdvancedSearchScreen extends ConsumerStatefulWidget {

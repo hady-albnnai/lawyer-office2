@@ -1,4 +1,5 @@
 /// معالج أول تشغيل — مكتب فاضي + بيانات الزبون + كلمة مرور.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

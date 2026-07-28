@@ -4,6 +4,7 @@
 /// حسب مواصفات PRODUCT_REDESIGN_MASTER_PLAN.md - القسم 2.1
 /// 
 /// آخر تحديث: 2026-07-09
+library;
 
 import 'package:flutter/material.dart';
 

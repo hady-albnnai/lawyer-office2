@@ -1,11 +1,11 @@
 /// شاشة ملفات الوكالات في ملفات المكتب
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/permission_catalog.dart';
-import '../../../core/enums/app_enums.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ui_data_providers.dart';

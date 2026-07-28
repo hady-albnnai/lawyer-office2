@@ -2,6 +2,7 @@
 ///
 /// تجمع البحث الشامل عبر كل كيانات المكتب مع توليد تقارير PDF offline
 /// (جلسات، متأخرات، نواقص، مالية، أوامر عمل، مذكرات).
+library;
 
 import 'dart:typed_data';
 
@@ -20,8 +21,6 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme.dart';
 import '../documents/document_viewer.dart';
-import '../persons/person_detail_screen.dart';
-import '../poa/poa_detail_screen.dart';
 import 'search_report_models.dart';
 
 class SearchReportsScreen extends ConsumerStatefulWidget {

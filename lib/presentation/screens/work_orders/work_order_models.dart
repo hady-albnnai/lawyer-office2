@@ -1,5 +1,6 @@
 /// Models لأوامر العمل
 /// حسب مواصفات PRODUCT_REDESIGN_MASTER_PLAN.md - الأقسام 9.2، 9.4، 9.8
+library;
 
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';

@@ -4,6 +4,7 @@
 /// PRODUCT_REDESIGN_MASTER_PLAN.md - القسم 3.2
 /// 
 /// آخر تحديث: 2026-07-09
+library;
 
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
@@ -70,7 +71,6 @@ class BadgeWidget extends StatelessWidget {
         backgroundColor = AppColors.info;
         break;
       case BadgeType.normal:
-      default:
         backgroundColor = AppColors.error;
         break;
     }

@@ -2,6 +2,7 @@
 ///
 /// تعرض بيانات SQLite عبر FinanceRepository. في الاختبارات يمكن تشغيل
 /// FinanceNotifier بلا مستودع (ذاكرة فقط).
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
