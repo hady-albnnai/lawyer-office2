@@ -1,10 +1,10 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import 'package:printing/printing.dart' as printing;
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:intl/intl.dart';
 
 /// خدمة التقارير وتصدير البيانات
 class ReportService {
@@ -12,17 +12,34 @@ class ReportService {
   factory ReportService() => _instance;
   ReportService._internal();
 
+  pw.ThemeData? _theme;
+
+  /// تحميل خط عربي (Amiri) لضمان ظهور النصوص العربية بشكل صحيح في PDF
+  Future<pw.ThemeData> _arabicTheme() async {
+    if (_theme != null) return _theme!;
+    final regular = pw.Font.ttf(await rootBundle.load('assets/fonts/Amiri-Regular.ttf'));
+    final bold = pw.Font.ttf(await rootBundle.load('assets/fonts/Amiri-Bold.ttf'));
+    _theme = pw.ThemeData.withFont(base: regular, bold: bold);
+    return _theme!;
+  }
+
+  static String _two(int v) => v.toString().padLeft(2, '0');
+  static String _fmtDate(DateTime d) => '${d.year}/${_two(d.month)}/${_two(d.day)}';
+  static String _fmtStamp(DateTime d) =>
+      '${d.year}/${_two(d.month)}/${_two(d.day)} ${_two(d.hour)}:${_two(d.minute)}';
+  static String _safeName(String s) => s.replaceAll(RegExp(r'[\\/:*?"<>|]'), '-');
+
   /// تصدير تقرير المواعيد اليومية إلى PDF
-  Future<void> exportDailyAgendaToPDF({
+  Future<String> exportDailyAgendaToPDF({
     required List<Map<String, dynamic>> appointments,
     required DateTime date,
   }) async {
-    final pdf = pw.Document();
-    final arabicFormat = DateFormat('yyyy/MM/dd', 'ar');
+    final pdf = pw.Document(theme: await _arabicTheme());
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
+        textDirection: pw.TextDirection.rtl,
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -36,11 +53,11 @@ class ReportService {
               ),
               pw.SizedBox(height: 20),
               pw.Text(
-                'التاريخ: ${arabicFormat.format(date)}',
+                'التاريخ: ${_fmtDate(date)}',
                 style: pw.TextStyle(fontSize: 14),
               ),
               pw.SizedBox(height: 20),
-              pw.Table.fromTextArray(
+              pw.TableHelper.fromTextArray(
                 context: context,
                 data: List<List<dynamic>>.generate(
                   appointments.length,
@@ -62,20 +79,20 @@ class ReportService {
       ),
     );
 
-    await _saveAndPrintPDF(pdf, 'تقرير_المواعيد_${arabicFormat.format(date)}.pdf');
+    return _saveAndPrintPDF(pdf, _safeName('تقرير_المواعيد_${_fmtDate(date)}.pdf'));
   }
 
   /// تصدير تقرير المواعيد الأسبوعية إلى PDF
-  Future<void> exportWeeklyAgendaToPDF({
+  Future<String> exportWeeklyAgendaToPDF({
     required Map<DateTime, List<Map<String, dynamic>>> weeklyAppointments,
     required DateTime weekStart,
   }) async {
-    final pdf = pw.Document();
-    final arabicFormat = DateFormat('yyyy/MM/dd', 'ar');
+    final pdf = pw.Document(theme: await _arabicTheme());
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
+        textDirection: pw.TextDirection.rtl,
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -89,7 +106,7 @@ class ReportService {
               ),
               pw.SizedBox(height: 20),
               pw.Text(
-                'الأسبوع: ${arabicFormat.format(weekStart)} - ${arabicFormat.format(weekStart.add(const Duration(days: 6)))}',
+                'الأسبوع: ${_fmtDate(weekStart)} - ${_fmtDate(weekStart.add(const Duration(days: 6)))}',
                 style: pw.TextStyle(fontSize: 14),
               ),
               pw.SizedBox(height: 20),
@@ -98,11 +115,11 @@ class ReportService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      arabicFormat.format(entry.key),
+                      _fmtDate(entry.key),
                       style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16),
                     ),
                     pw.SizedBox(height: 10),
-                    pw.Table.fromTextArray(
+                    pw.TableHelper.fromTextArray(
                       context: context,
                       data: List<List<dynamic>>.generate(
                         entry.value.length,
@@ -120,26 +137,26 @@ class ReportService {
                     pw.SizedBox(height: 20),
                   ],
                 );
-              }).toList(),
+              }),
             ],
           );
         },
       ),
     );
 
-    await _saveAndPrintPDF(pdf, 'تقرير_المواعيد_الأسبوعي_${arabicFormat.format(weekStart)}.pdf');
+    return _saveAndPrintPDF(pdf, _safeName('تقرير_المواعيد_الأسبوعي_${_fmtDate(weekStart)}.pdf'));
   }
 
   /// تصدير تقرير الإحصائيات إلى PDF
-  Future<void> exportStatisticsToPDF({
+  Future<String> exportStatisticsToPDF({
     required Map<String, dynamic> statistics,
   }) async {
-    final pdf = pw.Document();
-    final arabicFormat = DateFormat('yyyy/MM/dd HH:mm', 'ar');
+    final pdf = pw.Document(theme: await _arabicTheme());
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
+        textDirection: pw.TextDirection.rtl,
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -153,7 +170,7 @@ class ReportService {
               ),
               pw.SizedBox(height: 20),
               pw.Text(
-                'تاريخ التقرير: ${arabicFormat.format(DateTime.now())}',
+                'تاريخ التقرير: ${_fmtStamp(DateTime.now())}',
                 style: pw.TextStyle(fontSize: 14),
               ),
               pw.SizedBox(height: 30),
@@ -162,7 +179,7 @@ class ReportService {
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18),
               ),
               pw.SizedBox(height: 10),
-              pw.Table.fromTextArray(
+              pw.TableHelper.fromTextArray(
                 context: context,
                 data: [
                   ['إجمالي المواعيد', '${statistics['totalAppointments'] ?? 0}'],
@@ -181,7 +198,7 @@ class ReportService {
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18),
               ),
               pw.SizedBox(height: 10),
-              pw.Table.fromTextArray(
+              pw.TableHelper.fromTextArray(
                 context: context,
                 data: [
                   ['جلسات اليوم', '${statistics['courtSessionsToday'] ?? 0}'],
@@ -199,50 +216,50 @@ class ReportService {
       ),
     );
 
-    await _saveAndPrintPDF(pdf, 'تقرير_الإحصائيات_${arabicFormat.format(DateTime.now())}.pdf');
+    return _saveAndPrintPDF(pdf, _safeName('تقرير_الإحصائيات_${_fmtStamp(DateTime.now())}.pdf'));
   }
 
   /// دالة مساعدة لحفظ وطباعة PDF
-  Future<void> _saveAndPrintPDF(pw.Document pdf, String fileName) async {
-    try {
-      // حفظ PDF محلياً
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsBytes(await pdf.save());
-      
-      print('تم حفظ التقرير في: ${file.path}');
-    } catch (e) {
-      print('خطأ في تصدير PDF: $e');
-    }
+  Future<String> _saveAndPrintPDF(pw.Document pdf, String fileName) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final dir = Directory('${directory.path}/LawOffice/reports');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    final file = File('${dir.path}/$fileName');
+    await file.writeAsBytes(await pdf.save());
+    debugPrint('تم حفظ التقرير في: ${file.path}');
+    return file.path;
   }
 
   /// تصدير البيانات إلى Excel (تنسيق CSV بسيط)
-  Future<void> exportToCSV({
+  Future<String> exportToCSV({
     required List<Map<String, dynamic>> data,
     required String fileName,
   }) async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/$fileName.csv');
-      
-      final csvData = _convertToCSV(data);
-      await file.writeAsString(csvData);
-      
-      print('تم تصدير البيانات إلى: ${file.path}');
-    } catch (e) {
-      print('خطأ في تصدير CSV: $e');
-    }
+    final directory = await getApplicationDocumentsDirectory();
+    final dir = Directory('${directory.path}/LawOffice/reports');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    final file = File('${dir.path}/${_safeName(fileName)}.csv');
+
+    final csvData = _convertToCSV(data);
+    // BOM لضمان قراءة العربية بشكل صحيح في Excel
+    await file.writeAsString('\uFEFF$csvData');
+    debugPrint('تم تصدير البيانات إلى: ${file.path}');
+    return file.path;
   }
 
   /// تحويل البيانات إلى CSV
   String _convertToCSV(List<Map<String, dynamic>> data) {
     if (data.isEmpty) return '';
     
-    final headers = data.first.keys.join(',');
+    final headers = data.first.keys.map((h) => '"$h"').join(',');
     final rows = data.map((row) {
       return row.values.map((value) {
         final stringValue = value?.toString() ?? '';
-        return stringValue.contains(',') ? '"$stringValue"' : stringValue;
+        final needsQuote = stringValue.contains(',') ||
+            stringValue.contains('"') ||
+            stringValue.contains('\n');
+        final escaped = stringValue.replaceAll('"', '""');
+        return needsQuote ? '"$escaped"' : escaped;
       }).join(',');
     }).join('\n');
     

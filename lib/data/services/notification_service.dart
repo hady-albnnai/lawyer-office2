@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 /// خدمة الإشعارات الذكية للأجندة
 class NotificationService {
@@ -113,10 +113,10 @@ class NotificationService {
     required String body,
   }) async {
     try {
-      // تنفيذ بسيط للإشعارات - يمكن توسيعه لاحقاً
-      print('إشعار: $title - $body');
+      // TODO: ربطها بـ local_notifier عند تفعيل إشعارات سطح المكتب
+      debugPrint('إشعار: $title - $body');
     } catch (e) {
-      print('خطأ في إرسال الإشعار: $e');
+      debugPrint('خطأ في إرسال الإشعار: $e');
     }
   }
 

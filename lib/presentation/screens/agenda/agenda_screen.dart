@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/enums/app_enums.dart';
 import '../../../data/services/notification_service.dart';
@@ -1331,7 +1330,7 @@ class AgendaScreen extends ConsumerWidget {
                   
                   await reportService.exportToCSV(
                     data: appointments,
-                    fileName: 'تقرير_المواعيد_${DateFormat('yyyy_MM_dd').format(selectedDate)}',
+                    fileName: 'تقرير_المواعيد_${'${selectedDate.year}_${selectedDate.month.toString().padLeft(2, '0')}_${selectedDate.day.toString().padLeft(2, '0')}'}',
                   );
                   
                   if (context.mounted) {
