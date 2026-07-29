@@ -34,6 +34,10 @@ dependencies:
   file_picker: ^8.0.3
   open_filex: ^4.5.0
   pdf: ^3.11.0
+  # لا تحذف printing: مستخدمة في Printing.layoutPdf / sharePdf / PdfPreview
+  # ضمن finance_screen, legal_printing_screen, search_reports_screen,
+  # daily_work_center_screen, work_order_dialogs.
+  # ملاحظة: تنزّل pdfium أثناء أول بناء على ويندوز (قد يستغرق وقتاً).
   printing: ^5.13.1
 
   # Formatting, Security & Localization
