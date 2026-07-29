@@ -35,12 +35,15 @@ dependencies:
   local_notifier: ^0.1.6
   file_picker: ^11.0.2
   open_filex: ^4.5.0
-  pdf: ^3.13.0
+  # pdf 3.13 يتطلب xml ^7 -> image >=4.9 -> archive ^4 (تعارض مع archive ^3.6.1)
+  pdf: '>=3.12.0 <3.13.0'
+  # قيد صريح: image >=4.4 ينتقل إلى archive ^4؛ آخر إصدار متوافق مع archive 3.x هو 4.3.0
+  image: '>=4.1.0 <4.4.0'
   # لا تحذف printing: مستخدمة في Printing.layoutPdf / sharePdf / PdfPreview
   # ضمن finance_screen, legal_printing_screen, search_reports_screen,
   # daily_work_center_screen, work_order_dialogs.
   # ملاحظة: تنزّل pdfium أثناء أول بناء على ويندوز (قد يستغرق وقتاً).
-  printing: ^5.15.0
+  printing: '>=5.14.0 <5.15.0'
 
   # Formatting, Security & Localization
   intl: ^0.20.2

@@ -67,14 +67,16 @@ class BackupService {
       if (await sourceDir.exists()) {
         await for (var entity in sourceDir.list(recursive: false)) {
           if (entity is File && entity.path.endsWith('.db')) {
-            encoder.addFile(entity);
+            // await إلزامي: addFile ترجع Future، وبدونها قد يُغلق
+            // الأرشيف قبل اكتمال الكتابة فتنتج نسخة احتياطية ناقصة.
+            await encoder.addFile(entity);
           } else if (entity is Directory && entity.path.endsWith(AppConstants.filesDirectoryName) && includeAttachments) {
-            encoder.addDirectory(entity);
+            await encoder.addDirectory(entity);
           }
         }
       }
 
-      encoder.close();
+      await encoder.close();
       sendPort.send({'success': true, 'filePath': fullDestPath});
     } catch (e) {
       sendPort.send({'success': false, 'error': e.toString()});
