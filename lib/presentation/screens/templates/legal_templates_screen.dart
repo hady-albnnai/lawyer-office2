@@ -330,7 +330,7 @@ class _LegalTemplatesScreenState extends ConsumerState<LegalTemplatesScreen> {
                       ElevatedButton(
                         child: const Text('اختيار'),
                         onPressed: () async {
-                          final res = await fp.FilePicker.platform.pickFiles(type: fp.FileType.custom, allowedExtensions: ['docx', 'doc', 'rtf', 'txt', 'pdf']);
+                          final res = await fp.FilePicker.pickFiles(type: fp.FileType.custom, allowedExtensions: ['docx', 'doc', 'rtf', 'txt', 'pdf']);
                           if (res != null && res.files.single.path != null) {
                             setDialogState(() => selectedFile = File(res.files.single.path!));
                           }

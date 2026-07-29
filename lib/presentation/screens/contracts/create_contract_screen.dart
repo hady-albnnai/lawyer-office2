@@ -361,7 +361,7 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
   }
 
   Future<void> _pickFile() async {
-    final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['docx', 'doc', 'pdf']);
+    final res = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['docx', 'doc', 'pdf']);
     if (res != null && res.files.single.path != null) {
       setState(() => _wordFile = File(res.files.single.path!));
     }

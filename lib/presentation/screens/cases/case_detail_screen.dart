@@ -2603,7 +2603,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
       _showSnack('تعذر تحديد رقم الدعوى لحفظ المستند.', isError: true);
       return;
     }
-    final result = await file_picker.FilePicker.platform.pickFiles(allowMultiple: false);
+    final result = await file_picker.FilePicker.pickFiles(allowMultiple: false);
     final picked = result?.files.firstOrNull;
     final path = picked?.path;
     if (picked == null || path == null || path.isEmpty) return;

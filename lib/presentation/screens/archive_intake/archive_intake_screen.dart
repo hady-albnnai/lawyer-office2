@@ -1132,7 +1132,7 @@ class ArchiveIntakeScreen extends ConsumerWidget {
                     icon: const Icon(Icons.upload_file),
                     label: Text(files.isEmpty ? 'اختيار ملفات' : 'الملفات المختارة: ${files.length}'),
                     onPressed: () async {
-                      final result = await fp.FilePicker.platform.pickFiles(allowMultiple: true);
+                      final result = await fp.FilePicker.pickFiles(allowMultiple: true);
                       if (result == null) return;
                       setDialog(() {
                         files
@@ -2244,7 +2244,7 @@ class ArchiveIntakeScreen extends ConsumerWidget {
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.folder_open),
                           onPressed: () async {
-                            final selected = await fp.FilePicker.platform.getDirectoryPath(dialogTitle: 'اختر مصدر الدفعة');
+                            final selected = await fp.FilePicker.getDirectoryPath(dialogTitle: 'اختر مصدر الدفعة');
                             if (selected != null) setDialog(() => sourcePath.text = selected);
                           },
                         ),
@@ -2402,7 +2402,7 @@ class ArchiveIntakeScreen extends ConsumerWidget {
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.folder_open),
                       onPressed: () async {
-                        final selected = await fp.FilePicker.platform.getDirectoryPath(dialogTitle: 'اختر مصدر الأرشيف');
+                        final selected = await fp.FilePicker.getDirectoryPath(dialogTitle: 'اختر مصدر الأرشيف');
                         if (selected != null) setDialog(() => sourcePath.text = selected);
                       },
                     ),
@@ -2463,7 +2463,7 @@ class ArchiveIntakeScreen extends ConsumerWidget {
       await ref.read(auditServiceProvider).log(action: 'access_denied', category: 'archive', entityType: 'archive_batch', entityId: '$batchId', description: 'محاولة استيراد ملفات أرشيف دون صلاحية', severity: 'warning');
       return;
     }
-    final result = await fp.FilePicker.platform.pickFiles(allowMultiple: true);
+    final result = await fp.FilePicker.pickFiles(allowMultiple: true);
     if (result == null) return;
     final files = result.paths.whereType<String>().map(File.new).toList();
     if (files.isEmpty) return;
@@ -2498,7 +2498,7 @@ class ArchiveIntakeScreen extends ConsumerWidget {
       await ref.read(auditServiceProvider).log(action: 'access_denied', category: 'archive', entityType: 'archive_batch', entityId: '$batchId', description: 'محاولة استيراد مجلد أرشيف دون صلاحية', severity: 'warning');
       return;
     }
-    final directoryPath = await fp.FilePicker.platform.getDirectoryPath(dialogTitle: 'اختر مجلد الأرشيف');
+    final directoryPath = await fp.FilePicker.getDirectoryPath(dialogTitle: 'اختر مجلد الأرشيف');
     if (directoryPath == null || directoryPath.trim().isEmpty) return;
     final root = Directory(directoryPath);
     if (!await root.exists()) return;
@@ -2547,7 +2547,7 @@ class ArchiveIntakeScreen extends ConsumerWidget {
       await ref.read(auditServiceProvider).log(action: 'access_denied', category: 'archive', entityType: 'archive_batch', entityId: '$batchId', description: 'محاولة استيراد CSV دون صلاحية', severity: 'warning');
       return;
     }
-    final result = await fp.FilePicker.platform.pickFiles(type: fp.FileType.custom, allowedExtensions: const ['csv']);
+    final result = await fp.FilePicker.pickFiles(type: fp.FileType.custom, allowedExtensions: const ['csv']);
     final pathValue = result?.files.single.path;
     if (pathValue == null) return;
     final csvFile = File(pathValue);

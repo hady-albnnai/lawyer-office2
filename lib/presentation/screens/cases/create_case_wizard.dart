@@ -1311,7 +1311,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   Future<void> _addAttachment() async {
     // اختيار ملفات حقيقية من القرص. سابقاً كانت تُضاف أسماء وهمية
     // (مستند_1.pdf) بلا ملف فعلي، فتضيع المرفقات بصمت عند الحفظ.
-    final result = await file_picker.FilePicker.platform.pickFiles(allowMultiple: true);
+    final result = await file_picker.FilePicker.pickFiles(allowMultiple: true);
     if (result == null) return;
     final picked = result.files.where((f) => (f.path ?? '').isNotEmpty).toList();
     if (picked.isEmpty) return;

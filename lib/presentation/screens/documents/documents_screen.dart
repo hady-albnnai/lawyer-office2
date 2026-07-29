@@ -431,7 +431,7 @@ class _UploadDocDialogState extends ConsumerState<UploadDocDialog> {
   }
 
   Future<void> _pickFile() async {
-    final res = await fp.FilePicker.platform.pickFiles();
+    final res = await fp.FilePicker.pickFiles();
     if (res != null && res.files.single.path != null) {
       setState(() {
         _file = res.files.single;
