@@ -1011,6 +1011,8 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
   }
 
   Widget _buildStatusBar(CaseDetailState state) {
+    final caseItem = state.caseItem!;
+    final nextSession = state.nextSession;
     final statusColor = state.isTerminated
         ? AppColors.error
         : state.openDeficienciesCount > 0
