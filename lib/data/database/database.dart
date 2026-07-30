@@ -170,8 +170,9 @@ class AppDatabase extends _$AppDatabase {
 
   /// تحويل أسماء المحاكم القديمة إلى اسم المحافظة وحدها.
   ///
-  /// idempotent: الاسم المطابق لمحافظة أصلاً يُترك دون مساس، لذا يمكن
-  /// استدعاؤها في beforeOpen دون أثر جانبي.
+  /// تُنفَّذ مرة واحدة ضمن ترحيل v5 فقط، ولا تُستدعى في beforeOpen:
+  /// تشغيلها في كل إقلاع يعيد كتابة أسماء قد يكون المستخدم أدخلها
+  /// عمداً بصيغة مخصّصة.
   Future<void> normalizeCourtNames() async {
     final rows =
         await customSelect('SELECT id, name, city FROM courts').get();
@@ -489,7 +490,6 @@ class AppDatabase extends _$AppDatabase {
     await ensurePoaColumns();
     await ensureUpgradeTableColumns();
     await _ensureSqlColumn('courts', 'chamber_number', 'INTEGER');
-    await normalizeCourtNames();
   }
 
   /// استكمال أعمدة جدول الوكالات المضافة بعد الإصدار الأول من المخطط.
