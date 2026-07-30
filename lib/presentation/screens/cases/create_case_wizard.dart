@@ -1425,7 +1425,11 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   Future<void> _addAttachment() async {
     // اختيار ملفات حقيقية من القرص. سابقاً كانت تُضاف أسماء وهمية
     // (مستند_1.pdf) بلا ملف فعلي، فتضيع المرفقات بصمت عند الحفظ.
-    final result = await file_picker.FilePicker.pickFiles(allowMultiple: true);
+    final result = await file_picker.FilePicker.pickFiles(
+      allowMultiple: true,
+      type: file_picker.FileType.custom,
+      allowedExtensions: AppConstants.allowedAttachmentExtensions,
+    );
     if (result == null) return;
     final picked = result.files.where((f) => (f.path ?? '').isNotEmpty).toList();
     if (picked.isEmpty) return;
@@ -2232,17 +2236,22 @@ class _AddPoaDialogState extends ConsumerState<AddPoaDialog> {
                     children: [
                       // 1) الموكل
                       ref.watch(allPersonsProvider(null)).maybeWhen(
-                            data: (persons) => DropdownButtonFormField<int>(
-                              value: _selectedClientId,
-                              isExpanded: true,
-                              decoration: _dec('الموكل *'),
-                              items: persons
-                                  .map((p) => DropdownMenuItem(
-                                        value: p.id,
-                                        child: Text(p.fullName, overflow: TextOverflow.ellipsis),
-                                      ))
-                                  .toList(),
-                              onChanged: (v) => setState(() => _selectedClientId = v),
+                            data: (persons) => SearchablePicker<db.PersonEntity>(
+                              label: 'الموكل *',
+                              hintText: 'ابحث بالاسم أو الهاتف',
+                              prefixIcon: const Icon(Icons.person_search),
+                              items: persons,
+                              labelOf: (p) => p.fullName,
+                              searchTermsOf: (p) =>
+                                  [p.phone1 ?? '', p.nationalId ?? ''],
+                              subtitleOf: (p) => p.phone1,
+                              value: _selectedClientId == null
+                                  ? null
+                                  : persons
+                                      .where((p) => p.id == _selectedClientId)
+                                      .firstOrNull,
+                              onSelected: (p) =>
+                                  setState(() => _selectedClientId = p.id),
                             ),
                             orElse: () => const LinearProgressIndicator(),
                           ),

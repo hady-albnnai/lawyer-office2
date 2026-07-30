@@ -510,7 +510,11 @@ class _EnterWorkOrderResultDialogState extends ConsumerState<EnterWorkOrderResul
   }
 
   Future<void> _pickAttachments() async {
-    final result = await fp.FilePicker.pickFiles(allowMultiple: true);
+    final result = await fp.FilePicker.pickFiles(
+      allowMultiple: true,
+      type: fp.FileType.custom,
+      allowedExtensions: AppConstants.allowedAttachmentExtensions,
+    );
     if (result == null) return;
     final files = result.paths.whereType<String>().map(File.new).toList();
     if (files.isNotEmpty) setState(() => _attachments.addAll(files));

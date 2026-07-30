@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart' as fp;
 import '../../../core/auth/permission_catalog.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
 /// شاشة المستندات (Smart File Explorer)
@@ -431,7 +432,10 @@ class _UploadDocDialogState extends ConsumerState<UploadDocDialog> {
   }
 
   Future<void> _pickFile() async {
-    final res = await fp.FilePicker.pickFiles();
+    final res = await fp.FilePicker.pickFiles(
+      type: fp.FileType.custom,
+      allowedExtensions: AppConstants.allowedAttachmentExtensions,
+    );
     if (res != null && res.files.single.path != null) {
       setState(() {
         _file = res.files.single;

@@ -1132,7 +1132,12 @@ class ArchiveIntakeScreen extends ConsumerWidget {
                     icon: const Icon(Icons.upload_file),
                     label: Text(files.isEmpty ? 'اختيار ملفات' : 'الملفات المختارة: ${files.length}'),
                     onPressed: () async {
-                      final result = await fp.FilePicker.pickFiles(allowMultiple: true);
+                      final result = await fp.FilePicker.pickFiles(
+                        allowMultiple: true,
+                        type: fp.FileType.custom,
+                        allowedExtensions:
+                            AppConstants.allowedAttachmentExtensions,
+                      );
                       if (result == null) return;
                       setDialog(() {
                         files
@@ -2463,7 +2468,12 @@ class ArchiveIntakeScreen extends ConsumerWidget {
       await ref.read(auditServiceProvider).log(action: 'access_denied', category: 'archive', entityType: 'archive_batch', entityId: '$batchId', description: 'محاولة استيراد ملفات أرشيف دون صلاحية', severity: 'warning');
       return;
     }
-    final result = await fp.FilePicker.pickFiles(allowMultiple: true);
+    final result = await fp.FilePicker.pickFiles(
+                        allowMultiple: true,
+                        type: fp.FileType.custom,
+                        allowedExtensions:
+                            AppConstants.allowedAttachmentExtensions,
+                      );
     if (result == null) return;
     final files = result.paths.whereType<String>().map(File.new).toList();
     if (files.isEmpty) return;

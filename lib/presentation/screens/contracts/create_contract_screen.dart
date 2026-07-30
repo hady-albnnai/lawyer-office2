@@ -11,6 +11,7 @@ import '../../../data/database/database.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../widgets/archive_context_banner.dart';
+import '../../widgets/common/searchable_picker.dart';
 
 /// شاشة تنظيم وإبرام عقد جديد أو رفع عقد سابق للتحرير والربط (CreateContractScreen V6.2)
 class CreateContractScreen extends ConsumerStatefulWidget {
@@ -30,6 +31,8 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
   final _valueController = TextEditingController(text: '0');
   String _currency = 'ل.س';
 
+  /// SearchablePicker ليس FormField، فالتحقق يجري يدوياً عند الحفظ.
+  bool _partiesTouched = false;
   int? _party1PersonId;
   int? _party2PersonId;
 
@@ -148,22 +151,48 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                   data: (persons) => Row(
                     children: [
                       Expanded(
-                        child: DropdownButtonFormField<int>(
-                          value: _party1PersonId,
-                          decoration: const InputDecoration(labelText: 'الطرف الأول (البائع / المؤجر / صاحب العمل) *'),
-                          items: persons.map((p) => DropdownMenuItem(value: p.id, child: Text(p.fullName))).toList(),
-                          onChanged: (val) => setState(() => _party1PersonId = val),
-                          validator: (val) => val == null ? 'إلزامي' : null,
+                        child: SearchablePicker<PersonEntity>(
+                          label: 'الطرف الأول (البائع / المؤجر / صاحب العمل) *',
+                          hintText: 'ابحث بالاسم أو الهاتف',
+                          prefixIcon: const Icon(Icons.person_search),
+                          items: persons,
+                          labelOf: (p) => p.fullName,
+                          searchTermsOf: (p) =>
+                              [p.phone1 ?? '', p.nationalId ?? ''],
+                          subtitleOf: (p) => p.phone1,
+                          errorText: _partiesTouched && _party1PersonId == null
+                              ? 'إلزامي'
+                              : null,
+                          value: _party1PersonId == null
+                              ? null
+                              : persons
+                                  .where((p) => p.id == _party1PersonId)
+                                  .firstOrNull,
+                          onSelected: (p) =>
+                              setState(() => _party1PersonId = p.id),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: DropdownButtonFormField<int>(
-                          value: _party2PersonId,
-                          decoration: const InputDecoration(labelText: 'الطرف الثاني (المشتري / المستأجر / العامل) *'),
-                          items: persons.map((p) => DropdownMenuItem(value: p.id, child: Text(p.fullName))).toList(),
-                          onChanged: (val) => setState(() => _party2PersonId = val),
-                          validator: (val) => val == null ? 'إلزامي' : null,
+                        child: SearchablePicker<PersonEntity>(
+                          label: 'الطرف الثاني (المشتري / المستأجر / العامل) *',
+                          hintText: 'ابحث بالاسم أو الهاتف',
+                          prefixIcon: const Icon(Icons.person_search),
+                          items: persons,
+                          labelOf: (p) => p.fullName,
+                          searchTermsOf: (p) =>
+                              [p.phone1 ?? '', p.nationalId ?? ''],
+                          subtitleOf: (p) => p.phone1,
+                          errorText: _partiesTouched && _party2PersonId == null
+                              ? 'إلزامي'
+                              : null,
+                          value: _party2PersonId == null
+                              ? null
+                              : persons
+                                  .where((p) => p.id == _party2PersonId)
+                                  .firstOrNull,
+                          onSelected: (p) =>
+                              setState(() => _party2PersonId = p.id),
                         ),
                       ),
                     ],
@@ -361,7 +390,7 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
   }
 
   Future<void> _pickFile() async {
-    final res = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['docx', 'doc', 'pdf']);
+    final res = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['docx', 'doc', 'pdf', 'rtf']);
     if (res != null && res.files.single.path != null) {
       setState(() => _wordFile = File(res.files.single.path!));
     }
@@ -406,6 +435,8 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
       }
       return;
     }
+    // إظهار خطأ حقلي الطرفين لأنهما ليسا FormField ولا يلتقطهما validate.
+    setState(() => _partiesTouched = true);
     if (!_formKey.currentState!.validate() || _party1PersonId == null || _party2PersonId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى اختيار الأطراف المتعاقدة وتعبئة الحقول المطلوبة!'), backgroundColor: AppConstants.statusDanger));
       return;

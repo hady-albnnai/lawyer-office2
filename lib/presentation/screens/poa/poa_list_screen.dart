@@ -12,6 +12,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archive_context_banner.dart';
+import '../../widgets/common/searchable_picker.dart';
 import '../documents/document_viewer.dart';
 import '../persons/person_models.dart';
 import 'poa_detail_screen.dart';
@@ -357,11 +358,20 @@ class _AddAgencyDialogState extends ConsumerState<AddAgencyDialog> {
               ArchiveContextBanner(contextInfo: widget.archiveContext),
               TextField(controller: _numberController, decoration: const InputDecoration(labelText: 'رقم الوكالة / التوثيق')),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _principalPersonId,
-                decoration: const InputDecoration(labelText: 'الموكل'),
-                items: persons.map((person) => DropdownMenuItem(value: person.id, child: Text(person.fullName))).toList(),
-                onChanged: (value) => setState(() => _principalPersonId = value),
+              SearchablePicker<PersonDirectoryRecord>(
+                label: 'الموكل',
+                hintText: 'ابحث بالاسم أو الهاتف أو الرقم الوطني',
+                prefixIcon: const Icon(Icons.person_search),
+                items: persons,
+                labelOf: (p) => p.fullName,
+                searchTermsOf: (p) => [p.phone, p.nationalId],
+                subtitleOf: (p) => p.phone.isEmpty ? null : p.phone,
+                value: _principalPersonId == null
+                    ? null
+                    : persons
+                        .where((p) => p.id == _principalPersonId)
+                        .firstOrNull,
+                onSelected: (p) => setState(() => _principalPersonId = p.id),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<AgencyType>(

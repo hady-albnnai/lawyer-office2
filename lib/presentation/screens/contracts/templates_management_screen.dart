@@ -169,7 +169,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
                     ElevatedButton(
                       child: const Text('اختيار'),
                       onPressed: () async {
-                        final res = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['docx', 'doc']);
+                        final res = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['docx', 'doc', 'rtf']);
                         if (res != null && res.files.single.path != null) {
                           setDialogState(() => docxFile = File(res.files.single.path!));
                         }
