@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
 
 import '../../../core/auth/permission_catalog.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/enums/app_enums.dart';
 
 import '../../../data/database/database.dart' as db;
@@ -25,6 +26,7 @@ import '../../providers/ui_data_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/archive_context_banner.dart';
+import '../../widgets/common/searchable_picker.dart';
 import 'case_models.dart';
 
 /// معالج إنشاء دعوى جديدة
@@ -57,7 +59,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   // الخطوة 3: التصنيف
   // ===========================================================================
   CaseType _caseType = CaseType.civil;
-  String _caseSubType = 'بداية';
   int? _selectedCourtId;
   final TextEditingController _baseNumberController = TextEditingController();
   final TextEditingController _baseYearController = TextEditingController(
@@ -102,23 +103,164 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   bool _isSaving = false;
   
   // قوائم الاختيار
-  final List<String> _caseSubTypes = ['صلح', 'بداية', 'استئناف', 'نقض', 'مخاصمة'];
-  final List<String> _courtNames = [
-    'محكمة دمشق الأولى',
-    'محكمة دمشق الثانية',
-    'محكمة الاستئناف',
-    'محكمة النقض',
-    'محكمة حلب الأولى',
-    'محكمة حمص الأولى',
-    'محكمة اللاذقية الأولى',
-    'محكمة حما',
-    'محكمة درعا',
-    'محكمة السويداء',
-    'محكمة القنيطرة',
-    'محكمة الرقة',
-    'محكمة دير الزور',
-    'محكمة الحسكة',
-  ];
+  // المحكمة = المحافظة فقط. الدرجة (صلح/بداية/استئناف/نقض) شأن إجرائي
+  // مستقل تديره المراحل القضائية، ولا تُدمج في اسم المحكمة.
+  final List<String> _courtNames = [...AppConstants.syrianGovernorates];
+
+  /// رقم الغرفة داخل محكمة المحافظة: 1..16 اعتيادياً مع السماح بالزيادة.
+  int? _chamberNumber;
+
+  /// معاينة الرقم الذي سيأخذه الملف عند الحفظ. الرقم النهائي يُولَّد
+  /// داخل معاملة الحفظ عبر OfficeFileRepository لضمان عدم التكرار،
+  /// وهذه معاينة للعرض فقط.
+  bool _isGeneratingNumber = false;
+  final TextEditingController _customChamberController =
+      TextEditingController();
+
+
+  /// عرض الرقم المتوقع للدعوى اعتماداً على عدّاد ملفات المكتب.
+  ///
+  /// لا يستهلك رقماً من العدّاد؛ يقرأ آخر رقم ويضيف واحداً للعرض فقط،
+  /// بينما يُحجز الرقم فعلياً داخل معاملة الحفظ.
+  Future<void> _previewCaseNumber() async {
+    setState(() => _isGeneratingNumber = true);
+    try {
+      final year = int.tryParse(_baseYearController.text.trim()) ??
+          DateTime.now().year;
+      final preview = await ref
+          .read(officeFileRepositoryProvider)
+          .peekNextFileNumber(OfficeFileType.caseFile, year);
+      if (!mounted) return;
+      _caseNumberController.text = preview;
+    } catch (_) {
+      if (!mounted) return;
+      _caseNumberController.text = 'يُولَّد عند الحفظ';
+    } finally {
+      if (mounted) setState(() => _isGeneratingNumber = false);
+    }
+  }
+
+  /// استخراج المحافظة من تسمية محكمة قديمة قد تحمل درجة وترتيباً.
+  String? _governorateFrom(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    String norm(String x) => x
+        .replaceAll(RegExp(r'[\u064B-\u0652]'), '')
+        .replaceAll(RegExp(r'[أإآ]'), 'ا')
+        .replaceAll('ة', 'ه')
+        .replaceAll('ى', 'ي')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final hay = norm(raw);
+    if (RegExp(r'\bحما\b').hasMatch(hay) || hay.contains('حماه')) {
+      return 'حماة';
+    }
+    if (hay.contains('ريف دمشق')) return 'ريف دمشق';
+    for (final gov in AppConstants.syrianGovernorates) {
+      if (hay.contains(norm(gov))) return gov;
+    }
+    return null;
+  }
+
+  /// حقل اختيار المحكمة (المحافظة) ورقم الغرفة.
+  Widget _buildCourtAndChamberFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SearchablePicker<String>(
+          label: 'المحكمة (المحافظة)',
+          hintText: 'اختر المحافظة',
+          prefixIcon: const Icon(Icons.account_balance),
+          items: _courtNames,
+          labelOf: (g) => g,
+          value: (_selectedCourtId != null &&
+                  _selectedCourtId! >= 0 &&
+                  _selectedCourtId! < _courtNames.length)
+              ? _courtNames[_selectedCourtId!]
+              : null,
+          onSelected: (gov) =>
+              setState(() => _selectedCourtId = _courtNames.indexOf(gov)),
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<int>(
+          value: _chamberNumber,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: 'الغرفة',
+            hintText: 'اختر رقم الغرفة',
+            prefixIcon: const Icon(Icons.meeting_room_outlined),
+            border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          items: [
+            for (int i = AppConstants.minChamberNumber;
+                i <= AppConstants.defaultMaxChamberNumber;
+                i++)
+              DropdownMenuItem(value: i, child: Text('الغرفة $i')),
+            if (_chamberNumber != null &&
+                _chamberNumber! > AppConstants.defaultMaxChamberNumber)
+              DropdownMenuItem(
+                value: _chamberNumber,
+                child: Text('الغرفة $_chamberNumber'),
+              ),
+          ],
+          onChanged: (v) => setState(() => _chamberNumber = v),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            icon: const Icon(Icons.add),
+            label: const Text('غرفة برقم أعلى'),
+            onPressed: _askChamberNumber,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// إدخال رقم غرفة يتجاوز 16 عند استحداث غرف جديدة.
+  Future<void> _askChamberNumber() async {
+    _customChamberController.clear();
+    final result = await showDialog<int>(
+      context: context,
+      builder: (ctx) {
+        String? error;
+        return StatefulBuilder(
+          builder: (ctx, setLocal) => AlertDialog(
+            title: const Text('إضافة غرفة'),
+            content: TextField(
+              controller: _customChamberController,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'رقم الغرفة',
+                hintText: 'مثال: 17',
+                errorText: error,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('إلغاء'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final n =
+                      int.tryParse(_customChamberController.text.trim());
+                  if (n == null || n < AppConstants.minChamberNumber) {
+                    setLocal(() => error = 'أدخل رقماً صحيحاً أكبر من صفر');
+                    return;
+                  }
+                  Navigator.pop(ctx, n);
+                },
+                child: const Text('إضافة'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (result != null) setState(() => _chamberNumber = result);
+  }
 
   // دوال مساعدة للتحقق من صحة البيانات
   bool _isValidYear(String yearStr) {
@@ -131,6 +273,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _previewCaseNumber());
     final archive = widget.archiveContext;
     if (archive != null) {
       final caseType = archive.caseType ?? '';
@@ -138,15 +281,11 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       if (caseType.contains('تجار')) _caseType = CaseType.commercial;
       if (caseType.contains('شرع')) _caseType = CaseType.personalStatus;
       if (caseType.contains('إدار') || caseType.contains('ادار')) _caseType = CaseType.administrative;
-      if ((archive.courtLevel ?? '').isNotEmpty && !_caseSubTypes.contains(archive.courtLevel)) {
-        _caseSubTypes.add(archive.courtLevel!);
-      }
-      if ((archive.courtLevel ?? '').isNotEmpty && !_courtNames.contains(archive.courtLevel)) {
-        _courtNames.add(archive.courtLevel!);
-      }
-      if ((archive.courtLevel ?? '').isNotEmpty) {
-        _caseSubType = archive.courtLevel!;
-        _selectedCourtId = _courtNames.indexOf(archive.courtLevel!);
+      // courtLevel في الأرشيف قد يحمل تسمية قديمة مركّبة؛ نستخرج
+      // منها المحافظة فقط ونتجاهل ما يتعلق بالدرجة.
+      final gov = _governorateFrom(archive.courtLevel);
+      if (gov != null) {
+        _selectedCourtId = _courtNames.indexOf(gov);
       }
       if (archive.isClosed) {
         _nextSessionDate = null;
@@ -808,72 +947,9 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         ),
         const SizedBox(height: 16),
         
-        // النوع الفرعي
-        DropdownButtonFormField<String>(
-          value: _caseSubType,
-          items: _caseSubTypes.map((subType) {
-            return DropdownMenuItem(
-              value: subType,
-              child: Text(subType),
-            );
-          }).toList(),
-          onChanged: (value) => setState(() => _caseSubType = value!),
-          decoration: InputDecoration(
-            labelText: 'النوع الفرعي',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            icon: const Icon(Icons.add),
-            label: const Text('إضافة نوع فرعي غير موجود'),
-            onPressed: () async {
-              final value = await _askCustomValue('إضافة نوع فرعي للدعوى');
-              if (value == null || value.isEmpty) return;
-              setState(() {
-                if (!_caseSubTypes.contains(value)) _caseSubTypes.add(value);
-                _caseSubType = value;
-              });
-            },
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // المحكمة
-        DropdownButtonFormField<int?>(
-          value: _selectedCourtId,
-          items: _courtNames.asMap().entries.map((entry) {
-            return DropdownMenuItem(
-              value: entry.key,
-              child: Text(entry.value),
-            );
-          }).toList(),
-          onChanged: (value) => setState(() => _selectedCourtId = value),
-          decoration: InputDecoration(
-            labelText: 'المحكمة',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            icon: const Icon(Icons.add),
-            label: const Text('إضافة محكمة / درجة غير موجودة'),
-            onPressed: () async {
-              final value = await _askCustomValue('إضافة محكمة أو درجة تقاضي');
-              if (value == null || value.isEmpty) return;
-              setState(() {
-                if (!_courtNames.contains(value)) _courtNames.add(value);
-                _selectedCourtId = _courtNames.indexOf(value);
-              });
-            },
-          ),
-        ),
+
+        // المحكمة والغرفة
+        _buildCourtAndChamberFields(),
         const SizedBox(height: 16),
         
         // رقم الأساس وسنة الأساس
@@ -932,52 +1008,90 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   // ===========================================================================
   
   Widget _buildBasicDataStep() {
+    final activeCount = ref.watch(activeCasesCountProvider);
+    final closedCount = ref.watch(closedCasesCountProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildStepHeader(
           title: 'البيانات الأساسية',
-          description: 'ادخل رقم الدعوى وعنوانها',
+          description: 'رقم الدعوى يُولَّد تلقائياً، وأدخل موضوع الدعوى',
         ),
         const SizedBox(height: 24),
-        
-        // رقم الدعوى
+
+        // رقم الدعوى: يُولَّد من عدّاد المكتب ولا يُحرَّر يدوياً
         TextField(
           controller: _caseNumberController,
+          readOnly: true,
+          enabled: false,
+          style: AppTextStyles.numberText,
           decoration: InputDecoration(
-            labelText: 'رقم الدعوى',
-            hintText: 'مثال: 2026/001 (سيتم توليد تلقائياً إذا ترك فارغاً)',
+            labelText: 'رقم الدعوى (تلقائي)',
+            prefixIcon: const Icon(Icons.tag),
+            suffixIcon: _isGeneratingNumber
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : null,
+            filled: true,
+            fillColor: AppColors.cardBorder.withValues(alpha: 0.15),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        
-        // عنوان الدعوى
-        TextField(
-          controller: _titleController,
-          decoration: InputDecoration(
-            labelText: 'عنوان الدعوى',
-            hintText: 'مثال: دعوى تعويض عن ضرر',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.info.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: AppColors.info.withValues(alpha: 0.3),
             ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline, size: 18, color: AppColors.info),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'هذا الرقم هو تسلسل الدعوى ضمن دعاوى المكتب، ويشمل ما '
+                  'أُدخل من الأرشيف الجاري وما يُضاف لاحقاً. '
+                  'حالياً: ${activeCount.valueOrNull ?? 0} جارية • '
+                  '${closedCount.valueOrNull ?? 0} منتهية.',
+                  style: AppTextStyles.bodySmall,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
-        
-        // الموضوع
+
+        // موضوع الدعوى: حقل واحد بدل العنوان والموضوع المكرّرين
         TextField(
           controller: _subjectController,
           decoration: InputDecoration(
-            labelText: 'الموضوع',
+            labelText: 'موضوع الدعوى',
             hintText: 'مثال: تعويض عن ضرر مادي',
+            prefixIcon: const Icon(Icons.gavel),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          maxLines: 3,
+          maxLines: 2,
+          onChanged: (v) {
+            // العنوان مشتق من الموضوع للحفاظ على توافق السجلات القديمة.
+            _titleController.text = v;
+            setState(() {});
+          },
         ),
       ],
     );
@@ -1434,23 +1548,8 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         ),
         const SizedBox(height: 16),
         
-        // المحكمة
-        DropdownButtonFormField<int?>(
-          value: _selectedCourtId,
-          items: _courtNames.asMap().entries.map((entry) {
-            return DropdownMenuItem(
-              value: entry.key,
-              child: Text(entry.value),
-            );
-          }).toList(),
-          onChanged: (value) => setState(() => _selectedCourtId = value),
-          decoration: InputDecoration(
-            labelText: 'المحكمة',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
+        // المحكمة والغرفة
+        _buildCourtAndChamberFields(),
         const SizedBox(height: 24),
         
         // تنبيه
@@ -1601,10 +1700,11 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         }
         break;
       case 3: // البيانات الأساسية
-        if (_titleController.text.isEmpty) {
+        // العنوان والموضوع صارا حقلاً واحداً؛ التحقق على الموضوع.
+        if (_subjectController.text.trim().isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('يرجى إدخال عنوان الدعوى'),
+            const SnackBar(
+              content: Text('يرجى إدخال موضوع الدعوى'),
               backgroundColor: AppColors.error,
             ),
           );
@@ -1766,7 +1866,8 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         internalNumber: 'TMP',
         year: int.tryParse(_baseYearController.text) ?? DateTime.now().year,
         caseType: _caseType.toString().split('.').last,
-        subType: Value(_caseSubType),
+        // الدرجة لم تعد تُدمج هنا؛ تُدار عبر المراحل القضائية.
+        subType: Value(_caseType.displayName),
         status: Value(widget.archiveContext?.isClosed == true ? 'closed' : 'registered'),
         courtId: Value(_selectedCourtId),
         baseNumber: Value(_baseNumberController.text.isNotEmpty ? _baseNumberController.text : null),

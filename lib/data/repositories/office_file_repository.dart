@@ -158,6 +158,23 @@ class OfficeFileRepository {
     return rows.map((row) => OfficeFileRecord.fromData(row.data)).toList();
   }
 
+  /// معاينة الرقم التالي دون استهلاكه من العدّاد.
+  ///
+  /// للعرض في الواجهات فقط. الرقم النهائي يُحجَز داخل معاملة
+  /// createOfficeFile لضمان عدم التكرار عند الحفظ المتزامن، لذا قد
+  /// يختلف الرقم المعروض إن أُنشئ ملف آخر قبل الحفظ.
+  Future<String> peekNextFileNumber(OfficeFileType fileType, [int? targetYear]) async {
+    await _db.ensureOfficeFileTables();
+    final year = targetYear ?? DateTime.now().year;
+    final rows = await _db.customSelect(
+      '''SELECT last_number FROM office_file_sequences
+      WHERE year = ? AND file_type = ? LIMIT 1''',
+      variables: [Variable.withInt(year), Variable.withString(fileType.dbValue)],
+    ).get();
+    final next = rows.isEmpty ? 1 : ((rows.first.data['last_number'] as int) + 1);
+    return '${fileType.label}/$year/${next.toString().padLeft(4, '0')}';
+  }
+
   Future<OfficeFileRecord> createOfficeFile({
     required OfficeFileType fileType,
     OfficeFileSource source = OfficeFileSource.newWork,

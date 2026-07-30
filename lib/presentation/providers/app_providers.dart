@@ -150,6 +150,24 @@ final allCasesProvider = StreamProvider<List<Case>>((ref) {
   return ref.watch(caseRepositoryProvider).watchAllCases();
 });
 
+/// عدد الدعاوى الجارية في المكتب.
+///
+/// يشمل ما أُدخل من أرشيف الدعاوى الجارية وكل ما يُضاف بعد تشغيل
+/// التطبيق. الدعوى المنتهية (status = 'closed') تخرج من هذا العد
+/// تلقائياً لأن المزوّد مشتق من تدفق الدعاوى نفسه.
+final activeCasesCountProvider = Provider<AsyncValue<int>>((ref) {
+  return ref.watch(allCasesProvider).whenData(
+        (cases) => cases.where((c) => c.status != 'closed').length,
+      );
+});
+
+/// عدد الدعاوى المنتهية في المكتب.
+final closedCasesCountProvider = Provider<AsyncValue<int>>((ref) {
+  return ref.watch(allCasesProvider).whenData(
+        (cases) => cases.where((c) => c.status == 'closed').length,
+      );
+});
+
 /// تفاصيل دعوى واحدة من المستودع الحقيقي (Drift)
 final caseDetailFromRepoProvider = FutureProvider.family<Case?, int>((ref, caseId) {
   return ref.watch(caseRepositoryProvider).getCaseById(caseId);

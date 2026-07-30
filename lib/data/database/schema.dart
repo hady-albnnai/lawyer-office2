@@ -206,10 +206,16 @@ class CasePoaLinks extends Table {
 /// جدول قائمة المحاكم والدوائر القضائية في سوريا
 class Courts extends Table {
   IntColumn get id => integer().autoIncrement()();
+  /// اسم المحكمة = اسم المحافظة فقط (دمشق، حماة، حلب...).
+  /// لا تُدمج الدرجة ولا رقم الغرفة في الاسم.
   TextColumn get name => text()();
-  TextColumn get type => text().nullable()(); // صلح، بداية، استئناف، نقض، شرعية، تجارية، إدارية
+  /// مهجور: الدرجة (صلح/بداية/استئناف/نقض) تُدار عبر JudicialPhases.
+  /// يبقى العمود لعدم كسر السجلات التاريخية ولا يُعرض في الواجهات.
+  TextColumn get type => text().nullable()();
   TextColumn get city => text().nullable()(); // دمشق، السويداء، حلب...
   TextColumn get district => text().nullable()();
+  /// رقم الغرفة: 1..16 اعتيادياً، ويُسمح بما فوقها عند استحداث غرف.
+  IntColumn get chamberNumber => integer().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 }
 

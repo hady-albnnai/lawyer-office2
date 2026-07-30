@@ -79,7 +79,7 @@ class AppDatabase extends _$AppDatabase {
   /// schema.dart يجب أن يرافقه رفع هذا الرقم وإضافة m.addColumn في
   /// onUpgrade. عدم الالتزام يُنتج خطأ SQLite رقم 1 على القواعد القائمة.
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -98,6 +98,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await _migrateToV4(m);
+      }
+      if (from < 5) {
+        await _migrateToV5(m);
       }
     },
     beforeOpen: (details) async {
@@ -149,6 +152,73 @@ class AppDatabase extends _$AppDatabase {
     // --- work_orders: office_file_id من المرحلة السادسة لخارطة التنفيذ ---
     await _addColumnIfMissing(m, workOrders, 'office_file_id',
         () => workOrders.officeFileId);
+  }
+
+  /// ترحيل الإصدار 5 — إعادة هيكلة المحاكم: محافظة + رقم غرفة.
+  ///
+  /// كانت المحاكم تُخزَّن باسم مركّب يدمج المحافظة والدرجة والترتيب
+  /// ("محكمة البداية المدنية الأولى بدمشق")، وهذا خلط بين ثلاثة مفاهيم:
+  ///   - المحافظة: هوية المحكمة المكانية.
+  ///   - الدرجة: شأن إجرائي تديره JudicialPhases (بداية ← استئناف ← نقض).
+  ///   - الغرفة: رقم من 1 إلى 16 وقابل للزيادة.
+  /// الترحيل يضيف عمود الغرفة، ثم يستخرج المحافظة من الأسماء القديمة.
+  Future<void> _migrateToV5(Migrator m) async {
+    await _addColumnIfMissing(
+        m, courts, 'chamber_number', () => courts.chamberNumber);
+    await normalizeCourtNames();
+  }
+
+  /// تحويل أسماء المحاكم القديمة إلى اسم المحافظة وحدها.
+  ///
+  /// idempotent: الاسم المطابق لمحافظة أصلاً يُترك دون مساس، لذا يمكن
+  /// استدعاؤها في beforeOpen دون أثر جانبي.
+  Future<void> normalizeCourtNames() async {
+    final rows =
+        await customSelect('SELECT id, name, city FROM courts').get();
+
+    for (final row in rows) {
+      final id = row.data['id'] as int;
+      final name = (row.data['name'] as String?) ?? '';
+      final city = row.data['city'] as String?;
+
+      final resolved = _resolveGovernorate(name, city);
+      if (resolved == null || resolved == name) continue;
+
+      await customStatement(
+        'UPDATE courts SET name = ?, city = ? WHERE id = ?',
+        [resolved, resolved, id],
+      );
+    }
+  }
+
+  /// استخراج اسم المحافظة من تسمية محكمة قديمة.
+  ///
+  /// يعتمد على المطابقة النصية بعد تطبيع الهمزات والتاء المربوطة،
+  /// ويعالج التسميات الشائعة الخاطئة مثل "حما" بدل "حماة".
+  String? _resolveGovernorate(String rawName, String? city) {
+    String normalize(String s) => s
+        .replaceAll(RegExp(r'[\u064B-\u0652]'), '') // التشكيل
+        .replaceAll(RegExp(r'[أإآا]'), 'ا')
+        .replaceAll('ة', 'ه')
+        .replaceAll('ى', 'ي')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    final haystack = normalize('$rawName ${city ?? ''}');
+
+    // "حماة" تُكتب خطأً "حما"؛ تُفحص أولاً كي لا تلتقطها مطابقة أخرى.
+    if (RegExp(r'\bحما\b').hasMatch(haystack) ||
+        haystack.contains('حماه')) {
+      return 'حماة';
+    }
+
+    // ريف دمشق قبل دمشق حتى لا تبتلعها المطابقة الأعم.
+    if (haystack.contains('ريف دمشق')) return 'ريف دمشق';
+
+    for (final gov in AppConstants.syrianGovernorates) {
+      if (haystack.contains(normalize(gov))) return gov;
+    }
+    return null;
   }
 
   /// إضافة عمود عبر Migrator مع تخطّيه إن كان موجوداً بالفعل.
@@ -418,6 +488,8 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('CREATE INDEX IF NOT EXISTS idx_archive_items_hash ON archive_items(sha256);');
     await ensurePoaColumns();
     await ensureUpgradeTableColumns();
+    await _ensureSqlColumn('courts', 'chamber_number', 'INTEGER');
+    await normalizeCourtNames();
   }
 
   /// استكمال أعمدة جدول الوكالات المضافة بعد الإصدار الأول من المخطط.
@@ -634,19 +706,17 @@ class AppDatabase extends _$AppDatabase {
   /// حقن القوائم السورية الجاهزة الافتراضية عند أول تشغيل للمكتب
   Future<void> _seedDefaultLookups() async {
     await batch((b) {
-      // محاكم سورية افتراضية
-      b.insertAll(courts, [
-        CourtsCompanion.insert(name: 'محكمة البداية المدنية الأولى بدمشق', type: const Value('بداية'), city: const Value('دمشق')),
-        CourtsCompanion.insert(name: 'محكمة الصلح المدنية الأولى بدمشق', type: const Value('صلح'), city: const Value('دمشق')),
-        CourtsCompanion.insert(name: 'محكمة الاستئناف المدنية بدمشق', type: const Value('استئناف'), city: const Value('دمشق')),
-        CourtsCompanion.insert(name: 'محكمة النقض السورية - الغرفة المدنية', type: const Value('نقض'), city: const Value('دمشق')),
-        CourtsCompanion.insert(name: 'محكمة البداية التجارية بدمشق', type: const Value('تجارية'), city: const Value('دمشق')),
-        CourtsCompanion.insert(name: 'المحكمة الشرعية الأولى بدمشق', type: const Value('شرعية'), city: const Value('دمشق')),
-        CourtsCompanion.insert(name: 'محكمة البداية المدنية بالسويداء', type: const Value('بداية'), city: const Value('السويداء')),
-        CourtsCompanion.insert(name: 'محكمة الصلح المدنية بالسويداء', type: const Value('صلح'), city: const Value('السويداء')),
-        CourtsCompanion.insert(name: 'محكمة الاستئناف المدنية بالسويداء', type: const Value('استئناف'), city: const Value('السويداء')),
-        CourtsCompanion.insert(name: 'المحكمة الشرعية بالسويداء', type: const Value('شرعية'), city: const Value('السويداء')),
-      ]);
+      // المحاكم = المحافظات السورية. الدرجة تُدار عبر JudicialPhases،
+      // ورقم الغرفة يُحدَّد عند إنشاء الدعوى.
+      b.insertAll(
+        courts,
+        AppConstants.syrianGovernorates
+            .map((gov) => CourtsCompanion.insert(
+                  name: gov,
+                  city: Value(gov),
+                ))
+            .toList(),
+      );
 
       // مواضيع دعاوى جاهزة
       b.insertAll(caseSubjects, [
