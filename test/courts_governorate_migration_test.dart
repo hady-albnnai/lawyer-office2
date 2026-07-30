@@ -24,12 +24,21 @@ void main() {
     return rows.map((r) => r.data['name'] as String).toList();
   }
 
-  test('القائمة الافتراضية هي المحافظات وحدها', () async {
+  test('عمود الاسم يحمل المحافظة وحدها لكل المحاكم المحقونة', () async {
     final names = await courtNames();
 
-    expect(names.length, AppConstants.syrianGovernorates.length);
+    // صار لكل (نوع محكمة × محافظة) سجل، فالعدد أكبر من عدد
+    // المحافظات، لكن عمود الاسم يبقى محافظةً خالصة والنوع في
+    // court_kind. هذا هو جوهر الفصل الذي أُدخل في الإصدار 6.
     for (final gov in AppConstants.syrianGovernorates) {
       expect(names, contains(gov));
+    }
+    for (final name in names) {
+      expect(
+        AppConstants.syrianGovernorates.contains(name),
+        isTrue,
+        reason: 'اسم المحكمة "$name" ليس اسم محافظة',
+      );
     }
   });
 

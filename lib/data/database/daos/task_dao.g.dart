@@ -20,7 +20,9 @@ class TaskDaoManager {
       $$TaskHistoryTableTableManager(_db.attachedDatabase, _db.taskHistory);
   $$TimelineEventsTableTableManager get timelineEvents =>
       $$TimelineEventsTableTableManager(
-          _db.attachedDatabase, _db.timelineEvents);
+        _db.attachedDatabase,
+        _db.timelineEvents,
+      );
   $$DeficienciesTableTableManager get deficiencies =>
       $$DeficienciesTableTableManager(_db.attachedDatabase, _db.deficiencies);
 }

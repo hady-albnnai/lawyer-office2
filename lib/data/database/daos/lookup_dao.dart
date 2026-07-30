@@ -19,7 +19,10 @@ class LookupDao extends DatabaseAccessor<AppDatabase> with _$LookupDaoMixin {
   // إدارة قائمة المحاكم والدوائر القضائية (Courts)
   // ---------------------------------------------------------------------------
 
-  /// مراقبة المحاكم النشطة مع فلترة اختيارية حسب نوع المحكمة (صلح، بداية، استئناف...)
+  /// مراقبة المحاكم النشطة مع فلترة اختيارية حسب العمود المهجور `type`.
+  ///
+  /// يبقى للتوافق مع الشاشات القديمة. للاختيار حسب درجة التقاضي
+  /// استعمل [watchCourtsOfKind] التي تعتمد `court_kind`.
   Stream<List<Court>> watchActiveCourts({String? type}) {
     final query = select(courts)..where((t) => t.isActive.equals(true));
     if (type != null && type.isNotEmpty) {
@@ -27,6 +30,32 @@ class LookupDao extends DatabaseAccessor<AppDatabase> with _$LookupDaoMixin {
     }
     query.orderBy([(t) => OrderingTerm(expression: t.name)]);
     return query.watch();
+  }
+
+  /// المحاكم النشطة من نوع محدد (`CourtCatalog.appealCivil` مثلاً).
+  ///
+  /// تُستثنى السجلات بلا `court_kind` لأنها بقايا الإصدار الخامس
+  /// التي تحمل اسم محافظة مجرداً؛ عرضها يعيد الالتباس الذي أُصلح.
+  Stream<List<Court>> watchCourtsOfKind(String kindId) {
+    final query = select(courts)
+      ..where((t) => t.isActive.equals(true) & t.courtKind.equals(kindId))
+      ..orderBy([(t) => OrderingTerm(expression: t.name)]);
+    return query.watch();
+  }
+
+  /// محكمة بعينها من نوعها ومحافظتها، أو `null` إن لم توجد.
+  ///
+  /// تُستعمل عند النقل لمرحلة أعلى: يختار المحامي النوع والمحافظة
+  /// فيُستخرج `courtId` الحقيقي بدل تمرير فهرس قائمة.
+  Future<Court?> findCourt({
+    required String kindId,
+    required String governorate,
+  }) {
+    return (select(courts)
+          ..where((t) =>
+              t.courtKind.equals(kindId) & t.name.equals(governorate))
+          ..limit(1))
+        .getSingleOrNull();
   }
 
   /// إضافة محكمة أو دائرة قضائية جديدة للقائمة

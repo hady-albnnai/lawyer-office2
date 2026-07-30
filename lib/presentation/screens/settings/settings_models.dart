@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/court_catalog.dart';
 import '../../../core/utils/crypto_utils.dart';
 import '../../../data/repositories/settings_repository.dart';
 import '../../../data/services/backup_service.dart';
@@ -63,6 +64,8 @@ class SettingsCourtItem {
   final String name;
   final String type;
   final String city;
+  /// معرّف نوع المحكمة من `CourtCatalog` (فارغ للسجلات القديمة).
+  final String courtKind;
   final bool isActive;
 
   const SettingsCourtItem({
@@ -70,15 +73,25 @@ class SettingsCourtItem {
     required this.name,
     required this.type,
     required this.city,
+    this.courtKind = '',
     this.isActive = true,
   });
 
-  SettingsCourtItem copyWith({String? name, String? type, String? city, bool? isActive}) {
+  /// الاسم الكامل للعرض: نوع المحكمة ومحافظتها.
+  ///
+  /// القائمة تحوي سجلاً لكل (نوع × محافظة)، فعرض الاسم وحده يُظهر
+  /// «دمشق» عشرات المرات دون تمييز.
+  String get displayName => courtKind.isEmpty
+      ? name
+      : CourtCatalog.describeStored(kindId: courtKind, governorate: name);
+
+  SettingsCourtItem copyWith({String? name, String? type, String? city, String? courtKind, bool? isActive}) {
     return SettingsCourtItem(
       id: id,
       name: name ?? this.name,
       type: type ?? this.type,
       city: city ?? this.city,
+      courtKind: courtKind ?? this.courtKind,
       isActive: isActive ?? this.isActive,
     );
   }
@@ -371,6 +384,7 @@ class SettingsHubNotifier extends StateNotifier<SettingsHubState> {
               name: c.name,
               type: c.type ?? '',
               city: c.city ?? '',
+              courtKind: c.courtKind ?? '',
               isActive: c.isActive,
             ),
           )
@@ -832,6 +846,7 @@ class SettingsHubNotifier extends StateNotifier<SettingsHubState> {
           name: court.name,
           type: court.type.isEmpty ? null : court.type,
           city: court.city.isEmpty ? null : court.city,
+          courtKind: court.courtKind.isEmpty ? null : court.courtKind,
         )
         .then((_) => _reloadCourts())
         .catchError((_) => 0);
@@ -850,6 +865,7 @@ class SettingsHubNotifier extends StateNotifier<SettingsHubState> {
                   name: c.name,
                   type: c.type ?? '',
                   city: c.city ?? '',
+                  courtKind: c.courtKind ?? '',
                   isActive: c.isActive,
                 ))
             .toList(),
@@ -874,6 +890,7 @@ class SettingsHubNotifier extends StateNotifier<SettingsHubState> {
           name: court.name,
           type: court.type.isEmpty ? null : court.type,
           city: court.city.isEmpty ? null : court.city,
+          courtKind: court.courtKind.isEmpty ? null : court.courtKind,
         )
         .then((_) => _reloadCourts())
         .catchError((_) {});

@@ -30,7 +30,9 @@ class CaseDaoManager {
       $$CasePhasesTableTableManager(_db.attachedDatabase, _db.casePhases);
   $$OpponentLawyersTableTableManager get opponentLawyers =>
       $$OpponentLawyersTableTableManager(
-          _db.attachedDatabase, _db.opponentLawyers);
+        _db.attachedDatabase,
+        _db.opponentLawyers,
+      );
   $$CaseSessionsTableTableManager get caseSessions =>
       $$CaseSessionsTableTableManager(_db.attachedDatabase, _db.caseSessions);
   $$CaseActionsTableTableManager get caseActions =>

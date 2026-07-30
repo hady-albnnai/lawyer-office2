@@ -19,10 +19,14 @@ class AdminProcedureDaoManager {
       $$PersonsTableTableManager(_db.attachedDatabase, _db.persons);
   $$AdminProceduresTableTableManager get adminProcedures =>
       $$AdminProceduresTableTableManager(
-          _db.attachedDatabase, _db.adminProcedures);
+        _db.attachedDatabase,
+        _db.adminProcedures,
+      );
   $$AdminStepsTableTableManager get adminSteps =>
       $$AdminStepsTableTableManager(_db.attachedDatabase, _db.adminSteps);
   $$AdminProcedureTypesTableTableManager get adminProcedureTypes =>
       $$AdminProcedureTypesTableTableManager(
-          _db.attachedDatabase, _db.adminProcedureTypes);
+        _db.attachedDatabase,
+        _db.adminProcedureTypes,
+      );
 }

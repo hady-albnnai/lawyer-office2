@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../../core/constants/app_constants.dart';
+import '../../core/constants/court_catalog.dart';
 import '../services/storage_location_service.dart';
 import 'schema.dart';
 import 'daos/case_dao.dart';
@@ -80,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   /// schema.dart يجب أن يرافقه رفع هذا الرقم وإضافة m.addColumn في
   /// onUpgrade. عدم الالتزام يُنتج خطأ SQLite رقم 1 على القواعد القائمة.
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -102,6 +103,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 5) {
         await _migrateToV5(m);
+      }
+      if (from < 6) {
+        await _migrateToV6(m);
       }
     },
     beforeOpen: (details) async {
@@ -171,6 +175,115 @@ class AppDatabase extends _$AppDatabase {
     await _ensureSqlColumn('courts', 'chamber_number', 'INTEGER');
     await normalizeCourtNames();
   }
+
+  /// ترحيل الإصدار 6 — فصل «نوع المحكمة» عن «المحافظة».
+  ///
+  /// حتى الإصدار 5 كانت المحكمة تُعرَّف بالمحافظة وحدها، فكان جواب
+  /// «أمام أي محكمة استُؤنفت الدعوى؟» هو «حمص» — وهذا اسم مدينة لا
+  /// محكمة. الدرجة كانت تُحشر في `sub_type` كنص حر، ومنه استحال
+  /// معرفة مسار الطعن التالي.
+  ///
+  /// الإصلاح: `court_kind` يحمل معرّفاً من `CourtCatalog` يجمع
+  /// الدرجة والتخصص، و`chamber_number` يحمل الغرفة. المحافظة تبقى
+  /// في `court_id`. المحكمة الكاملة = النوع + المحافظة + الغرفة.
+  Future<void> _migrateToV6(Migrator m) async {
+    await _addColumnIfMissing(m, courts, 'court_kind', () => courts.courtKind);
+
+    await _addColumnIfMissing(m, cases, 'court_kind', () => cases.courtKind);
+    await _addColumnIfMissing(
+        m, cases, 'chamber_number', () => cases.chamberNumber);
+
+    await _addColumnIfMissing(
+        m, casePhases, 'court_kind', () => casePhases.courtKind);
+    await _addColumnIfMissing(
+        m, casePhases, 'chamber_number', () => casePhases.chamberNumber);
+
+    await ensureCourtKindRows();
+    await backfillCourtKinds();
+  }
+
+  /// حقن سجل لكل (نوع محكمة × محافظة) غير موجود.
+  ///
+  /// القواعد المرحَّلة من الإصدار 5 تحوي 14 سجلاً باسم محافظة وبلا
+  /// نوع. تُترك كما هي حتى لا تنكسر الدعاوى المرتبطة بها عبر
+  /// `court_id`، لكنها لا تظهر في قوائم الاختيار الجديدة لأنها
+  /// تُفلتر بـ `court_kind`. هذه الدالة تضيف الصفوف الناقصة فقط،
+  /// فتشغيلها مرة ثانية لا يُحدث تكراراً.
+  Future<void> ensureCourtKindRows() async {
+    final existing = await customSelect(
+      'SELECT name, court_kind FROM courts WHERE court_kind IS NOT NULL',
+    ).get();
+
+    final present = existing
+        .map((r) => '${r.data['court_kind']}|${r.data['name']}')
+        .toSet();
+
+    for (final kind in CourtCatalog.all) {
+      for (final gov in kind.governorates) {
+        if (present.contains('${kind.id}|$gov')) continue;
+        await customStatement(
+          'INSERT INTO courts (name, city, court_kind, is_active) '
+          'VALUES (?, ?, ?, 1)',
+          [gov, gov, kind.id],
+        );
+      }
+    }
+  }
+
+  /// استنتاج نوع المحكمة للسجلات التي سبقت الإصدار 6.
+  ///
+  /// المصدر الوحيد المتاح هو النص الحر في `cases.sub_type` و
+  /// `case_phases.phase_type` مع نوع الدعوى. الاستنتاج تقريبي بطبعه،
+  /// ولذلك يقتصر على الحالات القاطعة ويترك المبهم فارغاً بدل تخمين
+  /// درجة خاطئة تُظهر للمحامي مساراً لا وجود له.
+  Future<void> backfillCourtKinds() async {
+    final caseRows = await customSelect(
+      'SELECT id, case_type, sub_type FROM cases '
+      'WHERE court_kind IS NULL OR court_kind = ?',
+      variables: [Variable.withString('')],
+    ).get();
+
+    for (final row in caseRows) {
+      final kind = _inferCourtKind(
+        degreeText: row.data['sub_type'] as String?,
+        caseTypeText: row.data['case_type'] as String?,
+      );
+      if (kind == null) continue;
+      await customStatement(
+        'UPDATE cases SET court_kind = ? WHERE id = ?',
+        [kind, row.data['id'] as int],
+      );
+    }
+
+    final phaseRows = await customSelect(
+      'SELECT p.id AS id, p.phase_type AS phase_type, c.case_type AS case_type '
+      'FROM case_phases p LEFT JOIN cases c ON c.id = p.case_id '
+      'WHERE p.court_kind IS NULL OR p.court_kind = ?',
+      variables: [Variable.withString('')],
+    ).get();
+
+    for (final row in phaseRows) {
+      final kind = _inferCourtKind(
+        degreeText: row.data['phase_type'] as String?,
+        caseTypeText: row.data['case_type'] as String?,
+      );
+      if (kind == null) continue;
+      await customStatement(
+        'UPDATE case_phases SET court_kind = ? WHERE id = ?',
+        [kind, row.data['id'] as int],
+      );
+    }
+  }
+
+  /// مطابقة نص درجة قديم بمعرّف نوع محكمة.
+  ///
+  /// المنطق في `CourtCatalog.inferKindFromText` كي يبقى مصدراً
+  /// واحداً يتقاسمه الترحيل وشاشة الأرشيف.
+  String? _inferCourtKind({String? degreeText, String? caseTypeText}) =>
+      CourtCatalog.inferKindFromText(
+        degreeText: degreeText,
+        caseTypeText: caseTypeText,
+      );
 
   /// تحويل أسماء المحاكم القديمة إلى اسم المحافظة وحدها.
   ///
@@ -710,16 +823,24 @@ class AppDatabase extends _$AppDatabase {
   /// حقن القوائم السورية الجاهزة الافتراضية عند أول تشغيل للمكتب
   Future<void> _seedDefaultLookups() async {
     await batch((b) {
-      // المحاكم = المحافظات السورية. الدرجة تُدار عبر JudicialPhases،
-      // ورقم الغرفة يُحدَّد عند إنشاء الدعوى.
+      // المحاكم: سجل لكل (نوع محكمة × محافظة يجوز انعقادها فيها).
+      //
+      // كان السجل الواحد يحمل اسم محافظة مجرداً، فيختار المحامي
+      // «حمص» ولا يُعرف أهي صلح أم استئناف. الآن يحمل السجل نوعه
+      // في court_kind، وتبقى المحافظة في name و city.
+      // محاكم النقض والقضاء الإداري تُحقن لدمشق وحدها لأن مقرها
+      // القانوني هناك، فحقنها لكل محافظة يُنشئ محاكم لا وجود لها.
       b.insertAll(
         courts,
-        AppConstants.syrianGovernorates
-            .map((gov) => CourtsCompanion.insert(
-                  name: gov,
-                  city: Value(gov),
-                ))
-            .toList(),
+        [
+          for (final kind in CourtCatalog.all)
+            for (final gov in kind.governorates)
+              CourtsCompanion.insert(
+                name: gov,
+                city: Value(gov),
+                courtKind: Value(kind.id),
+              ),
+        ],
       );
 
       // مواضيع دعاوى جاهزة

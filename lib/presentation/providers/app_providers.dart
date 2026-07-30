@@ -253,6 +253,15 @@ final activeCourtsProvider = StreamProvider.family<List<Court>, String?>((ref, t
   return ref.watch(lookupRepositoryProvider).watchActiveCourts(type: type);
 });
 
+/// محاكم نوع محدد من `CourtCatalog` (كل المحافظات التي تنعقد فيها).
+///
+/// الوسيط هو معرّف النوع مثل `CourtCatalog.appealCivil`، والنتيجة
+/// سجلات المحاكم الحقيقية التي يُختار منها `courtId`.
+final courtsOfKindProvider =
+    StreamProvider.family<List<Court>, String>((ref, kindId) {
+  return ref.watch(lookupRepositoryProvider).watchCourtsOfKind(kindId);
+});
+
 
 final legalLibraryRepositoryProvider = Provider<LegalLibraryRepository>((ref) {
   final db = ref.watch(databaseProvider);

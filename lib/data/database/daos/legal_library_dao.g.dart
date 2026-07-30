@@ -16,8 +16,12 @@ class LegalLibraryDaoManager {
   LegalLibraryDaoManager(this._db);
   $$LegalLibraryItemsTableTableManager get legalLibraryItems =>
       $$LegalLibraryItemsTableTableManager(
-          _db.attachedDatabase, _db.legalLibraryItems);
+        _db.attachedDatabase,
+        _db.legalLibraryItems,
+      );
   $$LegalLibraryLinksTableTableManager get legalLibraryLinks =>
       $$LegalLibraryLinksTableTableManager(
-          _db.attachedDatabase, _db.legalLibraryLinks);
+        _db.attachedDatabase,
+        _db.legalLibraryLinks,
+      );
 }

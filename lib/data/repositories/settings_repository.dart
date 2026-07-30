@@ -186,6 +186,7 @@ class SettingsRepository {
     required String name,
     String? type,
     String? city,
+    String? courtKind,
     String? userRef,
   }) async {
     final id = await _dao.insertCourt(
@@ -193,6 +194,7 @@ class SettingsRepository {
         name: name,
         type: Value(type),
         city: Value(city),
+        courtKind: Value(courtKind),
       ),
     );
     await logActivity(
@@ -213,9 +215,10 @@ class SettingsRepository {
     required String name,
     String? type,
     String? city,
+    String? courtKind,
     String? userRef,
   }) async {
-    await _dao.updateCourt(id, name: name, type: type, city: city);
+    await _dao.updateCourt(id, name: name, type: type, city: city, courtKind: courtKind);
     await logActivity(
       table: 'courts',
       recordId: id,

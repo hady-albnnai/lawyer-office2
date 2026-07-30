@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:drift/drift.dart';
+import '../../core/constants/court_catalog.dart';
 import '../../core/enums/app_enums.dart';
 import '../database/database.dart';
 import '../database/daos/case_dao.dart';
@@ -109,6 +110,10 @@ class CaseRepository {
           phaseOrder: const Value(1),
           phaseType: caseData.subType.present ? caseData.subType.value! : 'بداية / صلح',
           courtId: caseData.courtId,
+          // نوع المحكمة والغرفة ينتقلان إلى المرحلة الأولى، وإلا بدأ
+          // سجل المراحل بلا درجة فتعذّر حساب مسار الطعن منه.
+          courtKind: caseData.courtKind,
+          chamberNumber: caseData.chamberNumber,
           baseNumber: caseData.baseNumber,
           year: caseData.year,
           startDate: Value(DateTime.now()),
@@ -200,6 +205,8 @@ class CaseRepository {
     required int caseId,
     required String newPhaseType,
     required int newCourtId,
+    String? newCourtKind,
+    int? newChamberNumber,
     String? newBaseNumber,
     int? newYear,
     required String userRef,
@@ -207,6 +214,21 @@ class CaseRepository {
     return await _caseDao.db.transaction(() async {
       final currentCase = await _caseDao.getCaseById(caseId);
       if (currentCase == null) throw Exception('الدعوى غير موجودة');
+
+      // حارس مسار الطعن: لا يُقبل الانتقال إلى محكمة لا يبلغها
+      // الطعن من المحكمة الحالية. بدونه كان يمكن نقل دعوى من
+      // الاستئناف إلى الصلح، وهو انحدار لا وجود له في التقاضي.
+      final currentKind = currentCase.courtKind;
+      if (currentKind != null && newCourtKind != null) {
+        final allowed = CourtCatalog.nextStagesFrom(currentKind)
+            .map((k) => k.id)
+            .toSet();
+        if (allowed.isNotEmpty && !allowed.contains(newCourtKind)) {
+          final from = CourtCatalog.byId(currentKind)?.label ?? currentKind;
+          final to = CourtCatalog.byId(newCourtKind)?.label ?? newCourtKind;
+          throw Exception('لا يجوز الانتقال من «$from» إلى «$to».');
+        }
+      }
 
       // 1. جلب المرحلة الحالية لإغلاقها ونقل قرارها
       final phases = await (_caseDao.select(_caseDao.db.casePhases)
@@ -234,6 +256,8 @@ class CaseRepository {
           phaseOrder: Value(nextOrder),
           phaseType: newPhaseType,
           courtId: Value(newCourtId),
+          courtKind: Value(newCourtKind),
+          chamberNumber: Value(newChamberNumber),
           baseNumber: Value(newBaseNumber),
           year: Value(newYear ?? DateTime.now().year),
           startDate: Value(DateTime.now()),
@@ -254,6 +278,10 @@ class CaseRepository {
         CasesCompanion(
           currentPhaseId: Value(newPhaseId),
           courtId: Value(newCourtId),
+          courtKind: Value(newCourtKind),
+          chamberNumber: Value(newChamberNumber),
+          subType: Value(
+              CourtCatalog.byId(newCourtKind)?.label ?? newPhaseType),
           baseNumber: Value(newBaseNumber),
           updatedAt: Value(DateTime.now()),
         ),
@@ -266,7 +294,7 @@ class CaseRepository {
           entityId: caseId,
           eventType: 'phase_transferred',
           eventDate: Value(DateTime.now()),
-          description: 'تم نقل القضية إلى مرحلة ($newPhaseType) في المحكمة الجديدة برقم أساس: ${newBaseNumber ?? "بانتظار التسجيل"}',
+          description: 'تم نقل القضية إلى ${CourtCatalog.describeStored(kindId: newCourtKind, chamberNumber: newChamberNumber)} برقم أساس: ${newBaseNumber ?? "بانتظار التسجيل"}',
           userRef: Value(userRef),
         ),
       );

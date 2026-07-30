@@ -15,12 +15,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/permission_catalog.dart';
+import '../../../core/constants/court_catalog.dart';
 import '../../../core/enums/app_enums.dart';
 import '../../../data/database/database.dart' as db;
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/ui_data_providers.dart' show uiDocumentsProvider, financeByEntityProvider, uiCasesProvider, uiFilesProvider;
 import '../../theme/app_colors.dart';
+import '../../widgets/common/court_selector.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme.dart';
 import '../documents/document_models.dart';
@@ -250,12 +252,17 @@ final caseDetailProvider =
     // أسماء الأطراف تُقرأ من دليل الأشخاص، وإلا ظهر معرّف الشخص رقماً مكانه.
     final personsAsync = ref.watch(allPersonsProvider(null));
 
+    // المحاكم تُقرأ لتحويل courtId إلى اسم؛ كان الرقم يُعرض كما هو
+    // فيظهر «المحكمة: 7» في ملخص الدعوى وسجل المراحل.
+    final courtsAsync = ref.watch(activeCourtsProvider(null));
+
     final dynamic caseItem = caseFuture.value;
     final dynamic parties = partiesAsync.value ?? [];
     final dynamic sessions = sessionsAsync.value ?? [];
     final dynamic phases = phasesAsync.value ?? [];
     final dynamic deficiencies = deficienciesAsync.value ?? [];
     final persons = personsAsync.value ?? const <db.PersonEntity>[];
+    final courts = courtsAsync.value ?? const <db.Court>[];
 
     return CaseDetailNotifier.fromRepository(
       caseItem,
@@ -264,6 +271,7 @@ final caseDetailProvider =
       phases: phases,
       deficiencies: deficiencies,
       persons: persons,
+      courts: courts,
     );
   },
 );
@@ -283,6 +291,7 @@ class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
     List<dynamic> phases = const [],
     List<dynamic> deficiencies = const [],
     List<dynamic> persons = const [],
+    List<dynamic> courts = const [],
   }) {
     final db.Case? caseItem = caseItemDynamic as db.Case?;
     if (caseItem == null) {
@@ -295,7 +304,11 @@ class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
     final dbDeficiencies = deficiencies.cast<db.Deficiency>();
     final personById = {for (final p in persons.cast<db.PersonEntity>()) p.id: p};
 
-    final uiCase = _convertDbCase(caseItem, dbPhases, dbSessions, dbDeficiencies);
+    final govById = {
+      for (final c in courts.cast<db.Court>()) c.id: c.name,
+    };
+    final uiCase =
+        _convertDbCase(caseItem, dbPhases, dbSessions, dbDeficiencies, govById);
 
     final clients = dbParties
         .where((p) => p.isClient)
@@ -333,14 +346,39 @@ class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
     );
   }
 
-  static Case _convertDbCase(db.Case dbCase, List<db.CasePhase> phases, List<db.CaseSession> sessions, List<db.Deficiency> deficiencies) {
+  /// وصف محكمة مقروء من أجزائها المخزَّنة.
+  ///
+  /// كان العرض يستعمل `courtId.toString()` فيظهر رقم المفتاح
+  /// الأجنبي مكان اسم المحكمة.
+  static String _courtLabel(
+    Map<int, String> govById, {
+    int? courtId,
+    String? courtKind,
+    int? chamberNumber,
+  }) {
+    final governorate = courtId == null ? null : govById[courtId];
+    if (courtKind == null && governorate == null) return 'غير محددة';
+    return CourtCatalog.describeStored(
+      kindId: courtKind,
+      governorate: governorate,
+      chamberNumber: chamberNumber,
+    );
+  }
+
+  static Case _convertDbCase(db.Case dbCase, List<db.CasePhase> phases, List<db.CaseSession> sessions, List<db.Deficiency> deficiencies, Map<int, String> govById) {
+    final courtLabel = _courtLabel(
+      govById,
+      courtId: dbCase.courtId,
+      courtKind: dbCase.courtKind,
+      chamberNumber: dbCase.chamberNumber,
+    );
     return Case(
       id: dbCase.id.toString(),
       caseNumber: dbCase.internalNumber,
       title: dbCase.subject ?? dbCase.internalNumber,
       type: _parseCaseType(dbCase.caseType),
       status: _parseCaseStatus(dbCase.status),
-      court: dbCase.courtId?.toString() ?? '',
+      court: courtLabel,
       subject: dbCase.subject ?? '',
       claim: dbCase.subjectDetails ?? '',
       notes: dbCase.notes ?? '',
@@ -348,8 +386,8 @@ class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
       lastUpdated: dbCase.updatedAt,
       baseNumber: dbCase.baseNumber,
       baseYear: dbCase.year,
-      phases: phases.map(_convertPhase).toList(),
-      sessions: sessions.map((s) => _convertSession(s, dbCase.courtId?.toString() ?? '')).toList(),
+      phases: phases.map((p) => _convertPhase(p, govById)).toList(),
+      sessions: sessions.map((s) => _convertSession(s, courtLabel)).toList(),
       deficiencies: deficiencies.map(_convertDeficiency).toList(),
     );
   }
@@ -378,11 +416,16 @@ class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
     }
   }
 
-  static CasePhase _convertPhase(db.CasePhase p) {
+  static CasePhase _convertPhase(db.CasePhase p, Map<int, String> govById) {
     return CasePhase(
       id: p.id.toString(),
       type: _parsePhaseType(p.phaseType),
-      court: p.courtId?.toString() ?? '',
+      court: _courtLabel(
+        govById,
+        courtId: p.courtId,
+        courtKind: p.courtKind,
+        chamberNumber: p.chamberNumber,
+      ),
       baseNumber: p.baseNumber,
       baseYear: p.year,
       startDate: p.startDate ?? DateTime.now(),
@@ -2509,93 +2552,198 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
     notesController.dispose();
   }
 
-  Future<void> _showAddPhaseDialog(BuildContext context, CaseDetailState state) async {
-    CasePhaseType selectedType = CasePhaseType.appeal;
-    int? selectedCourtId;
+  /// نقل الدعوى إلى محكمة أعلى ضمن مسار الطعن المسموح.
+  ///
+  /// كانت هذه الشاشة تعرض قائمة `CasePhaseType` كاملة، فتظهر
+  /// «جلسات» و«إثبات» و«حكم» كأنها محاكم يُنتقل إليها، ويظهر
+  /// «صلح» خياراً بعد «استئناف». والمحكمة كانت تُختار بالمحافظة
+  /// وحدها فيصير الجواب «حمص».
+  ///
+  /// الآن تُشتق الوجهات من `CourtCatalog.nextStagesFrom` اعتماداً
+  /// على المحكمة الحالية، فلا يُعرض إلا ما يبلغه الطعن فعلاً.
+  Future<void> _showAddPhaseDialog(
+      BuildContext context, CaseDetailState state) async {
+    final caseId = widget.caseId;
+    final dbCase = ref.read(caseDetailFromRepoProvider(caseId)).value;
+
+    // المحكمة الحالية: من الدعوى، وإلا استُنتجت من نص آخر مرحلة.
+    final currentKindId = dbCase?.courtKind ??
+        CourtCatalog.inferKindFromText(
+          degreeText: state.phases.isNotEmpty
+              ? state.phases.last.type.displayName
+              : dbCase?.subType,
+          caseTypeText: dbCase?.caseType,
+        );
+
+    final nextStages = CourtCatalog.nextStagesFrom(currentKindId);
+
+    if (nextStages.isEmpty) {
+      final currentLabel =
+          CourtCatalog.byId(currentKindId)?.label ?? 'المحكمة الحالية';
+      // محكمة النقض قمة الهرم: لا مرحلة بعدها. الإخبار بذلك أصدق
+      // من عرض قائمة خيارات لا تصلح.
+      _showSnack(
+        currentKindId == null
+            ? 'حدد محكمة الدعوى الحالية أولاً حتى يُعرف مسار الطعن.'
+            : 'لا توجد درجة أعلى بعد «$currentLabel».',
+        isError: true,
+      );
+      return;
+    }
+
+    final caseType = _caseTypeOf(dbCase?.caseType);
+    CourtSelection selection = CourtSelection(kindId: nextStages.first.id);
     final baseController = TextEditingController();
-    final yearController = TextEditingController(text: DateTime.now().year.toString());
-    final descriptionController = TextEditingController(text: 'نقل للمرحلة القضائية التالية مع المبرزات السابقة.');
+    final yearController =
+        TextEditingController(text: DateTime.now().year.toString());
+    final descriptionController = TextEditingController(
+        text: 'نقل للمرحلة القضائية التالية مع المبرزات السابقة.');
+    bool saving = false;
 
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setLocalState) => AlertDialog(
-          title: const Text('نقل الدعوى إلى مرحلة قضائية'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<CasePhaseType>(
-                  value: selectedType,
-                  decoration: const InputDecoration(labelText: 'المرحلة الجديدة'),
-                  items: CasePhaseType.values
-                      .map((type) => DropdownMenuItem(value: type, child: Text(type.displayName)))
-                      .toList(),
-                  onChanged: (type) {
-                    if (type != null) {
-                      setLocalState(() => selectedType = type);
-                    }
-                  },
-                ),
-                const SizedBox(height: 12),
-                // اختيار محكمة حقيقية لأن النقل يتطلب معرّف محكمة في قاعدة البيانات.
-                ref.watch(activeCourtsProvider(null)).maybeWhen(
-                      data: (courts) => DropdownButtonFormField<int>(
-                        value: selectedCourtId,
-                        isExpanded: true,
-                        decoration: const InputDecoration(labelText: 'المحكمة الجديدة *'),
-                        items: courts
-                            .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name, overflow: TextOverflow.ellipsis)))
-                            .toList(),
-                        onChanged: (v) => setLocalState(() => selectedCourtId = v),
+          title: const Text('نقل الدعوى إلى محكمة أعلى'),
+          content: SizedBox(
+            width: 460,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (currentKindId != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'المحكمة الحالية: '
+                        '${CourtCatalog.describeStored(kindId: currentKindId, governorate: null, chamberNumber: dbCase?.chamberNumber)}',
+                        style: AppTextStyles.bodySmallSecondary,
                       ),
-                      orElse: () => const LinearProgressIndicator(),
                     ),
-                const SizedBox(height: 12),
-                TextField(controller: baseController, decoration: const InputDecoration(labelText: 'رقم الأساس الجديد')),
-                const SizedBox(height: 12),
-                TextField(controller: yearController, decoration: const InputDecoration(labelText: 'سنة الأساس')),
-                const SizedBox(height: 12),
-                TextField(controller: descriptionController, maxLines: 3, decoration: const InputDecoration(labelText: 'الوصف')),
-              ],
+                  // الوجهات محصورة بمسار الطعن، والدرجة محسومة
+                  // فلا تُعرض شريحتها.
+                  CourtSelector(
+                    caseType: caseType,
+                    value: selection,
+                    restrictToKinds:
+                        nextStages.map((k) => k.id).toList(growable: false),
+                    showDegreeFilter: false,
+                    onChanged: (v) => setLocalState(() => selection = v),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                      controller: baseController,
+                      decoration: const InputDecoration(
+                          labelText: 'رقم الأساس الجديد')),
+                  const SizedBox(height: 12),
+                  TextField(
+                      controller: yearController,
+                      keyboardType: TextInputType.number,
+                      decoration:
+                          const InputDecoration(labelText: 'سنة الأساس')),
+                  const SizedBox(height: 12),
+                  TextField(
+                      controller: descriptionController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(labelText: 'الوصف')),
+                ],
+              ),
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('إلغاء')),
+            TextButton(
+              onPressed: saving
+                  ? null
+                  : () => Navigator.of(dialogContext).pop(),
+              child: const Text('إلغاء'),
+            ),
             ElevatedButton(
-              onPressed: () async {
-                if (selectedCourtId == null) {
-                  _showSnack('اختر المحكمة الجديدة أولاً.', isError: true);
-                  return;
-                }
-                // النقل الفعلي: يغلق المرحلة الحالية وينشئ المرحلة الأعلى
-                // وينقل القرار والثبوتيات حسب القاعدة الذهبية.
-                try {
-                  await ref.read(caseRepositoryProvider).transferToNextPhase(
-                        caseId: widget.caseId,
-                        newPhaseType: selectedType.displayName,
-                        newCourtId: selectedCourtId!,
-                        newBaseNumber: baseController.text.trim().isEmpty ? null : baseController.text.trim(),
-                        newYear: int.tryParse(yearController.text.trim()),
-                        userRef: ref.read(authControllerProvider).user?.fullName ?? 'المكتب',
-                      );
-                } catch (e) {
-                  _showSnack('تعذر نقل المرحلة: $e', isError: true);
-                  return;
-                }
-                ref.invalidate(allCasesProvider);
-                ref.invalidate(uiCasesProvider);
-                ref.invalidate(caseDetailProvider(widget.caseId));
-                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                _showSnack('تم نقل الدعوى إلى المرحلة الجديدة.');
-              },
-              child: const Text('حفظ المرحلة'),
+              onPressed: saving
+                  ? null
+                  : () async {
+                      if (!selection.isComplete) {
+                        _showSnack('اختر المحكمة ومحافظتها أولاً.',
+                            isError: true);
+                        return;
+                      }
+                      setLocalState(() => saving = true);
+                      try {
+                        await ref
+                            .read(caseRepositoryProvider)
+                            .transferToNextPhase(
+                              caseId: caseId,
+                              newPhaseType: selection.kind!.label,
+                              newCourtId: selection.courtId!,
+                              newCourtKind: selection.kindId,
+                              newChamberNumber: selection.chamberNumber,
+                              newBaseNumber:
+                                  baseController.text.trim().isEmpty
+                                      ? null
+                                      : baseController.text.trim(),
+                              newYear: int.tryParse(yearController.text.trim()),
+                              userRef: ref
+                                      .read(authControllerProvider)
+                                      .user
+                                      ?.fullName ??
+                                  'المكتب',
+                            );
+                      } catch (e) {
+                        setLocalState(() => saving = false);
+                        _showSnack('تعذر نقل المرحلة: $e', isError: true);
+                        return;
+                      }
+                      ref.invalidate(allCasesProvider);
+                      ref.invalidate(uiCasesProvider);
+                      ref.invalidate(caseDetailFromRepoProvider(caseId));
+                      ref.invalidate(caseDetailProvider(caseId));
+                      ref.invalidate(casePhasesProvider(caseId));
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                      _showSnack('تم نقل الدعوى إلى ${selection.description}.');
+                    },
+              child: saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('حفظ المرحلة'),
             ),
           ],
         ),
       ),
     );
 
+    baseController.dispose();
+    yearController.dispose();
+    descriptionController.dispose();
+  }
+
+  /// تحويل نوع الدعوى المخزَّن نصاً إلى `CaseType`.
+  ///
+  /// العمود يحمل أحياناً اسم ثابت الـ enum («civil») وأحياناً اسمه
+  /// المعروض («مدنية») حسب مسار الإنشاء، فيُفحص الشكلان.
+  CaseType _caseTypeOf(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return CaseType.civil;
+    final value = raw.trim();
+    for (final type in CaseType.values) {
+      if (type.name == value || type.displayName == value) return type;
+    }
+    if (value.contains('جزائ') || value.contains('جنائ')) {
+      return CaseType.criminal;
+    }
+    if (value.contains('تجار')) return CaseType.commercial;
+    if (value.contains('شرع') || value.contains('أحوال')) {
+      return CaseType.personalStatus;
+    }
+    if (value.contains('إدار') || value.contains('ادار')) {
+      return CaseType.administrative;
+    }
+    if (value.contains('عقار')) return CaseType.realEstate;
+    if (value.contains('عمال')) return CaseType.labor;
+    return CaseType.civil;
   }
 
   Future<void> _pickAndAddDocument(CaseDetailState state) async {

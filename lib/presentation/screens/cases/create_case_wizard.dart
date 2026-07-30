@@ -16,6 +16,7 @@ import 'package:drift/drift.dart' show Value;
 
 import '../../../core/auth/permission_catalog.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/court_catalog.dart';
 import '../../../core/enums/app_enums.dart';
 
 import '../../../data/database/database.dart' as db;
@@ -26,6 +27,7 @@ import '../../providers/ui_data_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/archive_context_banner.dart';
+import '../../widgets/common/court_selector.dart';
 import '../../widgets/common/searchable_picker.dart';
 import 'case_models.dart';
 
@@ -59,7 +61,15 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   // الخطوة 3: التصنيف
   // ===========================================================================
   CaseType _caseType = CaseType.civil;
-  int? _selectedCourtId;
+
+  /// المحكمة المختارة كاملة: النوع والمحافظة والسجل والغرفة.
+  ///
+  /// كان الاختيار محافظةً وحدها، فتُحفظ الدعوى بلا درجة تقاضٍ
+  /// ويستحيل معرفة مسار الطعن التالي.
+  CourtSelection _court = const CourtSelection();
+
+  /// معرّف سجل المحكمة، مشتق من الاختيار المركّب.
+  int? get _selectedCourtId => _court.courtId;
   final TextEditingController _baseNumberController = TextEditingController();
   final TextEditingController _baseYearController = TextEditingController(
     text: DateTime.now().year.toString(),
@@ -102,14 +112,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   
   bool _isSaving = false;
   
-  // قوائم الاختيار
-  // المحكمة = المحافظة فقط. الدرجة (صلح/بداية/استئناف/نقض) شأن إجرائي
-  // مستقل تديره المراحل القضائية، ولا تُدمج في اسم المحكمة.
-  final List<String> _courtNames = [...AppConstants.syrianGovernorates];
-
-  /// رقم الغرفة داخل محكمة المحافظة: 1..16 اعتيادياً مع السماح بالزيادة.
-  int? _chamberNumber;
-
   /// الدرجة القادمة من شاشة الأرشيف (صلح/بداية/استئناف/نقض).
   /// تُعرض للقراءة ولا يُعاد سؤال المستخدم عنها.
   String? _archiveCourtLevel;
@@ -130,8 +132,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   /// داخل معاملة الحفظ عبر OfficeFileRepository لضمان عدم التكرار،
   /// وهذه معاينة للعرض فقط.
   bool _isGeneratingNumber = false;
-  final TextEditingController _customChamberController =
-      TextEditingController();
 
 
   /// عرض الرقم المتوقع للدعوى اعتماداً على عدّاد ملفات المكتب.
@@ -177,129 +177,18 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     return null;
   }
 
-  /// حقل اختيار المحكمة (المحافظة) ورقم الغرفة.
+  /// حقل اختيار المحكمة الكامل: الدرجة ← النوع ← المحافظة ← الغرفة.
+  ///
+  /// كان الحقل يعرض المحافظات وحدها فتُحفظ الدعوى بلا درجة تقاضٍ.
+  /// الاختيار الآن مركّب، ويُقصر على المحاكم التي تنظر نوع الدعوى
+  /// المحدد في الخطوة نفسها.
   Widget _buildCourtAndChamberFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // المحاكم من قاعدة البيانات لا من قائمة ثابتة: courtId مفتاح
-        // أجنبي يشير إلى Courts.id، وتمرير فهرس القائمة المعروضة
-        // كان يكسر القيد عند الحفظ.
-        ref.watch(activeCourtsProvider(null)).when(
-              loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('تعذّر تحميل المحاكم: $e',
-                  style: AppTextStyles.bodySmall),
-              data: (courts) {
-                // مطابقة محافظة الأرشيف بمعرّف المحكمة مرة واحدة.
-                if (_pendingGovernorate != null && _selectedCourtId == null) {
-                  final match = courts
-                      .where((c) => c.name == _pendingGovernorate)
-                      .firstOrNull;
-                  if (match != null) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        setState(() {
-                          _selectedCourtId = match.id;
-                          _pendingGovernorate = null;
-                        });
-                      }
-                    });
-                  }
-                }
-                return SearchablePicker<db.Court>(
-                label: 'المحكمة (المحافظة)',
-                hintText: 'اختر المحافظة',
-                prefixIcon: const Icon(Icons.account_balance),
-                items: courts,
-                labelOf: (c) => c.name,
-                searchTermsOf: (c) => [c.city ?? ''],
-                value: _selectedCourtId == null
-                    ? null
-                    : courts.where((c) => c.id == _selectedCourtId).firstOrNull,
-                  onSelected: (c) => setState(() => _selectedCourtId = c.id),
-                );
-              },
-            ),
-        const SizedBox(height: 16),
-        DropdownButtonFormField<int>(
-          value: _chamberNumber,
-          isExpanded: true,
-          decoration: InputDecoration(
-            labelText: 'الغرفة',
-            hintText: 'اختر رقم الغرفة',
-            prefixIcon: const Icon(Icons.meeting_room_outlined),
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-          items: [
-            for (int i = AppConstants.minChamberNumber;
-                i <= AppConstants.defaultMaxChamberNumber;
-                i++)
-              DropdownMenuItem(value: i, child: Text('الغرفة $i')),
-            if (_chamberNumber != null &&
-                _chamberNumber! > AppConstants.defaultMaxChamberNumber)
-              DropdownMenuItem(
-                value: _chamberNumber,
-                child: Text('الغرفة $_chamberNumber'),
-              ),
-          ],
-          onChanged: (v) => setState(() => _chamberNumber = v),
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            icon: const Icon(Icons.add),
-            label: const Text('غرفة برقم أعلى'),
-            onPressed: _askChamberNumber,
-          ),
-        ),
-      ],
+    return CourtSelector(
+      caseType: _caseType,
+      value: _court,
+      preferredGovernorate: _pendingGovernorate,
+      onChanged: (selection) => setState(() => _court = selection),
     );
-  }
-
-  /// إدخال رقم غرفة يتجاوز 16 عند استحداث غرف جديدة.
-  Future<void> _askChamberNumber() async {
-    _customChamberController.clear();
-    final result = await showDialog<int>(
-      context: context,
-      builder: (ctx) {
-        String? error;
-        return StatefulBuilder(
-          builder: (ctx, setLocal) => AlertDialog(
-            title: const Text('إضافة غرفة'),
-            content: TextField(
-              controller: _customChamberController,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: 'رقم الغرفة',
-                hintText: 'مثال: 17',
-                errorText: error,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('إلغاء'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final n =
-                      int.tryParse(_customChamberController.text.trim());
-                  if (n == null || n < AppConstants.minChamberNumber) {
-                    setLocal(() => error = 'أدخل رقماً صحيحاً أكبر من صفر');
-                    return;
-                  }
-                  Navigator.pop(ctx, n);
-                },
-                child: const Text('إضافة'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-    if (result != null) setState(() => _chamberNumber = result);
   }
 
   // دوال مساعدة للتحقق من صحة البيانات
@@ -325,6 +214,15 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       _archiveCourtLevel = archive.courtLevel;
       // المحافظة تُطابَق بمعرّف المحكمة الحقيقي بعد تحميل القائمة.
       _pendingGovernorate = _governorateFrom(archive.courtLevel);
+      // نوع المحكمة يُستنتج من الدرجة المختارة في شاشة الأرشيف،
+      // فيبدأ الحقل المركّب من درجة صحيحة بدل أن يبدأ فارغاً.
+      final inferredKind = CourtCatalog.inferKindFromText(
+        degreeText: archive.courtLevel,
+        caseTypeText: archive.caseType,
+      );
+      if (inferredKind != null) {
+        _court = CourtSelection(kindId: inferredKind);
+      }
       if (archive.isClosed) {
         _nextSessionDate = null;
         _nextActionController.text = 'ملف أرشيف منتهٍ - لا يوجد موعد قادم';
@@ -932,21 +830,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             },
             child: const Text('موافق'),
           ),
-        ],
-      ),
-    );
-  }
-
-  Future<String?> _askCustomValue(String title) async {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: 'القيمة الجديدة')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-          ElevatedButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('إضافة')),
         ],
       ),
     );
@@ -2004,12 +1887,18 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         internalNumber: 'TMP',
         year: int.tryParse(_baseYearController.text) ?? DateTime.now().year,
         caseType: _caseType.toString().split('.').last,
-        // الدرجة القادمة من الأرشيف تُحفظ كما هي؛ وإلا يُحفظ النوع.
-        subType: Value(_archiveCourtLevel?.trim().isNotEmpty == true
-            ? _archiveCourtLevel!.trim()
-            : _caseType.displayName),
+        // الدرجة تُشتق من المحكمة المختارة، فهي مصدرها الصحيح.
+        // نص الأرشيف يُستعمل بديلاً حين لا تُختار محكمة.
+        subType: Value(_court.kind?.label ??
+            (_archiveCourtLevel?.trim().isNotEmpty == true
+                ? _archiveCourtLevel!.trim()
+                : _caseType.displayName)),
         status: Value(widget.archiveContext?.isClosed == true ? 'closed' : 'registered'),
         courtId: Value(_selectedCourtId),
+        // نوع المحكمة والغرفة يُحفظان صراحةً: المحافظة وحدها في
+        // courtId لا تكفي لمعرفة الدرجة ولا مسار الطعن التالي.
+        courtKind: Value(_court.kindId),
+        chamberNumber: Value(_court.chamberNumber),
         baseNumber: Value(_baseNumberController.text.isNotEmpty ? _baseNumberController.text : null),
         subject: Value(_subjectController.text.isNotEmpty ? _subjectController.text : _titleController.text),
         subjectDetails: Value(_detailsController.text),

@@ -34,14 +34,22 @@ class ContractDaoManager {
       $$ContractsTableTableManager(_db.attachedDatabase, _db.contracts);
   $$ContractPartiesTableTableManager get contractParties =>
       $$ContractPartiesTableTableManager(
-          _db.attachedDatabase, _db.contractParties);
+        _db.attachedDatabase,
+        _db.contractParties,
+      );
   $$ContractRemindersTableTableManager get contractReminders =>
       $$ContractRemindersTableTableManager(
-          _db.attachedDatabase, _db.contractReminders);
+        _db.attachedDatabase,
+        _db.contractReminders,
+      );
   $$ContractTemplatesTableTableManager get contractTemplates =>
       $$ContractTemplatesTableTableManager(
-          _db.attachedDatabase, _db.contractTemplates);
+        _db.attachedDatabase,
+        _db.contractTemplates,
+      );
   $$ContractVersionsTableTableManager get contractVersions =>
       $$ContractVersionsTableTableManager(
-          _db.attachedDatabase, _db.contractVersions);
+        _db.attachedDatabase,
+        _db.contractVersions,
+      );
 }

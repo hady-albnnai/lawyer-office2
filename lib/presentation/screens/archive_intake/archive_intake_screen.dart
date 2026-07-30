@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/permission_catalog.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/court_catalog.dart';
 import '../../../core/enums/app_enums.dart';
 import '../../../data/repositories/archive_intake_repository.dart';
 import '../../providers/auth_providers.dart';
@@ -134,15 +135,13 @@ const _archiveFileKindOptions = <String, String>{
   'misc': 'أرشيف غير محدد',
 };
 
-const _caseCourtMap = <String, List<String>>{
-  'مدنية': ['صلح مدني', 'بداية مدنية', 'استئناف مدني', 'نقض', 'مخاصمة'],
-  'شرعية': ['صلح شرعي', 'نقض شرعي', 'مخاصمة شرعية'],
-  'جزائية': ['نيابة عامة', 'تحقيق', 'إحالة', 'صلح جزاء', 'استئناف جنح', 'جنايات', 'نقض جزائي', 'مخاصمة جزائية'],
-  'تجارية': ['بداية تجارية', 'استئناف تجاري', 'نقض تجاري'],
-  // لا يوجد «نقض إداري» في النظام القضائي السوري؛ المحكمة الإدارية العليا
-  // هي أعلى درجة في القضاء الإداري.
-  'إدارية': ['محكمة عمالية', 'محكمة قضاء إداري', 'المحكمة الإدارية العليا'],
-};
+/// خارطة نوع الدعوى ← محاكمها، مشتقّة من `CourtCatalog`.
+///
+/// كانت خارطة يدوية انحرفت عن الواقع: أدرجت «محكمة عمالية» تحت
+/// الدعاوى الإدارية، وأغفلت محاكم الأحداث والتنفيذ، وخلطت «نقض»
+/// المجرد بدوائر النقض الثلاث. اشتقاقها من الفهرس يجعل المصدر
+/// واحداً فلا يتباعد الاثنان مجدداً.
+final _caseCourtMap = CourtCatalog.archiveClassificationMap();
 
 const _companyTypeMap = <String, List<String>>{
   'شركات أشخاص': ['شركة تضامنية', 'شركة توصية بسيطة'],

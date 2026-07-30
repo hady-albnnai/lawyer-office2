@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../core/auth/permission_catalog.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/court_catalog.dart';
 import '../../../data/repositories/archive_intake_repository.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../providers/app_providers.dart';
@@ -731,7 +732,9 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
   }
 
   Widget _courtsList(List<SettingsCourtItem> courts, bool canManage) {
-    final list = courts.where((c) => _query.isEmpty || c.name.toLowerCase().contains(_query) || c.type.toLowerCase().contains(_query) || c.city.toLowerCase().contains(_query)).toList();
+    // البحث يشمل الاسم الكامل (النوع + المحافظة) لأن القائمة صارت
+    // سجلاً لكل تركيبة، والبحث بالاسم وحده يُرجع كل محاكم المحافظة.
+    final list = courts.where((c) => _query.isEmpty || c.displayName.toLowerCase().contains(_query) || c.name.toLowerCase().contains(_query) || c.type.toLowerCase().contains(_query) || c.city.toLowerCase().contains(_query)).toList();
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: list.length,
@@ -740,8 +743,8 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
         return Card(
           child: ListTile(
             leading: CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Icon(Icons.account_balance, color: AppColors.secondaryGold)),
-            title: Text(c.name, style: AppTextStyles.labelLarge),
-            subtitle: Text('${c.type} • ${c.city} • ${c.isActive ? 'فعال' : 'معطل'}', style: AppTextStyles.bodySmallSecondary),
+            title: Text(c.displayName, style: AppTextStyles.labelLarge),
+            subtitle: Text('${c.city} • ${c.isActive ? 'فعال' : 'معطل'}', style: AppTextStyles.bodySmallSecondary),
             trailing: canManage
                 ? Wrap(
                     spacing: 6,
@@ -962,7 +965,10 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
     if (!ref.read(permissionServiceProvider).can(PermissionKeys.settingsLookupsManage)) return;
     final name = TextEditingController(text: court?.name ?? '');
     String type = court?.type ?? 'بداية';
-    String city = court?.city ?? 'السويداء';
+    // كل المحافظات لا سبعاً منها: القائمة القديمة كانت تمنع تسجيل
+    // محكمة في إدلب أو الرقة أو دير الزور أو الحسكة أو طرطوس.
+    String city = court?.city ?? AppConstants.syrianGovernorates.first;
+    String? courtKind = (court?.courtKind ?? '').isEmpty ? null : court!.courtKind;
     showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -973,22 +979,34 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
             children: [
               TextField(controller: name, decoration: const InputDecoration(labelText: 'اسم المحكمة *')),
               const SizedBox(height: 12),
+
               DropdownButtonFormField<String>(
-                value: type,
-                decoration: const InputDecoration(labelText: 'التصنيف'),
-                items: ['صلح', 'بداية', 'استئناف', 'نقض', 'شرعية', 'تجارية']
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                initialValue: city,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'المحافظة'),
+                items: AppConstants.syrianGovernorates
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
-                onChanged: (v) => setDialog(() => type = v ?? type),
+                onChanged: (v) => setDialog(() {
+                  city = v ?? city;
+                  // الاسم يتبع المحافظة: عمود name يحمل المحافظة
+                  // ونوع المحكمة يُحفظ في court_kind.
+                  name.text = city;
+                }),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: city,
-                decoration: const InputDecoration(labelText: 'المحافظة'),
-                items: ['دمشق', 'السويداء', 'ريف دمشق', 'حلب', 'حمص', 'اللاذقية', 'درعا']
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                initialValue: courtKind,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'نوع المحكمة والدرجة'),
+                items: CourtCatalog.all
+                    .map((k) => DropdownMenuItem(
+                          value: k.id,
+                          child: Text('${k.label} — ${k.degree.label}',
+                              overflow: TextOverflow.ellipsis),
+                        ))
                     .toList(),
-                onChanged: (v) => setDialog(() => city = v ?? city),
+                onChanged: (v) => setDialog(() => courtKind = v),
               ),
             ],
           ),
@@ -1002,6 +1020,7 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
                   name: name.text.trim(),
                   type: type,
                   city: city,
+                  courtKind: courtKind ?? '',
                   isActive: court?.isActive ?? true,
                 );
                 if (court == null) {

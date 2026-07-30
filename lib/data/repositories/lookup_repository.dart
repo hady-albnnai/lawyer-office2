@@ -8,6 +8,9 @@ class LookupRepository {
   LookupRepository(this._lookupDao);
 
   Stream<List<Court>> watchActiveCourts({String? type}) => _lookupDao.watchActiveCourts(type: type);
+  Stream<List<Court>> watchCourtsOfKind(String kindId) => _lookupDao.watchCourtsOfKind(kindId);
+  Future<Court?> findCourt({required String kindId, required String governorate}) =>
+      _lookupDao.findCourt(kindId: kindId, governorate: governorate);
   Future<int> insertCourt(CourtsCompanion companion) => _lookupDao.insertCourt(companion);
 
   Stream<List<CaseSubject>> watchActiveCaseSubjects({String? category}) => _lookupDao.watchActiveCaseSubjects(category: category);

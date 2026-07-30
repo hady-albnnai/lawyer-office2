@@ -212,6 +212,12 @@ class Courts extends Table {
   /// مهجور: الدرجة (صلح/بداية/استئناف/نقض) تُدار عبر JudicialPhases.
   /// يبقى العمود لعدم كسر السجلات التاريخية ولا يُعرض في الواجهات.
   TextColumn get type => text().nullable()();
+  /// نوع المحكمة من `CourtCatalog` (معرّف ثابت لا نص معروض).
+  ///
+  /// المحافظة وحدها لا تعرّف محكمة: «دمشق» ليست جواباً عن سؤال
+  /// «أمام أي محكمة؟». هذا العمود يحمل الدرجة والتخصص معاً
+  /// (مثل `appeal_civil`)، ومنه تُشتق مسارات الطعن المسموحة.
+  TextColumn get courtKind => text().nullable()();
   TextColumn get city => text().nullable()(); // دمشق، السويداء، حلب...
   TextColumn get district => text().nullable()();
   /// رقم الغرفة: 1..16 اعتيادياً، ويُسمح بما فوقها عند استحداث غرف.
@@ -265,6 +271,11 @@ class Cases extends Table {
   TextColumn get status => text().withDefault(const Constant('preparing'))(); // preparing, pending_registration, registered, closed
   IntColumn get currentPhaseId => integer().nullable()(); // معرف المرحلة القضائية الحالية
   IntColumn get courtId => integer().nullable().references(Courts, #id)();
+  /// نوع المحكمة الحالية من `CourtCatalog` (مثل `first_instance_civil`).
+  /// يُخزَّن إلى جانب `courtId` لأن الأخير يحمل المحافظة وحدها.
+  TextColumn get courtKind => text().nullable()();
+  /// رقم الغرفة داخل المحكمة الحالية.
+  IntColumn get chamberNumber => integer().nullable()();
   TextColumn get baseNumber => text().nullable()(); // رقم الأساس في المحكمة
   TextColumn get subject => text().nullable()();
   TextColumn get subjectDetails => text().nullable()();
@@ -297,6 +308,11 @@ class CasePhases extends Table {
   IntColumn get phaseOrder => integer().withDefault(const Constant(1))();
   TextColumn get phaseType => text()(); // بداية، استئناف، نقض، إعادة محاكمة
   IntColumn get courtId => integer().nullable().references(Courts, #id)();
+  /// نوع محكمة المرحلة من `CourtCatalog`. يجعل سجل المراحل قابلاً
+  /// للقراءة: «استئناف مدني في حمص — الغرفة 2» بدل «استئناف» و«حمص».
+  TextColumn get courtKind => text().nullable()();
+  /// رقم الغرفة أمام محكمة هذه المرحلة.
+  IntColumn get chamberNumber => integer().nullable()();
   TextColumn get baseNumber => text().nullable()();
   IntColumn get year => integer().nullable()();
   DateTimeColumn get startDate => dateTime().nullable()();

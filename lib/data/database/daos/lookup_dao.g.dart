@@ -24,11 +24,17 @@ class LookupDaoManager {
       $$CaseSubjectsTableTableManager(_db.attachedDatabase, _db.caseSubjects);
   $$PartyRolesLookupTableTableManager get partyRolesLookup =>
       $$PartyRolesLookupTableTableManager(
-          _db.attachedDatabase, _db.partyRolesLookup);
+        _db.attachedDatabase,
+        _db.partyRolesLookup,
+      );
   $$ContractTypesLookupTableTableManager get contractTypesLookup =>
       $$ContractTypesLookupTableTableManager(
-          _db.attachedDatabase, _db.contractTypesLookup);
+        _db.attachedDatabase,
+        _db.contractTypesLookup,
+      );
   $$CompanyTypesLookupTableTableManager get companyTypesLookup =>
       $$CompanyTypesLookupTableTableManager(
-          _db.attachedDatabase, _db.companyTypesLookup);
+        _db.attachedDatabase,
+        _db.companyTypesLookup,
+      );
 }

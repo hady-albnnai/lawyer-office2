@@ -110,12 +110,14 @@ class SettingsDao extends DatabaseAccessor<AppDatabase> with _$SettingsDaoMixin 
     return (select(courts)..orderBy([(t) => OrderingTerm(expression: t.name)])).get();
   }
 
-  Future<void> updateCourt(int id, {required String name, String? type, String? city}) {
+  Future<void> updateCourt(int id,
+      {required String name, String? type, String? city, String? courtKind}) {
     return (update(courts)..where((t) => t.id.equals(id))).write(
       CourtsCompanion(
         name: Value(name),
         type: Value(type),
         city: Value(city),
+        courtKind: Value(courtKind),
       ),
     );
   }

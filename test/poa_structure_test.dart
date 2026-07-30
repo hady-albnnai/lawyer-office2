@@ -3,11 +3,14 @@ import 'dart:io';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lawyer_office/core/constants/court_catalog.dart';
 import 'package:lawyer_office/core/enums/app_enums.dart';
 import 'package:lawyer_office/data/database/database.dart';
 import 'package:lawyer_office/data/repositories/office_file_repository.dart';
 import 'package:lawyer_office/data/repositories/poa_repository.dart';
 import 'package:lawyer_office/data/services/file_storage_service.dart';
+import 'package:lawyer_office/presentation/screens/cases/case_models.dart'
+    show CaseType;
 
 /// هيكل الوكالة حسب البندين 3 و7 من خطة ملف الوكالة،
 /// وتصحيح قائمة المحاكم الإدارية.
@@ -118,13 +121,21 @@ void main() {
   });
 
   test('Administrative court list has no "نقض إداري"', () {
-    final src = File('lib/presentation/screens/archive_intake/archive_intake_screen.dart')
-        .readAsLinesSync()
-        .where((l) => !l.trimLeft().startsWith('//'))
-        .join('\n');
+    // كان الفحص يقرأ نص شاشة الأرشيف بحثاً عن سلسلة حرفية. صارت
+    // قائمة المحاكم تُشتق من `CourtCatalog`، فيُفحص السلوك نفسه:
+    // لا نقض إداري، وأعلى درجة هي المحكمة الإدارية العليا.
+    final labels = CourtCatalog.forCaseType(CaseType.administrative)
+        .map((k) => k.label)
+        .toList();
 
-    expect(src.contains("'نقض إداري'"), isFalse,
+    expect(labels.any((l) => l.contains('نقض')), isFalse,
         reason: 'لا يوجد نقض إداري في النظام القضائي السوري');
-    expect(src.contains('المحكمة الإدارية العليا'), isTrue);
+    expect(labels, contains('المحكمة الإدارية العليا'));
+
+    final top = CourtCatalog.forCaseTypeAndDegree(
+      CaseType.administrative,
+      LitigationDegree.cassation,
+    ).map((k) => k.id);
+    expect(top, [CourtCatalog.supremeAdministrativeCourt]);
   });
 }

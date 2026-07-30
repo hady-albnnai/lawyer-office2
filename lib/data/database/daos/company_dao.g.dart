@@ -24,13 +24,19 @@ class CompanyDaoManager {
       $$CompanyPhasesTableTableManager(_db.attachedDatabase, _db.companyPhases);
   $$CompanyManagementTableTableManager get companyManagement =>
       $$CompanyManagementTableTableManager(
-          _db.attachedDatabase, _db.companyManagement);
+        _db.attachedDatabase,
+        _db.companyManagement,
+      );
   $$PersonsTableTableManager get persons =>
       $$PersonsTableTableManager(_db.attachedDatabase, _db.persons);
   $$CompanyPartnersTableTableManager get companyPartners =>
       $$CompanyPartnersTableTableManager(
-          _db.attachedDatabase, _db.companyPartners);
+        _db.attachedDatabase,
+        _db.companyPartners,
+      );
   $$CompanyDirectorsTableTableManager get companyDirectors =>
       $$CompanyDirectorsTableTableManager(
-          _db.attachedDatabase, _db.companyDirectors);
+        _db.attachedDatabase,
+        _db.companyDirectors,
+      );
 }

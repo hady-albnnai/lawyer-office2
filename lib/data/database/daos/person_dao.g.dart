@@ -32,12 +32,16 @@ class PersonDaoManager {
       $$TeamMembersTableTableManager(_db.attachedDatabase, _db.teamMembers);
   $$OpponentLawyersTableTableManager get opponentLawyers =>
       $$OpponentLawyersTableTableManager(
-          _db.attachedDatabase, _db.opponentLawyers);
+        _db.attachedDatabase,
+        _db.opponentLawyers,
+      );
   $$NotariesTableTableManager get notaries =>
       $$NotariesTableTableManager(_db.attachedDatabase, _db.notaries);
   $$PowersOfAttorneyTableTableManager get powersOfAttorney =>
       $$PowersOfAttorneyTableTableManager(
-          _db.attachedDatabase, _db.powersOfAttorney);
+        _db.attachedDatabase,
+        _db.powersOfAttorney,
+      );
   $$PoaPartiesTableTableManager get poaParties =>
       $$PoaPartiesTableTableManager(_db.attachedDatabase, _db.poaParties);
   $$CourtsTableTableManager get courts =>
