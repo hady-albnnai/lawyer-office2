@@ -349,6 +349,7 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('CREATE INDEX IF NOT EXISTS idx_archive_items_batch ON archive_items(batch_id, status);');
     await customStatement('CREATE INDEX IF NOT EXISTS idx_archive_items_hash ON archive_items(sha256);');
     await ensurePoaColumns();
+    await ensureUpgradeTableColumns();
   }
 
   /// استكمال أعمدة جدول الوكالات المضافة بعد الإصدار الأول من المخطط.
@@ -373,6 +374,61 @@ class AppDatabase extends _$AppDatabase {
     await _ensureSqlColumn('powers_of_attorney', 'expiry_date', 'DATETIME');
     await _ensureSqlColumn('powers_of_attorney', 'notary_id', 'INTEGER');
     await _ensureSqlColumn('powers_of_attorney', 'delegate_id', 'INTEGER');
+  }
+
+  /// استكمال أعمدة الجداول المُنشأة عبر onUpgrade.
+  ///
+  /// الجداول التالية تُنشأ في onUpgrade (وليس createAll)، وأي عمود يُضاف
+  /// إليها بعد ترقية المستخدم لا يصل إلى قاعدته لأن schemaVersion لم يتغيّر.
+  /// النتيجة نفس عطل الوكالات: Drift يولّد INSERT بأعمدة غير موجودة
+  /// فيفشل بخطأ SQLite رقم 1.
+  ///
+  /// التعريفات مطابقة لـ schema.dart. الأعمدة NOT NULL التي لها قيمة
+  /// افتراضية تُضاف بنفس الافتراضي؛ أما NOT NULL بلا افتراضي فلا يمكن
+  /// إضافتها لجدول يحوي صفوفاً، لذا تُستثنى (وهي موجودة أصلاً منذ الإنشاء).
+  Future<void> ensureUpgradeTableColumns() async {
+    // --- work_orders ---
+    await _ensureSqlColumn('work_orders', 'office_file_id', 'INTEGER');
+    await _ensureSqlColumn(
+        'work_orders', 'linked_entity_type', 'INTEGER NOT NULL DEFAULT 0');
+    await _ensureSqlColumn(
+        'work_orders', 'linked_entity_id', 'INTEGER NOT NULL DEFAULT 0');
+    await _ensureSqlColumn('work_orders', 'assigned_to_phone', 'TEXT');
+    await _ensureSqlColumn(
+        'work_orders', 'priority', "TEXT NOT NULL DEFAULT 'medium'");
+    await _ensureSqlColumn(
+        'work_orders', 'status', "TEXT NOT NULL DEFAULT 'draft'");
+    await _ensureSqlColumn('work_orders', 'instructions', 'TEXT');
+    await _ensureSqlColumn('work_orders', 'created_by', 'TEXT');
+    await _ensureSqlColumn('work_orders', 'printed_at', 'DATETIME');
+    await _ensureSqlColumn('work_orders', 'whatsapp_sent_at', 'DATETIME');
+    await _ensureSqlColumn('work_orders', 'result_status', 'TEXT');
+    await _ensureSqlColumn('work_orders', 'result_text', 'TEXT');
+    await _ensureSqlColumn('work_orders', 'result_date', 'DATETIME');
+    await _ensureSqlColumn('work_orders', 'next_date', 'DATETIME');
+    await _ensureSqlColumn('work_orders', 'approved_at', 'DATETIME');
+
+    // --- legal_library_items ---
+    for (final c in const [
+      'category', 'source', 'source_url', 'file_path', 'file_name',
+      'extracted_text', 'tags', 'law_number', 'law_kind', 'last_amendment',
+      'court', 'chamber', 'decision_number', 'base_number', 'principle',
+      'journal_issue', 'page', 'notes', 'created_by',
+    ]) {
+      await _ensureSqlColumn('legal_library_items', c, 'TEXT');
+    }
+    await _ensureSqlColumn('legal_library_items', 'decision_date', 'DATETIME');
+    await _ensureSqlColumn('legal_library_items', 'journal_year', 'INTEGER');
+    await _ensureSqlColumn(
+        'legal_library_items', 'year', 'INTEGER NOT NULL DEFAULT 0');
+    await _ensureSqlColumn(
+        'legal_library_items', 'is_favorite', 'INTEGER NOT NULL DEFAULT 0');
+    await _ensureSqlColumn(
+        'legal_library_items', 'is_principle', 'INTEGER NOT NULL DEFAULT 0');
+
+    // --- legal_library_links ---
+    await _ensureSqlColumn('legal_library_links', 'entity_title', 'TEXT');
+    await _ensureSqlColumn('legal_library_links', 'note', 'TEXT');
   }
 
   Future<void> _ensureSqlColumn(String tableName, String columnName, String definition) async {
