@@ -21,6 +21,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme.dart';
 import 'settings_models.dart';
+import 'storage_settings_card.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -388,6 +389,8 @@ class _BackupTab extends ConsumerWidget {
         constraints: const BoxConstraints(maxWidth: 900),
         child: Column(
           children: [
+            const StorageSettingsCard(),
+            const SizedBox(height: 16),
             Card(
               color: const Color(0xFF117A65),
               child: Padding(

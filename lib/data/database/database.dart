@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../../core/constants/app_constants.dart';
+import '../services/storage_location_service.dart';
 import 'schema.dart';
 import 'daos/case_dao.dart';
 import 'daos/person_dao.dart';
@@ -766,13 +767,14 @@ class AppDatabase extends _$AppDatabase {
 /// إنشاء الاتصال مع قاعدة البيانات المحلية في Isolate خلفي على Windows دون اعتماد OpenSSL خارجي
 LazyDatabase _openDatabase() {
   return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final lawOfficeDir = Directory(p.join(dbFolder.path, AppConstants.appDataDirectoryName));
+    // المسار قد يكون مخصَّصاً من المستخدم؛ StorageLocationService
+    // تُهيَّأ في main قبل runApp فيكون الجذر جاهزاً هنا.
+    final lawOfficeDir = Directory(StorageLocationService.activeRoot);
     if (!await lawOfficeDir.exists()) {
       await lawOfficeDir.create(recursive: true);
     }
 
-    final file = File(p.join(lawOfficeDir.path, AppConstants.defaultDatabaseName));
+    final file = File(StorageLocationService.databaseFile);
 
     return NativeDatabase.createInBackground(
       file,

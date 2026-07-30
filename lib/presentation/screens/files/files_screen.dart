@@ -255,14 +255,6 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _statusTab('active', 'الملفات الجارية', 'تؤثر على مكتب العمل والمواعيد القادمة')),
-              const SizedBox(width: 10),
-              Expanded(child: _statusTab('completed', 'الملفات المنتهية', 'للحفظ والبحث فقط دون أثر على المواعيد')),
-            ],
-          ),
-          const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -308,42 +300,6 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
       case FileType.agency:
         return Icons.verified_user_outlined;
     }
-  }
-
-  Widget _statusTab(String value, String label, String subtitle) {
-    final selected = _statusFilter == value;
-    return InkWell(
-      onTap: () {
-        setState(() => _statusFilter = value);
-        context.go('/files?status=$value');
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryNavy.withOpacity(0.10) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? AppColors.primaryNavy : AppColors.cardBorder, width: selected ? 1.5 : 0.7),
-        ),
-        child: Row(
-          children: [
-            Icon(value == 'active' ? Icons.pending_actions : Icons.inventory_2, color: selected ? AppColors.primaryNavy : AppColors.textSecondary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: AppTextStyles.labelLarge.copyWith(color: selected ? AppColors.primaryNavy : AppColors.textPrimary)),
-                  const SizedBox(height: 3),
-                  Text(subtitle, style: AppTextStyles.bodySmallSecondary, maxLines: 1, overflow: TextOverflow.ellipsis),
-                ],
-              ),
-            ),
-            if (selected) const Icon(Icons.check_circle, color: AppColors.success),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildSummary(List<FileItem> all, List<FileItem> filtered) {

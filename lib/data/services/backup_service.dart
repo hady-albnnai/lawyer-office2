@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:archive/archive_io.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
+import 'storage_location_service.dart';
 
 /// محرك النسخ الاحتياطي الذكي والاستعادة (BackupService)
 /// ينفذ النسخ في الخلفية (Isolate) لعدم تجميد الواجهة، مع فحص أسبوعي ذكي عند الإغلاق ودعم الأقراص الخارجية.
@@ -23,11 +24,11 @@ class BackupService {
   }) async {
     final receivePort = ReceivePort();
 
-    final docsDir = await getApplicationDocumentsDirectory();
-    final sourcePath = p.join(docsDir.path, AppConstants.appDataDirectoryName);
-    
-    // تحديد مسار الحفظ (إما مجلد النسخ التلقائي أو القرص الخارجي USB / هارد)
-    final String backupPath = customExternalPath ?? p.join(docsDir.path, AppConstants.backupsDirectoryName);
+    // المصدر والوجهة يتبعان مسار البيانات المخصَّص إن وُجد، وإلا
+    // ستُنسخ بيانات المجلد الافتراضي بينما المستخدم يعمل على غيره.
+    final sourcePath = StorageLocationService.activeRoot;
+    final String backupPath =
+        customExternalPath ?? StorageLocationService.backupsDir;
 
     await Isolate.spawn(_backupIsolateWorker, {
       'sendPort': receivePort.sendPort,
@@ -129,8 +130,7 @@ class BackupService {
 
   /// قائمة بالنسخ الاحتياطية المتاحة للاستعادة
   Future<List<File>> listAvailableBackups({String? customPath}) async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final backupPath = customPath ?? p.join(docsDir.path, AppConstants.backupsDirectoryName);
+    final backupPath = customPath ?? StorageLocationService.backupsDir;
     final backupDir = Directory(backupPath);
 
     if (!await backupDir.exists()) return [];
@@ -153,9 +153,7 @@ class BackupService {
   /// عملية مدمِّرة تكتب فوق بيانات المكتب؛ فشلها الصامت يترك المستخدم
   /// يظن أن بياناته استُعيدت.
   Future<bool> restoreFromBackup(File zipFile) async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final destRoot = p.join(docsDir.path, AppConstants.appDataDirectoryName);
-    final normalizedRoot = p.normalize(destRoot);
+    final normalizedRoot = p.normalize(StorageLocationService.activeRoot);
 
     late final Archive archive;
     try {

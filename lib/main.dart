@@ -5,11 +5,16 @@ import 'package:window_manager/window_manager.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'app.dart';
 import 'core/constants/app_constants.dart';
+import 'data/services/storage_location_service.dart';
 
 /// نقطة انطلاق تطبيق إدارة وأرشفة مكتب المحاماة السوري (V6.2 Offline-First)
 /// التحديث الماسي: Native Desktop Integration (Windows/Mac)
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // تحديد مسار تخزين البيانات قبل أي وصول لقاعدة البيانات:
+  // LazyDatabase تحتاج المسار متزامناً عند أول استعلام.
+  await StorageLocationService.initialize();
 
   // تهيئة الإضافات الخاصة بسطح المكتب فقط إذا كان التطبيق يعمل على الكمبيوتر
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {

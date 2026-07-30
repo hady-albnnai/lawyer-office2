@@ -45,7 +45,13 @@ class SidebarItemModel {
 
   /// نوع الشارة الخاصة (للـ Office Files)
   final String? badge; // 'active', 'closed', 'needs'
-  
+
+  /// لون مميّز للقسم الرئيسي.
+  ///
+  /// الأقسام السبعة متشابهة بصرياً، فيصعب على المستخدم تمييزها
+  /// بالنص وحده. اللون يجعل التنقّل معتمداً على الذاكرة البصرية.
+  final Color? accentColor;
+
   const SidebarItemModel({
     required this.id,
     required this.label,
@@ -58,8 +64,25 @@ class SidebarItemModel {
     this.tooltip,
     this.children,
     this.badge,
+    this.accentColor,
   });
   
+  /// نسخة بلون قسم موروث.
+  SidebarItemModel copyWithAccent(Color color) => SidebarItemModel(
+        id: id,
+        label: label,
+        icon: icon,
+        route: route,
+        badgeCount: badgeCount,
+        badgeType: badgeType,
+        isHidden: isHidden,
+        isDisabled: isDisabled,
+        tooltip: tooltip,
+        children: children,
+        badge: badge,
+        accentColor: color,
+      );
+
   /// تحويل إلى widget
   Widget toWidget({
     required BuildContext context,
@@ -104,10 +127,19 @@ class SidebarItem extends StatelessWidget {
     
     final isSelected = selectedRoute == item.route;
     
+    final accent = item.accentColor;
+
     Color backgroundColor = AppColors.sidebarBackground;
-    if (isSelected) backgroundColor = AppColors.sidebarSelected;
-    
-    Color iconColor = isSelected ? AppColors.sidebarIconSelected : AppColors.sidebarIcon;
+    if (isSelected) {
+      backgroundColor = accent != null
+          ? accent.withValues(alpha: 0.18)
+          : AppColors.sidebarSelected;
+    }
+
+    // الأيقونة تحمل لون القسم دائماً لا عند الاختيار فقط، وإلا ضاع
+    // التمييز البصري الذي هو الغرض من التلوين.
+    Color iconColor = accent ??
+        (isSelected ? AppColors.sidebarIconSelected : AppColors.sidebarIcon);
     final double itemHeight = 48.0;
     
     // Use live badgeCount if provided, otherwise fall back to the model value
@@ -123,6 +155,9 @@ class SidebarItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(8),
+            border: (accent != null && isSelected)
+                ? Border(right: BorderSide(color: accent, width: 3))
+                : null,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
@@ -222,22 +257,29 @@ class SidebarItemList extends StatelessWidget {
         tilePadding: const EdgeInsets.symmetric(horizontal: 8),
         leading: Icon(
           parent.icon,
-          color: hasSelectedChild ? AppColors.primaryNavy : AppColors.sidebarIcon,
+          color: parent.accentColor ??
+              (hasSelectedChild
+                  ? AppColors.primaryNavy
+                  : AppColors.sidebarIcon),
           size: 22,
         ),
         title: Text(
           parent.label,
           style: hasSelectedChild
               ? AppTextStyles.sidebarItem.copyWith(
-                  color: AppColors.primaryNavy,
+                  color: parent.accentColor ?? AppColors.primaryNavy,
                   fontWeight: FontWeight.bold,
                 )
               : AppTextStyles.sidebarItem,
         ),
         children: parent.children!.map((child) {
+          // الأبناء يرثون لون القسم ليبقى الانتماء واضحاً بعد التوسيع.
+          final tinted = child.accentColor == null && parent.accentColor != null
+              ? child.copyWithAccent(parent.accentColor!)
+              : child;
           return Padding(
             padding: const EdgeInsets.only(right: 16.0, bottom: 4.0),
-            child: child.toWidget(
+            child: tinted.toWidget(
               context: context,
               isExpanded: isExpanded,
               selectedRoute: selectedRoute,

@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:encrypt/encrypt.dart' as enc;
 import '../../core/constants/app_constants.dart';
+import 'storage_location_service.dart';
 
 class FileStorageService {
   // مفتاح التشفير الديناميكي (يتم جلبه لاحقاً من SecurityDao، هنا كمثال ثابت للتطبيق المكتبي)
@@ -15,8 +16,8 @@ class FileStorageService {
 
   /// الحصول على المجلد الجذري للتطبيق (مثال: AppData/LawOffice/files/)
   Future<Directory> getRootStorageDir() async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final appDir = Directory(p.join(docsDir.path, AppConstants.appDataDirectoryName, AppConstants.filesDirectoryName));
+    // يتبع المسار المخصَّص إن اختاره المستخدم، وإلا مجلد المستندات.
+    final appDir = Directory(StorageLocationService.filesDir);
     if (!await appDir.exists()) {
       await appDir.create(recursive: true);
     }

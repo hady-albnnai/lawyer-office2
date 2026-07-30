@@ -319,6 +319,37 @@ class AppSidebar extends NavSidebar {
   }
 }
 
+
+/// ألوان الأقسام الرئيسية في القائمة الجانبية.
+///
+/// اختيرت متباعدة في دائرة الألوان ليسهل تمييزها، ومتوافقة مع
+/// الطابع الرسمي للمكتب (درجات مشبعة لا فاقعة). الدلالة مقصودة:
+/// المالية أخضر، والتقارير بنفسجي، والإدارة رمادي محايد.
+class SidebarPalette {
+  const SidebarPalette._();
+
+  /// مكتب العمل — أزرق نشط: نقطة البداية اليومية.
+  static const Color workspace = Color(0xFF1565C0);
+
+  /// ملفات المكتب — كهرماني: لون الملفات الورقية.
+  static const Color officeFiles = Color(0xFFB8860B);
+
+  /// المكتبة القانونية — نيلي عميق.
+  static const Color library = Color(0xFF4527A0);
+
+  /// النماذج القانونية — تركوازي.
+  static const Color templates = Color(0xFF00838F);
+
+  /// المالية والصندوق — أخضر: دلالة مالية متعارفة.
+  static const Color finance = Color(0xFF2E7D32);
+
+  /// التقارير والكشوف — بنفسجي مائل للوردي.
+  static const Color reports = Color(0xFF8E24AA);
+
+  /// إدارة المكتب — رمادي محايد: قسم إعدادات لا تشغيل.
+  static const Color admin = Color(0xFF546E7A);
+}
+
 /// قائمة عناصر SideBar الافتراضية (11 تبويب)
 
 /// مساحات العمل الستة (The 6 Workspaces)
@@ -329,6 +360,7 @@ List<SidebarItemModel> getDefaultSidebarItems() {
       label: 'مكتب العمل',
       icon: Icons.dashboard_outlined,
       route: '/today',
+      accentColor: SidebarPalette.workspace,
       children: [
         SidebarItemModel(id: 'ws_today', label: 'اليوم', icon: CustomIcons.todayDashboard, route: '/today'),
         SidebarItemModel(id: 'ws_agenda', label: 'التقويم', icon: CustomIcons.agenda, route: '/agenda'),
@@ -341,6 +373,7 @@ List<SidebarItemModel> getDefaultSidebarItems() {
       label: 'ملفات المكتب',
       icon: Icons.folder_special_outlined,
       route: '/files',
+      accentColor: SidebarPalette.officeFiles,
       children: [
         SidebarItemModel(id: 'of_active', label: 'الملفات الجارية', icon: Icons.pending_actions, route: '/files?status=active', badge: 'active'),
         SidebarItemModel(id: 'of_completed', label: 'الملفات المنتهية', icon: Icons.inventory_2_outlined, route: '/files?status=completed', badge: 'closed'),
@@ -354,24 +387,28 @@ List<SidebarItemModel> getDefaultSidebarItems() {
       label: 'المكتبة القانونية',
       icon: CustomIcons.legalLibrary,
       route: '/legal-library',
+      accentColor: SidebarPalette.library,
     ),
     const SidebarItemModel(
       id: 'legal_templates',
       label: 'النماذج القانونية',
       icon: Icons.article_outlined,
       route: '/templates',
+      accentColor: SidebarPalette.templates,
     ),
     const SidebarItemModel(
       id: 'finance',
       label: 'المالية والصندوق',
       icon: CustomIcons.finance,
       route: '/finance',
+      accentColor: SidebarPalette.finance,
     ),
     const SidebarItemModel(
       id: 'reports',
       label: 'التقارير والكشوف',
       icon: CustomIcons.searchReports,
       route: '/search-reports',
+      accentColor: SidebarPalette.reports,
       children: [
         SidebarItemModel(id: 'reports_search', label: 'البحث والتقارير', icon: CustomIcons.searchReports, route: '/search-reports'),
         SidebarItemModel(id: 'reports_printing', label: 'الطباعة والتصدير', icon: Icons.print, route: '/printing'),
@@ -382,6 +419,7 @@ List<SidebarItemModel> getDefaultSidebarItems() {
       label: 'إدارة المكتب',
       icon: CustomIcons.settings,
       route: '/settings',
+      accentColor: SidebarPalette.admin,
     ),
   ];
 }
