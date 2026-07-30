@@ -1295,7 +1295,7 @@ class AgendaScreen extends ConsumerWidget {
 
     try {
       await AutomationService().autoRecurringAppointments(
-        ref: ref,
+        db: ref.read(databaseProvider),
         currentDate: DateTime.now(),
       );
       ref.invalidate(unifiedAgendaFromDBProvider);

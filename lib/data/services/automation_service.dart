@@ -1,8 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/database.dart';
 import '../database/daos/task_dao.dart';
-import '../../presentation/providers/app_providers.dart';
 
 /// خدمة الأتمتة الذكية للمواعيد المتكررة
 DateTime? _asDate(Object? v) {
@@ -20,10 +18,9 @@ class AutomationService {
 
   /// ترحيل تلقائي للمواعيد المتكررة
   Future<void> autoRecurringAppointments({
-    required Ref ref,
+    required AppDatabase db,
     required DateTime currentDate,
   }) async {
-    final db = ref.read(databaseProvider);
     final taskDao = TaskDao(db);
 
     // 1. ترحيل الجلسات الدورية (مراجعة دورية كل 3 أشهر)
@@ -175,10 +172,9 @@ class AutomationService {
 
   /// اقتراح مواعيد محتملة بناءً على الأنماط
   Future<List<Map<String, dynamic>>> suggestAppointments({
-    required Ref ref,
+    required AppDatabase db,
     required DateTime targetDate,
   }) async {
-    final db = ref.read(databaseProvider);
     final suggestions = <Map<String, dynamic>>[];
 
     // 1. اقتراح أوقات الجلسات بناءً على الأوقات المفضلة
@@ -229,11 +225,10 @@ class AutomationService {
 
   /// ترحيل مشروط (إذا أنجزت المهمة الحالية، يرحل الموعد التالي)
   Future<void> conditionalReschedule({
-    required Ref ref,
+    required AppDatabase db,
     required int currentTaskId,
     required int nextTaskId,
   }) async {
-    final db = ref.read(databaseProvider);
     final taskDao = TaskDao(db);
 
     // التحقق من إتمام المهمة الحالية
@@ -253,11 +248,10 @@ class AutomationService {
 
   /// ترحيل ذكي بناءً على القرارات
   Future<void> smartRescheduleBasedOnDecision({
-    required Ref ref,
+    required AppDatabase db,
     required int sessionId,
     required String decision,
   }) async {
-    final db = ref.read(databaseProvider);
     final taskDao = TaskDao(db);
 
     // استخراج معلومات الجلسة

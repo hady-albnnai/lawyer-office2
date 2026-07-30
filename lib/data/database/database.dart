@@ -163,8 +163,11 @@ class AppDatabase extends _$AppDatabase {
   ///   - الغرفة: رقم من 1 إلى 16 وقابل للزيادة.
   /// الترحيل يضيف عمود الغرفة، ثم يستخرج المحافظة من الأسماء القديمة.
   Future<void> _migrateToV5(Migrator m) async {
-    await _addColumnIfMissing(
-        m, courts, 'chamber_number', () => courts.chamberNumber);
+    // SQL مباشر لا m.addColumn: عمود chamber_number أُضيف إلى
+    // schema.dart ولم يُعد توليد database.g.dart بعد، فلا يوجد
+    // GeneratedColumn مقابل له. _ensureSqlColumn تعمل على مستوى
+    // SQLite مباشرة فتنجح في الحالتين، وتتخطّى العمود إن كان موجوداً.
+    await _ensureSqlColumn('courts', 'chamber_number', 'INTEGER');
     await normalizeCourtNames();
   }
 
