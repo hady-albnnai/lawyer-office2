@@ -1,6 +1,10 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  # أدوات التدقيق حزمة مستقلة لها pubspec خاص، فتحليلها ضمن التطبيق
+  # يُنتج أخطاء استيراد وهمية.
+  exclude:
+    - tool/audit/**
   errors:
     deprecated_member_use: ignore
     use_build_context_synchronously: ignore
