@@ -73,8 +73,13 @@ class AppDatabase extends _$AppDatabase {
   /// للاختبارات: قاعدة ذاكرة اختيارية.
   AppDatabase.forTesting(super.e);
 
+  /// الإصدار 4: استكمال الأعمدة التي أُضيفت للمخطط دون ترحيل مقابل.
+  ///
+  /// قاعدة إلزامية (انظر CONSTITUTION.md): أي عمود جديد يُضاف إلى
+  /// schema.dart يجب أن يرافقه رفع هذا الرقم وإضافة m.addColumn في
+  /// onUpgrade. عدم الالتزام يُنتج خطأ SQLite رقم 1 على القواعد القائمة.
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -91,6 +96,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         await m.createTable(workOrders);
       }
+      if (from < 4) {
+        await _migrateToV4(m);
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON;');
@@ -100,6 +108,66 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
+
+  /// ترحيل الإصدار 4 — إضافة الأعمدة الناقصة بشكل صريح.
+  ///
+  /// هذه الأعمدة أُضيفت إلى schema.dart بعد الإصدار الأول دون رفع
+  /// schemaVersion، فبقيت مفقودة في قواعد المستخدمين القائمة بينما
+  /// يولّدها Drift في عبارات INSERT => SQLite error 1 (no such column).
+  ///
+  /// كل addColumn محاطة بفحص وجود مسبق لأن بعض القواعد قد تكون حصلت
+  /// على العمود عبر شبكة الأمان في beforeOpen قبل تطبيق هذا الترحيل.
+  Future<void> _migrateToV4(Migrator m) async {
+    // --- powers_of_attorney: حقول ملف الوكالة (البندان 3 و7) ---
+    await _addColumnIfMissing(m, powersOfAttorney, 'category',
+        () => powersOfAttorney.category);
+    await _addColumnIfMissing(m, powersOfAttorney, 'sub_type',
+        () => powersOfAttorney.subType);
+    await _addColumnIfMissing(m, powersOfAttorney, 'registry_number',
+        () => powersOfAttorney.registryNumber);
+    await _addColumnIfMissing(m, powersOfAttorney, 'white_number',
+        () => powersOfAttorney.whiteNumber);
+    await _addColumnIfMissing(m, powersOfAttorney, 'delegate_name',
+        () => powersOfAttorney.delegateName);
+    await _addColumnIfMissing(m, powersOfAttorney, 'delegate_phone',
+        () => powersOfAttorney.delegatePhone);
+    await _addColumnIfMissing(m, powersOfAttorney, 'delegate_branch',
+        () => powersOfAttorney.delegateBranch);
+    await _addColumnIfMissing(m, powersOfAttorney, 'scope_text',
+        () => powersOfAttorney.scopeText);
+    await _addColumnIfMissing(m, powersOfAttorney, 'file_path',
+        () => powersOfAttorney.filePath);
+    await _addColumnIfMissing(m, powersOfAttorney, 'status',
+        () => powersOfAttorney.status);
+    await _addColumnIfMissing(m, powersOfAttorney, 'expiry_date',
+        () => powersOfAttorney.expiryDate);
+    await _addColumnIfMissing(m, powersOfAttorney, 'notary_id',
+        () => powersOfAttorney.notaryId);
+    await _addColumnIfMissing(m, powersOfAttorney, 'delegate_id',
+        () => powersOfAttorney.delegateId);
+
+    // --- work_orders: office_file_id من المرحلة السادسة لخارطة التنفيذ ---
+    await _addColumnIfMissing(m, workOrders, 'office_file_id',
+        () => workOrders.officeFileId);
+  }
+
+  /// إضافة عمود عبر Migrator مع تخطّيه إن كان موجوداً بالفعل.
+  ///
+  /// ضروري لأن شبكة الأمان (ensure*Columns) قد تكون أضافت العمود
+  /// في تشغيل سابق، و ALTER TABLE ADD COLUMN يفشل على عمود مكرر.
+  Future<void> _addColumnIfMissing(
+    Migrator m,
+    TableInfo table,
+    String columnName,
+    GeneratedColumn Function() column,
+  ) async {
+    final info =
+        await customSelect('PRAGMA table_info(${table.actualTableName})').get();
+    final exists = info.any((row) => row.data['name'] == columnName);
+    if (!exists) {
+      await m.addColumn(table, column());
+    }
+  }
 
   /// إنشاء جداول الأمان والصلاحيات وسجل المسؤولية عبر SQL مخصص.
   /// ملاحظة: هذه الجداول مستقلة عن منطق التشغيل الحالي، وتُفتح قبل استخدام AuthRepository.
