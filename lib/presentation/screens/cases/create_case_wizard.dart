@@ -185,7 +185,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         // المحاكم من قاعدة البيانات لا من قائمة ثابتة: courtId مفتاح
         // أجنبي يشير إلى Courts.id، وتمرير فهرس القائمة المعروضة
         // كان يكسر القيد عند الحفظ.
-        ref.watch(activeCourtsProvider).when(
+        ref.watch(activeCourtsProvider(null)).when(
               loading: () => const LinearProgressIndicator(),
               error: (e, _) => Text('تعذّر تحميل المحاكم: $e',
                   style: AppTextStyles.bodySmall),
@@ -2231,15 +2231,6 @@ class _AddClientDialogState extends ConsumerState<AddClientDialog> {
   bool _saving = false;
   Future<void> _submitClient() async {
     if (_nameController.text.trim().isEmpty || _saving) return;
-    if (_isLegalEntity && _representativeController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('اسم ممثل $_opponentType إلزامي'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
     setState(() => _saving = true);
     try {
       final personId = await ref.read(personRepositoryProvider).createPerson(
@@ -2739,6 +2730,16 @@ class _AddOpponentDialogState extends ConsumerState<AddOpponentDialog> {
   bool _saving = false;
   void _submitOpponent() async {
     if (_nameController.text.trim().isEmpty || _saving) return;
+    // الشخص الاعتباري لا يحضر بنفسه، فاسم الممثل شرط لصحة المراسلات.
+    if (_isLegalEntity && _representativeController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('اسم ممثل $_opponentType إلزامي'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     setState(() => _saving = true);
     try {
       final personId = await ref.read(personRepositoryProvider).createPerson(
