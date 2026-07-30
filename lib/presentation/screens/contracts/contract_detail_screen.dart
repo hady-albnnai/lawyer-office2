@@ -230,18 +230,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                           style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentGold, foregroundColor: AppConstants.primaryNavy, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14)),
                           icon: const Icon(Icons.open_in_new),
                           label: const Text('فتح وتحرير في Word 📝', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                          onPressed: () async {
-                            final storageService = ref.read(fileStorageServiceProvider);
-                            final absPath = await storageService.getAbsolutePath(latest!.filePath!);
-                            final file = File(absPath);
-                            if (await file.exists()) {
-                              await OpenFilex.open(absPath);
-                            } else {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الملف الفعلي غير موجود على القرص!'), backgroundColor: AppConstants.statusDanger));
-                              }
-                            }
-                          },
+                          onPressed: () => _openVersionFile(latest!.filePath!),
                         )
                       else
                         ElevatedButton.icon(
@@ -269,12 +258,9 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                         subtitle: Text('ملاحظات التعديل: ${v.notes ?? "---"}'),
                         trailing: IconButton(
                           icon: const Icon(Icons.download_outlined, color: AppConstants.primaryNavy),
-                          onPressed: () async {
-                            if (v.filePath != null) {
-                              final absPath = await ref.read(fileStorageServiceProvider).getAbsolutePath(v.filePath!);
-                              await OpenFilex.open(absPath);
-                            }
-                          },
+                          onPressed: v.filePath == null
+                              ? null
+                              : () => _openVersionFile(v.filePath!),
                         ),
                       ),
                     );
@@ -398,6 +384,27 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تعذّر الرفع: $e'),
+          backgroundColor: AppConstants.statusDanger,
+        ),
+      );
+    }
+  }
+
+
+  /// فتح ملف نسخة العقد.
+  ///
+  /// المرفقات تُخزَّن مشفّرة (AES) بلاحقة .enc عبر saveAttachment، لذا
+  /// تسليم المسار الخام إلى OpenFilex كان يفتح ملفاً مشفّراً لا يقرأه
+  /// Word. AttachmentService تفكّ التشفير إلى ملف مؤقت أولاً.
+  Future<void> _openVersionFile(String relativePath) async {
+    final result = await ref
+        .read(attachmentServiceProvider)
+        .openStoredAttachment(relativePath);
+    if (!mounted) return;
+    if (!result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message ?? 'تعذّر فتح الملف'),
           backgroundColor: AppConstants.statusDanger,
         ),
       );
