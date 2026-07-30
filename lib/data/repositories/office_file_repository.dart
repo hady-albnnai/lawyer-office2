@@ -197,29 +197,83 @@ class OfficeFileRepository {
         );
       }
 
+      // Try to insert the office file, handle UNIQUE constraint conflicts
       final fileNumber = '${fileType.label}/$year/${nextSerial.toString().padLeft(4, '0')}';
-
-      await _db.customStatement(
-        '''INSERT INTO office_files(
-          file_number, file_type, file_year, serial, source, status,
-          linked_entity_type, linked_entity_id, title,
-          opened_by_user_id, opened_by_name_snapshot, notes, updated_at
-        ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)''',
-        [
-          fileNumber,
-          fileType.dbValue,
-          year,
-          nextSerial,
-          source.dbValue,
-          status.dbValue,
-          linkedEntityType,
-          linkedEntityId,
-          title,
-          openedByUserId,
-          openedByNameSnapshot,
-          notes,
-        ],
-      );
+      
+      try {
+        await _db.customStatement(
+          '''INSERT INTO office_files (
+            file_number, file_type, file_year, serial, source, status,
+            linked_entity_type, linked_entity_id, title,
+            opened_at, opened_by_user_id, opened_by_name_snapshot,
+            has_pending_finance, has_pending_paper_original, has_post_closure_actions,
+            created_at, updated_at
+          ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, 0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          )''',
+          [
+            fileNumber,
+            fileType.dbValue,
+            year,
+            nextSerial,
+            source.dbValue,
+            status.dbValue,
+            linkedEntityType,
+            linkedEntityId,
+            title,
+            openedByUserId,
+            openedByNameSnapshot,
+          ],
+        );
+      } catch (e) {
+        // Handle UNIQUE constraint conflict
+        // Try to find the next available serial number
+        final existingRows = await _db.customSelect(
+          '''SELECT MAX(serial) as max_serial FROM office_files
+          WHERE file_type = ? AND file_year = ?''',
+          variables: [Variable.withString(fileType.dbValue), Variable.withInt(year)],
+        ).get();
+        
+        final existingMaxSerial = existingRows.isNotEmpty 
+            ? (existingRows.first.data['max_serial'] as int? ?? 0)
+            : 0;
+        final newSerial = existingMaxSerial + 1;
+        final newFileNumber = '${fileType.label}/$year/${newSerial.toString().padLeft(4, '0')}';
+        
+        // Update the sequence table
+        await _db.customStatement(
+          '''UPDATE office_file_sequences
+          SET last_number = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE year = ? AND file_type = ?''',
+          [newSerial, year, fileType.dbValue],
+        );
+        
+        // Try the insert again with the new serial
+        await _db.customStatement(
+          '''INSERT INTO office_files (
+            file_number, file_type, file_year, serial, source, status,
+            linked_entity_type, linked_entity_id, title,
+            opened_at, opened_by_user_id, opened_by_name_snapshot,
+            has_pending_finance, has_pending_paper_original, has_post_closure_actions,
+            created_at, updated_at
+          ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, 0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          )''',
+          [
+            newFileNumber,
+            fileType.dbValue,
+            year,
+            newSerial,
+            source.dbValue,
+            status.dbValue,
+            linkedEntityType,
+            linkedEntityId,
+            title,
+            openedByUserId,
+            openedByNameSnapshot,
+          ],
+        );
+      }
 
       final row = await _db.customSelect('SELECT last_insert_rowid() AS id').getSingle();
       return row.data['id'] as int;

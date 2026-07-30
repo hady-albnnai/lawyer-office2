@@ -312,9 +312,21 @@ class _AddAgencyDialogState extends ConsumerState<AddAgencyDialog> {
     final archive = widget.archiveContext;
     if (archive != null) {
       final poaType = archive.poaType ?? '';
-      if (poaType.contains('خاص') || poaType.contains('بيع')) _type = AgencyType.special;
-      if (poaType.contains('شرع')) _type = AgencyType.sharia;
-      if (poaType.contains('نقابة') || poaType.contains('قضائية')) _source = AgencySource.barDelegate;
+      // Convert string type to AgencyType enum
+      if (poaType.contains('خاص') || poaType.contains('بيع')) {
+        _type = AgencyType.special;
+      } else if (poaType.contains('شرع')) {
+        _type = AgencyType.sharia;
+      } else {
+        _type = AgencyType.general; // Default to general
+      }
+      
+      if (poaType.contains('نقابة') || poaType.contains('قضائية')) {
+        _source = AgencySource.barDelegate;
+      } else {
+        _source = AgencySource.notary; // Default to notary
+      }
+      
       _scopeController.text = archive.isClosed ? 'أرشفة وكالة منتهية - $poaType' : 'إدخال وكالة جارية - $poaType';
     }
   }
@@ -520,10 +532,14 @@ class _AddAgencyDialogState extends ConsumerState<AddAgencyDialog> {
         if (_customTypeController.text.trim().isNotEmpty) 'نوع مخصص: ${_customTypeController.text.trim()}',
         if (_scopeController.text.trim().isNotEmpty) _scopeController.text.trim(),
       ].join('\n');
+      
+      // Ensure poaType is properly set as integer (0, 1, 2)
+      final poaTypeValue = _type.index; // This will be 0, 1, or 2
+      
       final poaId = await ref.read(poaRepositoryProvider).createPoa(
             poa: db.PowersOfAttorneyCompanion.insert(
               sourceType: _source == AgencySource.notary ? 'notary' : 'delegate',
-              poaType: _type.index,
+              poaType: poaTypeValue, // Use the integer value directly
               poaNumber: Value(_numberController.text.trim()),
               poaDate: Value(_issuedAt),
               category: Value(_source == AgencySource.notary ? 'notarial' : 'judicial'),
@@ -546,6 +562,7 @@ class _AddAgencyDialogState extends ConsumerState<AddAgencyDialog> {
               'type': _type.displayName,
               'customType': _customTypeController.text.trim(),
               'source': _source.displayName,
+              'poaTypeValue': poaTypeValue,
             },
             severity: 'info',
           );
