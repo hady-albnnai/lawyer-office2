@@ -348,6 +348,31 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('CREATE INDEX IF NOT EXISTS idx_archive_batches_status ON archive_batches(status, created_at);');
     await customStatement('CREATE INDEX IF NOT EXISTS idx_archive_items_batch ON archive_items(batch_id, status);');
     await customStatement('CREATE INDEX IF NOT EXISTS idx_archive_items_hash ON archive_items(sha256);');
+    await ensurePoaColumns();
+  }
+
+  /// استكمال أعمدة جدول الوكالات المضافة بعد الإصدار الأول من المخطط.
+  ///
+  /// قواعد البيانات التي أُنشئت قبل إضافة حقول "ملف الوكالة" (البندان 3 و7)
+  /// تفتقر لهذه الأعمدة، بينما تولّد Drift عبارة INSERT تتضمنها كلها،
+  /// فيفشل الإدخال بخطأ SQLite رقم 1 (logic error / no such column).
+  /// التعريفات هنا مطابقة لما في schema.dart تماماً.
+  Future<void> ensurePoaColumns() async {
+    await _ensureSqlColumn(
+        'powers_of_attorney', 'category', "TEXT NOT NULL DEFAULT 'judicial'");
+    await _ensureSqlColumn('powers_of_attorney', 'sub_type', 'TEXT');
+    await _ensureSqlColumn('powers_of_attorney', 'registry_number', 'TEXT');
+    await _ensureSqlColumn('powers_of_attorney', 'white_number', 'TEXT');
+    await _ensureSqlColumn('powers_of_attorney', 'delegate_name', 'TEXT');
+    await _ensureSqlColumn('powers_of_attorney', 'delegate_phone', 'TEXT');
+    await _ensureSqlColumn('powers_of_attorney', 'delegate_branch', 'TEXT');
+    await _ensureSqlColumn('powers_of_attorney', 'scope_text', 'TEXT');
+    await _ensureSqlColumn('powers_of_attorney', 'file_path', 'TEXT');
+    await _ensureSqlColumn(
+        'powers_of_attorney', 'status', "TEXT NOT NULL DEFAULT 'active'");
+    await _ensureSqlColumn('powers_of_attorney', 'expiry_date', 'DATETIME');
+    await _ensureSqlColumn('powers_of_attorney', 'notary_id', 'INTEGER');
+    await _ensureSqlColumn('powers_of_attorney', 'delegate_id', 'INTEGER');
   }
 
   Future<void> _ensureSqlColumn(String tableName, String columnName, String definition) async {
