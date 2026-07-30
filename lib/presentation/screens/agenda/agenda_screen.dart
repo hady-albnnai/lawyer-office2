@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/enums/app_enums.dart';
+import '../../../data/database/daos/task_dao.dart';
 import '../../../data/services/automation_service.dart';
 import '../../../data/services/notification_service.dart';
 import '../../../data/services/report_service.dart';
@@ -765,7 +766,7 @@ class AgendaScreen extends ConsumerWidget {
                           ),
                           // زر المشاركة
                           InkWell(
-                            onTap: () => _showCollaborationMenu(context, item),
+                            onTap: () => _showCollaborationMenu(context, ref, item),
                             child: Icon(
                               Icons.people_outline,
                               size: 20,
@@ -1414,7 +1415,8 @@ class AgendaScreen extends ConsumerWidget {
     );
   }
 
-  void _showCollaborationMenu(BuildContext context, UnifiedAgendaItem item) {
+  void _showCollaborationMenu(
+      BuildContext context, WidgetRef ref, UnifiedAgendaItem item) {
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -1436,7 +1438,7 @@ class AgendaScreen extends ConsumerWidget {
               subtitle: const Text('تعيين موظف مسؤول عن هذا الموعد'),
               onTap: () {
                 Navigator.pop(context);
-                _showAssignStaffDialog(context, item);
+                _showAssignStaffDialog(context, ref, item);
               },
             ),
             ListTile(
@@ -1445,7 +1447,7 @@ class AgendaScreen extends ConsumerWidget {
               subtitle: const Text('إضافة ملاحظة يمكن للموظفين رؤيتها'),
               onTap: () {
                 Navigator.pop(context);
-                _showSharedNoteDialog(context, item);
+                _showSharedNoteDialog(context, ref, item);
               },
             ),
             ListTile(
@@ -1463,7 +1465,15 @@ class AgendaScreen extends ConsumerWidget {
     );
   }
 
-  void _showAssignStaffDialog(BuildContext context, UnifiedAgendaItem item) {
+  /// معرّف المهمة الحقيقي من معرّف عنصر الأجندة (task_<id>).
+  /// يرجع null لعناصر ليست مهام (جلسات مثلاً) فلا تُحفظ عليها.
+  int? _taskIdOf(UnifiedAgendaItem item) {
+    if (!item.id.startsWith('task_')) return null;
+    return int.tryParse(item.id.substring('task_'.length));
+  }
+
+  void _showAssignStaffDialog(
+      BuildContext context, WidgetRef ref, UnifiedAgendaItem item) {
     final TextEditingController staffController = TextEditingController();
     
     showDialog(
@@ -1483,12 +1493,46 @@ class AgendaScreen extends ConsumerWidget {
             child: const Text('إلغاء'),
           ),
           TextButton(
-            onPressed: () {
-              // حفظ تعيين الموظف
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('تم تعيين ${staffController.text} للموعد: ${item.title}')),
-              );
+            onPressed: () async {
+              final name = staffController.text.trim();
+              if (name.isEmpty) return;
+
+              final taskId = _taskIdOf(item);
+              if (taskId == null) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('تعيين الموظف متاح للمهام فقط، لا للجلسات.'),
+                    backgroundColor: AppColors.warning,
+                  ),
+                );
+                return;
+              }
+
+              // الحفظ الفعلي: سابقاً كان الزر يعرض رسالة نجاح فقط
+              // ويضيع التعيين عند إغلاق النافذة.
+              try {
+                final db = ref.read(databaseProvider);
+                await TaskDao(db).assignTask(taskId, assignedTo: name);
+                ref.invalidate(unifiedAgendaFromDBProvider);
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('تم تعيين $name للموعد: ${item.title}'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('تعذّر حفظ التعيين: $e'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
             },
             child: const Text('حفظ'),
           ),
@@ -1497,7 +1541,8 @@ class AgendaScreen extends ConsumerWidget {
     );
   }
 
-  void _showSharedNoteDialog(BuildContext context, UnifiedAgendaItem item) {
+  void _showSharedNoteDialog(
+      BuildContext context, WidgetRef ref, UnifiedAgendaItem item) {
     final TextEditingController noteController = TextEditingController();
     
     showDialog(
@@ -1518,12 +1563,44 @@ class AgendaScreen extends ConsumerWidget {
             child: const Text('إلغاء'),
           ),
           TextButton(
-            onPressed: () {
-              // حفظ الملاحظة المشتركة
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('تم إضافة الملاحظة المشتركة للموعد: ${item.title}')),
-              );
+            onPressed: () async {
+              final note = noteController.text.trim();
+              if (note.isEmpty) return;
+
+              final taskId = _taskIdOf(item);
+              if (taskId == null) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('الملاحظات متاحة للمهام فقط، لا للجلسات.'),
+                    backgroundColor: AppColors.warning,
+                  ),
+                );
+                return;
+              }
+
+              try {
+                final db = ref.read(databaseProvider);
+                await TaskDao(db).assignTask(taskId, notes: note);
+                ref.invalidate(unifiedAgendaFromDBProvider);
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('تم حفظ الملاحظة للموعد: ${item.title}'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('تعذّر حفظ الملاحظة: $e'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
             },
             child: const Text('حفظ'),
           ),

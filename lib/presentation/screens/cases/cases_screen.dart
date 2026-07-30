@@ -32,13 +32,28 @@ class CasesScreen extends ConsumerWidget {
               onPressed: () => context.go('/search-reports'),
               tooltip: 'بحث',
             ),
-            IconButton(
-              icon: const Icon(Icons.filter_alt),
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (context) => const CasesFilterDialog(),
-              ),
-              tooltip: 'فلترة',
+            Consumer(
+              builder: (context, ref, _) {
+                final filter = ref.watch(casesFilterProvider);
+                return IconButton(
+                  icon: Badge(
+                    isLabelVisible: filter.activeCount > 0,
+                    label: Text('${filter.activeCount}'),
+                    child: const Icon(Icons.filter_alt),
+                  ),
+                  tooltip: filter.isEmpty
+                      ? 'فلترة'
+                      : 'فلترة (${filter.activeCount} مطبّق)',
+                  onPressed: () async {
+                    final result = await showDialog<CasesFilter>(
+                      context: context,
+                      builder: (_) => CasesFilterDialog(initial: filter),
+                    );
+                    if (result == null) return; // إلغاء
+                    ref.read(casesFilterProvider.notifier).state = result;
+                  },
+                );
+              },
             ),
             if (canCreate)
               IconButton(
@@ -160,9 +175,67 @@ class CasesScreen extends ConsumerWidget {
   }
 }
 
-final casesProvider = Provider<List<Case>>((ref) {
+/// معايير فلترة الدعاوى المطبَّقة حالياً.
+class CasesFilter {
+  final CaseType? type;
+  final CaseStatus? status;
+  final bool deficient;
+  final bool nearSession;
+  final bool pendingBase;
+
+  const CasesFilter({
+    this.type,
+    this.status,
+    this.deficient = false,
+    this.nearSession = false,
+    this.pendingBase = false,
+  });
+
+  bool get isEmpty =>
+      type == null &&
+      status == null &&
+      !deficient &&
+      !nearSession &&
+      !pendingBase;
+
+  int get activeCount =>
+      (type != null ? 1 : 0) +
+      (status != null ? 1 : 0) +
+      (deficient ? 1 : 0) +
+      (nearSession ? 1 : 0) +
+      (pendingBase ? 1 : 0);
+}
+
+/// الفلتر المطبَّق على قائمة الدعاوى.
+final casesFilterProvider =
+    StateProvider<CasesFilter>((ref) => const CasesFilter());
+
+/// كل الدعاوى دون فلترة.
+final allCasesUnfilteredProvider = Provider<List<Case>>((ref) {
   final asyncCases = ref.watch(uiCasesProvider);
   return asyncCases.maybeWhen(data: (items) => items, orElse: () => const <Case>[]);
+});
+
+/// الدعاوى بعد تطبيق الفلتر.
+///
+/// كان زر «تطبيق» في نافذة الفلترة يغلق النافذة ويعرض «تم تطبيق
+/// الفلاتر» دون أي أثر، لأن القيم المختارة لم تكن تُمرَّر لأي مكان.
+final casesProvider = Provider<List<Case>>((ref) {
+  final all = ref.watch(allCasesUnfilteredProvider);
+  final f = ref.watch(casesFilterProvider);
+  if (f.isEmpty) return all;
+
+  return all.where((c) {
+    if (f.type != null && c.type != f.type) return false;
+    if (f.status != null && c.status != f.status) return false;
+    if (f.deficient && c.openDeficienciesCount == 0) return false;
+    if (f.nearSession && c.nextSession == null) return false;
+    if (f.pendingBase &&
+        !(c.baseNumber == null || c.baseNumber!.isEmpty)) {
+      return false;
+    }
+    return true;
+  }).toList();
 });
 
 
@@ -391,18 +464,20 @@ class CaseDocsDialog extends ConsumerWidget {
 }
 
 class CasesFilterDialog extends StatefulWidget {
-  const CasesFilterDialog({super.key});
+  const CasesFilterDialog({super.key, this.initial = const CasesFilter()});
+
+  final CasesFilter initial;
 
   @override
   State<CasesFilterDialog> createState() => _CasesFilterDialogState();
 }
 
 class _CasesFilterDialogState extends State<CasesFilterDialog> {
-  CaseType? _type;
-  CaseStatus? _status;
-  bool _deficient = false;
-  bool _nearSession = false;
-  bool _pendingBase = false;
+  late CaseType? _type = widget.initial.type;
+  late CaseStatus? _status = widget.initial.status;
+  late bool _deficient = widget.initial.deficient;
+  late bool _nearSession = widget.initial.nearSession;
+  late bool _pendingBase = widget.initial.pendingBase;
 
   @override
   Widget build(BuildContext context) {
@@ -453,15 +528,25 @@ class _CasesFilterDialogState extends State<CasesFilterDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('إلغاء')),
-                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('إلغاء'),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(const CasesFilter()),
+                  child: const Text('مسح الكل'),
+                ),
+                const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: const Text('تم تطبيق الفلاتر'), backgroundColor: AppColors.success),
-                    );
-                  },
+                  onPressed: () => Navigator.of(context).pop(CasesFilter(
+                    type: _type,
+                    status: _status,
+                    deficient: _deficient,
+                    nearSession: _nearSession,
+                    pendingBase: _pendingBase,
+                  )),
                   child: const Text('تطبيق'),
                 ),
               ],

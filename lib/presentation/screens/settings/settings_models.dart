@@ -638,7 +638,14 @@ class SettingsHubNotifier extends StateNotifier<SettingsHubState> {
       if (next.lastBackupAt != null) {
         await prefs.setString(_kLastBackup, next.lastBackupAt!.toIso8601String());
       }
-    } catch (_) {}
+    } catch (e) {
+      // لا نُبلّغ بالنجاح إن لم تُكتب الإعدادات فعلاً.
+      state = state.copyWith(
+        preferences: next,
+        lastMessage: 'تعذّر حفظ الإعدادات على القرص: $e',
+      );
+      return;
+    }
 
     state = state.copyWith(
       preferences: next,
@@ -753,34 +760,14 @@ class SettingsHubNotifier extends StateNotifier<SettingsHubState> {
       }
     }
 
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-    final stamp = now.toIso8601String().replaceAll(':', '-').substring(0, 19);
-    final folder = customPath?.isNotEmpty == true
-        ? customPath!
-        : (state.preferences.externalBackupPath.isNotEmpty
-            ? state.preferences.externalBackupPath
-            : 'LawOffice_Backups');
-    final record = BackupRecord(
-      id: 'bk_${now.microsecondsSinceEpoch}',
-      path: '$folder/SyrLawOffice_Backup_$stamp.zip',
-      type: type,
-      sizeMb: includeAttachments ? 12.6 : 3.2,
-      includesAttachments: includeAttachments,
-      createdAt: now,
-    );
-    final prefs = state.preferences.copyWith(lastBackupAt: now);
-    try {
-      final sp = await SharedPreferences.getInstance();
-      await sp.setString(_kLastBackup, now.toIso8601String());
-    } catch (_) {}
+    // بلا مستودع لا يمكن كتابة نسخة فعلية. المسار السابق كان يخترع
+    // سجلاً بمسار وحجم وهميين (12.6 ميجابايت) ويُبلّغ بالنجاح، فيظن
+    // المستخدم أن لديه نسخة احتياطية لا وجود لها.
     state = state.copyWith(
       isBusy: false,
-      backups: [record, ...state.backups],
-      preferences: prefs,
-      lastMessage: 'تم إنشاء نسخة احتياطية: ${record.path}',
+      lastMessage: 'تعذّر إنشاء نسخة احتياطية: قاعدة البيانات غير مهيأة',
     );
-    _log('export', 'backups', 'نسخ احتياطي ($type) — ${record.path}');
-    return record;
+    throw StateError('BackupService غير متاح: المستودع غير مهيأ');
   }
 
   /// استعادة نسخة احتياطية فعلياً من ملفها على القرص.
