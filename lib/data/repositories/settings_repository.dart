@@ -162,8 +162,14 @@ class SettingsRepository {
     return path;
   }
 
+  /// تمرّر RestoreException للأعلى: فشل الاستعادة يجب أن يصل للمستخدم
+  /// برسالة محددة، لا كـ false مبهم.
   Future<bool> restoreBackup(String path, {String? userRef}) async {
-    final ok = await _backupService.restoreFromBackup(File(path));
+    final file = File(path);
+    if (!await file.exists()) {
+      throw RestoreException('ملف النسخة الاحتياطية غير موجود: $path');
+    }
+    final ok = await _backupService.restoreFromBackup(file);
     if (ok) {
       await logActivity(
         table: 'backups',

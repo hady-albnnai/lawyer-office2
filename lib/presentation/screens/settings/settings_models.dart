@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/crypto_utils.dart';
 import '../../../data/repositories/settings_repository.dart';
+import '../../../data/services/backup_service.dart';
 import '../../providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 
@@ -782,13 +783,46 @@ class SettingsHubNotifier extends StateNotifier<SettingsHubState> {
     return record;
   }
 
-  /// محاكاة استعادة نسخة.
+  /// استعادة نسخة احتياطية فعلياً من ملفها على القرص.
+  ///
+  /// كانت هذه الدالة محاكاة: تسجّل نجاحاً وتعرض رسالة "تمت الاستعادة"
+  /// دون استعادة أي بيانات. الاستعادة عملية حرجة، وإيهام المستخدم
+  /// بنجاحها قد يدفعه للاعتماد على بيانات لم تُسترجع أصلاً.
   Future<bool> restoreBackup(String backupId) async {
-    final exists = state.backups.any((b) => b.id == backupId);
-    if (!exists) return false;
-    _log('import', 'backups', 'استعادة النسخة $backupId');
-    state = state.copyWith(lastMessage: 'تمت استعادة النسخة بنجاح');
-    return true;
+    final record =
+        state.backups.where((b) => b.id == backupId).firstOrNull;
+    if (record == null) {
+      state = state.copyWith(lastMessage: 'النسخة المطلوبة غير موجودة');
+      return false;
+    }
+
+    final repo = _repository;
+    if (repo == null) {
+      state = state.copyWith(
+          lastMessage: 'الاستعادة غير متاحة: قاعدة البيانات غير مهيأة');
+      return false;
+    }
+
+    if (record.path.trim().isEmpty) {
+      state = state.copyWith(lastMessage: 'مسار النسخة الاحتياطية غير معروف');
+      return false;
+    }
+
+    try {
+      final ok = await repo.restoreBackup(record.path);
+      if (ok) {
+        _log('import', 'backups', 'استعادة النسخة $backupId من ${record.path}');
+        state = state.copyWith(
+            lastMessage: 'تمت استعادة النسخة. أعد تشغيل التطبيق لتحميل البيانات.');
+      }
+      return ok;
+    } on RestoreException catch (e) {
+      state = state.copyWith(lastMessage: e.message);
+      return false;
+    } catch (e) {
+      state = state.copyWith(lastMessage: 'تعذّرت الاستعادة: $e');
+      return false;
+    }
   }
 
   void setExternalBackupPath(String path) {

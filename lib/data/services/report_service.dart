@@ -36,14 +36,22 @@ class ReportService {
   }) async {
     final pdf = pw.Document(theme: await _arabicTheme());
 
+    // MultiPage: عدد مواعيد اليوم غير محدود سلفاً.
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         textDirection: pw.TextDirection.rtl,
+        margin: const pw.EdgeInsets.all(32),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.center,
+          margin: const pw.EdgeInsets.only(top: 12),
+          child: pw.Text(
+            'صفحة ${context.pageNumber} من ${context.pagesCount}',
+            style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+          ),
+        ),
         build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
+          return [
               pw.Header(
                 level: 0,
                 child: pw.Text(
@@ -73,8 +81,7 @@ class ReportService {
                 cellAlignment: pw.Alignment.center,
                 cellStyle: const pw.TextStyle(fontSize: 10),
               ),
-            ],
-          );
+          ];
         },
       ),
     );
@@ -89,57 +96,95 @@ class ReportService {
   }) async {
     final pdf = pw.Document(theme: await _arabicTheme());
 
+    // MultiPage لا Page: التقرير الأسبوعي قد يضم عشرات المواعيد،
+    // وصفحة واحدة ثابتة تقتطع كل ما يتجاوز ارتفاعها دون تنبيه.
+    final entries = weeklyAppointments.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         textDirection: pw.TextDirection.rtl,
-        build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Header(
-                level: 0,
+        margin: const pw.EdgeInsets.all(32),
+        header: (context) => context.pageNumber == 1
+            ? pw.SizedBox()
+            : pw.Container(
+                alignment: pw.Alignment.centerRight,
+                margin: const pw.EdgeInsets.only(bottom: 12),
                 child: pw.Text(
-                  'تقرير المواعيد الأسبوعية',
-                  style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+                  'تقرير المواعيد الأسبوعية — تابع',
+                  style: pw.TextStyle(
+                      fontSize: 10, color: PdfColors.grey700),
                 ),
               ),
-              pw.SizedBox(height: 20),
-              pw.Text(
-                'الأسبوع: ${_fmtDate(weekStart)} - ${_fmtDate(weekStart.add(const Duration(days: 6)))}',
-                style: pw.TextStyle(fontSize: 14),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.center,
+          margin: const pw.EdgeInsets.only(top: 12),
+          child: pw.Text(
+            'صفحة ${context.pageNumber} من ${context.pagesCount}',
+            style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+          ),
+        ),
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Text(
+                'تقرير المواعيد الأسبوعية',
+                style:
+                    pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
               ),
-              pw.SizedBox(height: 20),
-              ...weeklyAppointments.entries.map((entry) {
-                return pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+            ),
+            pw.SizedBox(height: 12),
+            pw.Text(
+              'الأسبوع: ${_fmtDate(weekStart)} - ${_fmtDate(weekStart.add(const Duration(days: 6)))}',
+              style: const pw.TextStyle(fontSize: 14),
+            ),
+            pw.SizedBox(height: 16),
+            if (entries.isEmpty)
+              pw.Text('لا توجد مواعيد في هذا الأسبوع.',
+                  style: const pw.TextStyle(fontSize: 12))
+            else
+              for (final entry in entries) ...[
+                // يمنع انفصال عنوان اليوم عن جدوله عبر حدّ الصفحة.
+                pw.Wrap(
                   children: [
-                    pw.Text(
-                      _fmtDate(entry.key),
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          '${_fmtDate(entry.key)}  (${entry.value.length} موعد)',
+                          style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold, fontSize: 16),
+                        ),
+                        pw.SizedBox(height: 8),
+                        if (entry.value.isEmpty)
+                          pw.Text('لا مواعيد',
+                              style: const pw.TextStyle(fontSize: 10))
+                        else
+                          pw.TableHelper.fromTextArray(
+                            context: context,
+                            data: List<List<dynamic>>.generate(
+                              entry.value.length,
+                              (index) => [
+                                entry.value[index]['time'] ?? '',
+                                entry.value[index]['title'] ?? '',
+                                entry.value[index]['type'] ?? '',
+                              ],
+                            ),
+                            headers: const ['الوقت', 'العنوان', 'النوع'],
+                            headerStyle:
+                                pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                            cellAlignment: pw.Alignment.center,
+                            cellStyle: const pw.TextStyle(fontSize: 9),
+                          ),
+                      ],
                     ),
-                    pw.SizedBox(height: 10),
-                    pw.TableHelper.fromTextArray(
-                      context: context,
-                      data: List<List<dynamic>>.generate(
-                        entry.value.length,
-                        (index) => [
-                          entry.value[index]['time'] ?? '',
-                          entry.value[index]['title'] ?? '',
-                          entry.value[index]['type'] ?? '',
-                        ],
-                      ),
-                      headers: ['الوقت', 'العنوان', 'النوع'],
-                      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                      cellAlignment: pw.Alignment.center,
-                      cellStyle: const pw.TextStyle(fontSize: 9),
-                    ),
-                    pw.SizedBox(height: 20),
                   ],
-                );
-              }),
-            ],
-          );
+                ),
+                pw.SizedBox(height: 18),
+              ],
+          ];
         },
       ),
     );

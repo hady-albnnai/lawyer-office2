@@ -149,7 +149,7 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
           Step(
             title: const Text('الشركاء'),
             subtitle: Text(_selectedPartners.isEmpty
-                ? 'لم يُضف شركاء بعد'
+                ? 'المطلوب: $_partnersRuleLabel'
                 : '${_selectedPartners.length} شريك • مجموع النسب ${_totalSharePercent.toStringAsFixed(1)}%'),
             isActive: _currentStep >= 3,
             state: _currentStep > 3 ? StepState.complete : StepState.editing,
@@ -351,6 +351,25 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
     );
   }
 
+  /// هل الشكل المختار شركة شخص واحد؟
+  ///
+  /// النظام السوري يقصر هذه الشركة على شريك واحد، فالتحقق العام
+  /// "شريك واحد على الأقل" لا يكفي: يجب منع إضافة شريك ثانٍ.
+  bool get _isSinglePersonCompany =>
+      _companyType.contains('الشخص الواحد');
+
+  /// الحد الأدنى لعدد الشركاء حسب الشكل القانوني.
+  int get _minPartners => _isSinglePersonCompany ? 1 : 2;
+
+  /// الحد الأقصى لعدد الشركاء، أو null إن كان غير محدود.
+  int? get _maxPartners => _isSinglePersonCompany ? 1 : null;
+
+  /// وصف قيد الشركاء لعرضه في الواجهة.
+  String get _partnersRuleLabel {
+    if (_isSinglePersonCompany) return 'شريك واحد فقط (شركة شخص واحد)';
+    return 'شريكان على الأقل';
+  }
+
   /// مجموع نسب الشركاء المضافين — يُستخدم للتحقق والعرض.
   double get _totalSharePercent => _selectedPartners.fold<double>(
       0, (sum, p) => sum + (p.sharePercentage.value ?? 0));
@@ -482,6 +501,21 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
       children: [
         const Text('إضافة الشركاء وتوزيع الحصص:',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            const Icon(Icons.info_outline,
+                size: 16, color: AppConstants.statusInfo),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'الشكل المختار: $_companyType — المطلوب: $_partnersRuleLabel',
+                style: const TextStyle(
+                    fontSize: 12, color: AppConstants.textMuted),
+              ),
+            ),
+          ],
+        ),
         if (widget.archiveContext?.isClosed == true) ...[
           const SizedBox(height: 8),
           const Text(
@@ -687,6 +721,12 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
       return;
     }
 
+    final max = _maxPartners;
+    if (max != null && _selectedPartners.length >= max) {
+      _showError('$_companyType لا تقبل أكثر من $max شريك.');
+      return;
+    }
+
     if (_totalSharePercent + percent > 100.01) {
       _showError(
           'المجموع سيتجاوز 100% (الحالي ${_totalSharePercent.toStringAsFixed(1)}%)');
@@ -847,10 +887,10 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
       return;
     }
 
-    if (_currentStep == 3 && _selectedPartners.isEmpty) {
+    if (_currentStep == 3 && _selectedPartners.length < _minPartners) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('يرجى إضافة شريك واحد على الأقل!'),
+        SnackBar(
+          content: Text('$_companyType تتطلب $_partnersRuleLabel.'),
           backgroundColor: AppConstants.statusDanger,
         ),
       );

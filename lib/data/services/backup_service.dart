@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:archive/archive_io.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
 
 /// محرك النسخ الاحتياطي الذكي والاستعادة (BackupService)
@@ -104,29 +105,76 @@ class BackupService {
   }
 
   /// استعادة النظام من ملف نسخة احتياطية (.zip)
+  ///
+  /// ترمي [RestoreException] عند الفشل بدل إرجاع false، لأن الاستعادة
+  /// عملية مدمِّرة تكتب فوق بيانات المكتب؛ فشلها الصامت يترك المستخدم
+  /// يظن أن بياناته استُعيدت.
   Future<bool> restoreFromBackup(File zipFile) async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final destRoot = p.join(docsDir.path, AppConstants.appDataDirectoryName);
+    final normalizedRoot = p.normalize(destRoot);
+
+    late final Archive archive;
     try {
-      final docsDir = await getApplicationDocumentsDirectory();
-      final destPath = p.join(docsDir.path, AppConstants.appDataDirectoryName);
-
-      // فك الضغط فوق المجلد الحالي
       final bytes = await zipFile.readAsBytes();
-      final archive = ZipDecoder().decodeBytes(bytes);
-
-      for (final file in archive) {
-        final filename = file.name;
-        if (file.isFile) {
-          final data = file.content as List<int>;
-          File(p.join(destPath, filename))
-            ..createSync(recursive: true)
-            ..writeAsBytesSync(data);
-        } else {
-          Directory(p.join(destPath, filename)).createSync(recursive: true);
-        }
-      }
-      return true;
+      archive = ZipDecoder().decodeBytes(bytes);
     } catch (e) {
-      return false;
+      throw RestoreException('تعذّر قراءة ملف النسخة الاحتياطية: قد يكون تالفاً.');
     }
+
+    if (archive.isEmpty) {
+      throw RestoreException('ملف النسخة الاحتياطية فارغ.');
+    }
+
+    final skipped = <String>[];
+
+    for (final file in archive) {
+      final filename = file.name;
+
+      // حماية من Zip Slip: مدخل يحوي ../ يمكنه الكتابة خارج مجلد التطبيق.
+      final target = p.normalize(p.join(normalizedRoot, filename));
+      if (!p.isWithin(normalizedRoot, target) && target != normalizedRoot) {
+        skipped.add(filename);
+        continue;
+      }
+
+      if (!file.isFile) {
+        Directory(target).createSync(recursive: true);
+        continue;
+      }
+
+      // في archive 4.x يُرجع content مصفوفة فارغة عند تعذّر فكّ الضغط
+      // بدل رمي خطأ، فالكتابة المباشرة تُنتج ملفاً فارغاً بصمت.
+      final data = file.readBytes();
+      if (data == null) {
+        throw RestoreException(
+            'تعذّر فكّ ضغط "$filename". النسخة الاحتياطية تالفة، ولم تُستكمل الاستعادة.');
+      }
+
+      // ملف بحجم صفر مشروع فقط إن كان أصله كذلك.
+      if (data.isEmpty && file.size > 0) {
+        throw RestoreException(
+            'الملف "$filename" فارغ رغم أن حجمه المسجّل ${file.size} بايت. الاستعادة متوقفة لتفادي فقدان البيانات.');
+      }
+
+      File(target)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(data);
+    }
+
+    if (skipped.isNotEmpty) {
+      debugPrint('تم تجاهل مسارات غير آمنة أثناء الاستعادة: $skipped');
+    }
+
+    return true;
   }
+}
+
+/// فشل استعادة نسخة احتياطية برسالة صالحة للعرض للمستخدم.
+class RestoreException implements Exception {
+  final String message;
+  const RestoreException(this.message);
+
+  @override
+  String toString() => message;
 }
