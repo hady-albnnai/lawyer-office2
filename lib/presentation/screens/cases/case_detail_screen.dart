@@ -7,6 +7,8 @@ library;
 
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 import 'package:drift/drift.dart' as drift;
 import 'package:file_picker/file_picker.dart' as file_picker;
 import 'package:flutter/material.dart';
@@ -2603,20 +2605,29 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
       _showSnack('تعذر تحديد رقم الدعوى لحفظ المستند.', isError: true);
       return;
     }
-    final result = await file_picker.FilePicker.pickFiles(allowMultiple: false);
-    final picked = result?.files.firstOrNull;
-    final path = picked?.path;
-    if (picked == null || path == null || path.isEmpty) return;
+    // التحقق من الصيغة والحجم قبل الرفع: الملف الذي لا يقرأه التطبيق
+    // لا فائدة من تخزينه مشفّراً.
+    final attachments = ref.read(attachmentServiceProvider);
+    final pick = await attachments.pickAttachment();
+    if (pick.rejectionReason != null) {
+      _showSnack(pick.rejectionReason!, isError: true);
+      return;
+    }
+    if (!pick.isAccepted) return;
+
+    final file = pick.file!;
+    final fileName = p.basename(file.path);
+    final ext = p.extension(file.path).replaceFirst('.', '').toLowerCase();
 
     // الحفظ الفعلي في قاعدة البيانات وتخزين نسخة الملف، بدل إضافته
     // إلى حالة الشاشة فقط حيث كان يضيع عند إعادة فتح الدعوى.
     try {
       await ref.read(documentRepositoryProvider).addDocument(
-            docName: picked.name,
+            docName: fileName,
             docType: 'case_document',
-            fileType: picked.extension?.toLowerCase(),
+            fileType: ext,
             summary: 'مستند مرفوع من ملف الدعوى',
-            sourceFile: File(path),
+            sourceFile: file,
             entityType: EntityType.caseEntity.index,
             entityId: caseId,
             userRef: ref.read(authControllerProvider).user?.fullName ?? 'مكتب المحامي',
@@ -2627,7 +2638,22 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
     }
 
     ref.invalidate(uiDocumentsProvider);
-    _showSnack('تم رفع وربط المستند بالدعوى.');
+    if (!mounted) return;
+    // إتاحة الفتح مباشرة بعد الرفع بدل ترك المستخدم يبحث عن الملف.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('تم رفع «$fileName» وربطه بالدعوى.'),
+        action: SnackBarAction(
+          label: 'فتح',
+          onPressed: () async {
+            final res = await attachments.openLocalFile(file.path);
+            if (!res.success && mounted) {
+              _showSnack(res.message ?? 'تعذّر الفتح', isError: true);
+            }
+          },
+        ),
+      ),
+    );
   }
 
   /// ربط مستند موجود فعلاً في الأرشيف العام بهذه الدعوى.

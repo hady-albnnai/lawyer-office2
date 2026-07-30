@@ -5,6 +5,7 @@ import '../../data/services/conflict_of_interest_service.dart';
 import '../../data/services/sequence_service.dart';
 import '../../data/services/task_sync_service.dart';
 import '../../data/services/deficiency_service.dart';
+import '../../data/services/attachment_service.dart';
 import '../../data/services/file_storage_service.dart';
 import '../../data/services/backup_service.dart';
 import '../../data/repositories/person_repository.dart';
@@ -49,6 +50,11 @@ final deficiencyServiceProvider = Provider<DeficiencyService>((ref) {
 
 final fileStorageServiceProvider = Provider<FileStorageService>((ref) {
   return FileStorageService();
+});
+
+/// إدارة اختيار المرفقات وفتحها (المرفقات مخزَّنة مشفّرة).
+final attachmentServiceProvider = Provider<AttachmentService>((ref) {
+  return AttachmentService(ref.watch(fileStorageServiceProvider));
 });
 
 final backupServiceProvider = Provider<BackupService>((ref) {

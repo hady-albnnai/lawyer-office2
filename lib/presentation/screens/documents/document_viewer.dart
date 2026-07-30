@@ -53,9 +53,17 @@ class DocumentViewerScreen extends ConsumerWidget {
             title: Text(doc.title),
         actions: [
           if (doc.filePath.isNotEmpty)
-            IconButton(icon: const Icon(Icons.download), onPressed: () => _showMsg(context, 'تم تنزيل ${doc.fileName}'), tooltip: 'تنزيل'),
+            IconButton(
+              icon: const Icon(Icons.open_in_new),
+              onPressed: () => _openAttachment(context, ref, doc),
+              tooltip: 'فتح الملف',
+            ),
           if (doc.filePath.isNotEmpty)
-            IconButton(icon: const Icon(Icons.share), onPressed: () => _showMsg(context, 'تم مشاركة ${doc.fileName}'), tooltip: 'مشاركة'),
+            IconButton(
+              icon: const Icon(Icons.folder_open),
+              onPressed: () => _revealAttachment(context, ref, doc),
+              tooltip: 'إظهار في المجلد',
+            ),
         ],
           ),
           body: Column(
@@ -412,15 +420,67 @@ class DocumentViewerScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(d.fileName, style: AppTextStyles.bodyMedium),
           const SizedBox(height: 16),
-          ElevatedButton.icon(onPressed: () => _showMsg(c, 'تم فتح ${d.fileName}'), icon: const Icon(Icons.open_in_new), label: Text(subtitle)),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(onPressed: () => _showMsg(c, 'تم تنزيل ${d.fileName}'), icon: const Icon(Icons.download), label: const Text('تنزيل')),
+          Consumer(
+            builder: (ctx, ref, _) => Column(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _openAttachment(ctx, ref, d),
+                  icon: const Icon(Icons.open_in_new),
+                  label: Text(subtitle),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _revealAttachment(ctx, ref, d),
+                  icon: const Icon(Icons.folder_open),
+                  label: const Text('إظهار في المجلد'),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  void _showMsg(BuildContext c, String msg) => ScaffoldMessenger.of(c).showSnackBar(SnackBar(content: Text(msg), backgroundColor: AppColors.success));
+  void _showMsg(BuildContext c, String msg, {bool isError = false}) =>
+      ScaffoldMessenger.of(c).showSnackBar(SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? AppColors.error : AppColors.success,
+      ));
+
+  /// فتح المرفق فعلياً. المرفقات مخزّنة مشفّرة، فتُفكّ إلى ملف مؤقت
+  /// ثم تُسلَّم لتطبيق النظام. سابقاً كان الزر يعرض رسالة نجاح فقط
+  /// دون أي فتح حقيقي.
+  Future<void> _openAttachment(
+      BuildContext context, WidgetRef ref, DocumentItem doc) async {
+    if (doc.filePath.isEmpty) {
+      _showMsg(context, 'لا يوجد ملف مرفق بهذا المستند', isError: true);
+      return;
+    }
+    final result = await ref
+        .read(attachmentServiceProvider)
+        .openStoredAttachment(doc.filePath);
+    if (!context.mounted) return;
+    if (!result.success) {
+      _showMsg(context, result.message ?? 'تعذّر فتح الملف', isError: true);
+    }
+  }
+
+  /// إظهار الملف داخل مستكشف الملفات.
+  Future<void> _revealAttachment(
+      BuildContext context, WidgetRef ref, DocumentItem doc) async {
+    if (doc.filePath.isEmpty) {
+      _showMsg(context, 'لا يوجد ملف مرفق بهذا المستند', isError: true);
+      return;
+    }
+    final result =
+        await ref.read(attachmentServiceProvider).revealInFolder(doc.filePath);
+    if (!context.mounted) return;
+    if (!result.success) {
+      _showMsg(context, result.message ?? 'تعذّر فتح المجلد', isError: true);
+    }
+  }
+
 
   String? _linkedEntityRoute(DocumentItem doc) {
     if (doc.entityId == '0') return null;

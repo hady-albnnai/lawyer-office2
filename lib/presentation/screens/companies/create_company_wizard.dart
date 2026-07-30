@@ -8,6 +8,7 @@ import '../../../data/database/database.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../widgets/archive_context_banner.dart';
+import '../../widgets/common/searchable_picker.dart';
 
 /// معالج تأسيس شركة جديدة أو أرشفة شركة قائمة (CreateCompanyWizard V6.2)
 class CreateCompanyWizard extends ConsumerStatefulWidget {
@@ -42,6 +43,8 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
   String _tempShareType = 'cash';
   final _tempShareValueController = TextEditingController();
   final _tempSharePercentController = TextEditingController();
+  /// أي حقل شريك ناقص: person | value | percent
+  String? _partnerFieldError;
 
   // الخطوة 5: الإدارة والمدير العام
   final List<CompanyDirectorsCompanion> _selectedDirectors = [];
@@ -90,6 +93,11 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
         currentStep: _currentStep,
         onStepContinue: _onContinue,
         onStepCancel: _onCancel,
+        // الرجوع للخطوات السابقة بالنقر على عناوينها. التحقق يُطبَّق
+        // عند التقدّم فقط، فالرجوع لمراجعة بيانات مُدخلة لا يُمنع.
+        onStepTapped: (index) {
+          if (index < _currentStep) setState(() => _currentStep = index);
+        },
         controlsBuilder: (context, details) {
           return Padding(
             padding: const EdgeInsets.only(top: 24.0),
@@ -139,17 +147,23 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
             content: _buildBasicDataStep(),
           ),
           Step(
-            title: const Text('الشركاء وحصص رأس المال'),
-            subtitle: Text('عدد الشركاء: ${_selectedPartners.length}'),
+            title: const Text('الشركاء'),
+            subtitle: Text(_selectedPartners.isEmpty
+                ? 'لم يُضف شركاء بعد'
+                : '${_selectedPartners.length} شريك • مجموع النسب ${_totalSharePercent.toStringAsFixed(1)}%'),
             isActive: _currentStep >= 3,
             state: _currentStep > 3 ? StepState.complete : StepState.editing,
             content: _buildPartnersStep(),
           ),
           Step(
             title: const Text('الإدارة والتفويض بالتوقيع'),
-            subtitle: Text('عدد المديرين/المفوضين: ${_selectedDirectors.length}'),
+            subtitle: Text(_selectedDirectors.isEmpty
+                ? 'لم يُضف مديرون بعد'
+                : '${_selectedDirectors.length} مدير/مفوض'),
             isActive: _currentStep >= 4,
-            state: _currentStep == 4 ? StepState.editing : StepState.indexed,
+            state: _currentStep > 4
+                ? StepState.complete
+                : (_currentStep == 4 ? StepState.editing : StepState.indexed),
             content: _buildDirectorsStep(),
           ),
         ],
@@ -161,18 +175,43 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
   }
 
   Widget _buildPathStep() {
+    // تحديد لون النص صراحةً: الاعتماد على الافتراضي كان يُنتج نصاً
+    // أبيض على خلفية فاتحة فيختفي الخيار المحدد.
+    Widget chip({
+      required String label,
+      required bool selected,
+      required VoidCallback onTap,
+    }) {
+      return ChoiceChip(
+        label: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : AppConstants.textDark,
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        selected: selected,
+        selectedColor: AppConstants.primaryNavy,
+        backgroundColor: AppConstants.surfaceWhite,
+        side: BorderSide(
+          color: selected ? AppConstants.primaryNavy : AppConstants.textMuted,
+        ),
+        onSelected: (_) => onTap(),
+      );
+    }
+
     return Row(
       children: [
-        ChoiceChip(
-          label: const Text('تأسيس جديد (من الصفر)'),
+        chip(
+          label: 'تأسيس جديد (من الصفر)',
           selected: _isNewEstablishment,
-          onSelected: (_) => setState(() => _isNewEstablishment = true),
+          onTap: () => setState(() => _isNewEstablishment = true),
         ),
         const SizedBox(width: 16),
-        ChoiceChip(
-          label: const Text('أرشفة شركة قائمة ومسجلة'),
+        chip(
+          label: 'أرشفة شركة قائمة ومسجلة',
           selected: !_isNewEstablishment,
-          onSelected: (_) => setState(() => _isNewEstablishment = false),
+          onTap: () => setState(() => _isNewEstablishment = false),
         ),
       ],
     );
@@ -197,12 +236,17 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('اختر الشكل القانوني للشركة السورية:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text('اختر الشكل القانوني للشركة السورية:',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
+        SearchablePicker<String>(
+          label: 'الشكل القانوني',
+          hintText: 'ابحث عن الشكل القانوني',
+          prefixIcon: const Icon(Icons.business_center),
+          items: _companyTypes,
+          labelOf: (t) => t,
           value: _companyType,
-          items: _companyTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-          onChanged: (val) => setState(() => _companyType = val!),
+          onSelected: (val) => setState(() => _companyType = val),
         ),
         Align(
           alignment: Alignment.centerLeft,
@@ -307,29 +351,171 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
     );
   }
 
+  /// مجموع نسب الشركاء المضافين — يُستخدم للتحقق والعرض.
+  double get _totalSharePercent => _selectedPartners.fold<double>(
+      0, (sum, p) => sum + (p.sharePercentage.value ?? 0));
+
+  /// إنشاء شخص جديد دون مغادرة الويزارد.
+  ///
+  /// كان الشريك/المدير لا يُضاف إلا من سجل الأشخاص، وهو سجل قد لا
+  /// يعرفه المستخدم ولا يملك بياناته مسبقاً.
+  Future<PersonEntity?> _createPersonInline(String initialName, String title) async {
+    final nameCtrl = TextEditingController(text: initialName);
+    final phoneCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final addressCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final created = await showDialog<PersonEntity>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'الاسم الثلاثي *',
+                    hintText: 'مثال: أحمد محمد العلي',
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  validator: (v) {
+                    final t = (v ?? '').trim();
+                    if (t.isEmpty) return 'الاسم إلزامي';
+                    if (t.split(RegExp(r'\s+')).length < 3) {
+                      return 'أدخل الاسم الثلاثي';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'رقم الهاتف *',
+                    hintText: 'مثال: 0999123456',
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                  validator: (v) => (v ?? '').trim().isEmpty
+                      ? 'رقم الهاتف إلزامي'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'البريد الإلكتروني',
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  validator: (v) {
+                    final t = (v ?? '').trim();
+                    if (t.isEmpty) return null;
+                    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+').hasMatch(t)
+                        ? null
+                        : 'بريد إلكتروني غير صالح';
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: addressCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'عنوان الإقامة',
+                    prefixIcon: Icon(Icons.home),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!(formKey.currentState?.validate() ?? false)) return;
+              final id = await ref.read(personRepositoryProvider).createPerson(
+                    person: PersonsCompanion.insert(
+                      fullName: nameCtrl.text.trim(),
+                      phone1: drift.Value(phoneCtrl.text.trim()),
+                      email: drift.Value(emailCtrl.text.trim().isEmpty
+                          ? null
+                          : emailCtrl.text.trim()),
+                      permanentAddress: drift.Value(
+                          addressCtrl.text.trim().isEmpty
+                              ? null
+                              : addressCtrl.text.trim()),
+                    ),
+                  );
+              final person =
+                  await ref.read(personRepositoryProvider).getPersonById(id);
+              if (ctx.mounted) Navigator.pop(ctx, person);
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+
+    nameCtrl.dispose();
+    phoneCtrl.dispose();
+    emailCtrl.dispose();
+    addressCtrl.dispose();
+
+    if (created != null) ref.invalidate(allPersonsProvider);
+    return created;
+  }
+
   Widget _buildPartnersStep() {
     final personsAsync = ref.watch(allPersonsProvider(null));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('إضافة الشركاء وتوزيع الحصص:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text('إضافة الشركاء وتوزيع الحصص:',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         if (widget.archiveContext?.isClosed == true) ...[
           const SizedBox(height: 8),
-          const Text('هذه شركة مؤرشفة كمنتهية؛ إدخال الشركاء هنا للتوثيق التاريخي فقط ولا يولد نواقص أو عمل قادم.', style: TextStyle(color: AppConstants.textMuted)),
+          const Text(
+              'هذه شركة مؤرشفة كمنتهية؛ إدخال الشركاء هنا للتوثيق التاريخي فقط ولا يولد نواقص أو عمل قادم.',
+              style: TextStyle(color: AppConstants.textMuted)),
         ],
         const SizedBox(height: 12),
         personsAsync.when(
           data: (persons) => Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.grey.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12)),
             child: Column(
               children: [
-                DropdownButtonFormField<int>(
-                  value: _tempPartnerPersonId,
-                  decoration: const InputDecoration(labelText: 'اختر الشريك من سجل الأشخاص'),
-                  items: persons.map((p) => DropdownMenuItem(value: p.id, child: Text(p.fullName))).toList(),
-                  onChanged: (val) => setState(() => _tempPartnerPersonId = val),
+                SearchablePicker<PersonEntity>(
+                  label: 'الشريك',
+                  hintText: 'ابحث بالاسم أو الهاتف',
+                  prefixIcon: const Icon(Icons.person_search),
+                  items: persons,
+                  labelOf: (p) => p.fullName,
+                  searchTermsOf: (p) =>
+                      [p.phone1 ?? '', p.nationalId ?? ''],
+                  subtitleOf: (p) => p.phone1,
+                  value: _tempPartnerPersonId == null
+                      ? null
+                      : persons
+                          .where((p) => p.id == _tempPartnerPersonId)
+                          .firstOrNull,
+                  onSelected: (p) =>
+                      setState(() => _tempPartnerPersonId = p.id),
+                  createNewLabel: 'إضافة شريك جديد',
+                  onCreateNew: (typed) =>
+                      _createPersonInline(typed, 'إضافة شريك جديد'),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -337,13 +523,17 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _tempShareType,
-                        decoration: const InputDecoration(labelText: 'نوع الحصة'),
+                        decoration:
+                            const InputDecoration(labelText: 'نوع الحصة'),
                         items: const [
                           DropdownMenuItem(value: 'cash', child: Text('نقدية')),
-                          DropdownMenuItem(value: 'in_kind', child: Text('عينية')),
-                          DropdownMenuItem(value: 'effort', child: Text('جهد')),
+                          DropdownMenuItem(
+                              value: 'in_kind', child: Text('عينية')),
+                          DropdownMenuItem(
+                              value: 'effort', child: Text('جهد')),
                         ],
-                        onChanged: (val) => setState(() => _tempShareType = val!),
+                        onChanged: (val) =>
+                            setState(() => _tempShareType = val!),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -351,7 +541,13 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                       child: TextFormField(
                         controller: _tempShareValueController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'قيمة الحصة (ل.س)'),
+                        decoration: InputDecoration(
+                          labelText: 'قيمة الحصة (ل.س) *',
+                          errorText: _partnerFieldError == 'value'
+                              ? 'مطلوبة'
+                              : null,
+                        ),
+                        onChanged: (_) => setState(() {}),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -359,7 +555,13 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                       child: TextFormField(
                         controller: _tempSharePercentController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'النسبة %'),
+                        decoration: InputDecoration(
+                          labelText: 'النسبة % *',
+                          errorText: _partnerFieldError == 'percent'
+                              ? 'مطلوبة'
+                              : null,
+                        ),
+                        onChanged: (_) => setState(() {}),
                       ),
                     ),
                   ],
@@ -368,23 +570,7 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                 ElevatedButton.icon(
                   icon: const Icon(Icons.add),
                   label: const Text('إضافة الشريك للقائمة'),
-                  onPressed: () {
-                    if (_tempPartnerPersonId != null) {
-                      setState(() {
-                        _selectedPartners.add(CompanyPartnersCompanion.insert(
-                          companyId: 0,
-                          personId: _tempPartnerPersonId!,
-                          partnerType: const drift.Value('شريك مؤسس'),
-                          shareType: drift.Value(_tempShareType),
-                          shareValue: drift.Value(double.tryParse(_tempShareValueController.text.trim()) ?? 0),
-                          sharePercentage: drift.Value(double.tryParse(_tempSharePercentController.text.trim()) ?? 0),
-                        ));
-                        _tempPartnerPersonId = null;
-                        _tempShareValueController.clear();
-                        _tempSharePercentController.clear();
-                      });
-                    }
-                  },
+                  onPressed: _addPartnerToList,
                 ),
               ],
             ),
@@ -393,23 +579,139 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
           error: (_, __) => const Text('خطأ في تحميل أسماء الأشخاص'),
         ),
         const SizedBox(height: 16),
-        const Text('قائمة الشركاء المضافين:', style: TextStyle(fontWeight: FontWeight.bold)),
+        if (_selectedPartners.isNotEmpty) ...[
+          Row(
+            children: [
+              const Text('قائمة الشركاء المضافين:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text(
+                'المجموع: ${_totalSharePercent.toStringAsFixed(1)}%',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: (_totalSharePercent - 100).abs() < 0.01
+                      ? AppConstants.statusSuccess
+                      : AppConstants.statusWarning,
+                ),
+              ),
+            ],
+          ),
+          if ((_totalSharePercent - 100).abs() >= 0.01)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'تنبيه: مجموع النسب لا يساوي 100%.',
+                style: const TextStyle(
+                    color: AppConstants.statusWarning, fontSize: 12),
+              ),
+            ),
+        ],
         ..._selectedPartners.asMap().entries.map((entry) {
           final idx = entry.key;
           final p = entry.value;
+          final name = personsAsync.valueOrNull
+                  ?.where((x) => x.id == p.personId.value)
+                  .firstOrNull
+                  ?.fullName ??
+              'شريك #${p.personId.value}';
           return Card(
             child: ListTile(
-              leading: const Icon(Icons.person, color: AppConstants.primaryNavy),
-              title: Text('شريك رقم ID: ${p.personId.value} • النسبة: ${p.sharePercentage.value}%'),
-              subtitle: Text('قيمة الحصة: ${p.shareValue.value} ل.س • النوع: ${p.shareType.value == "cash" ? "نقدية" : "عينية"}'),
+              leading:
+                  const Icon(Icons.person, color: AppConstants.primaryNavy),
+              title: Text('$name • النسبة: ${p.sharePercentage.value}%'),
+              subtitle: Text(
+                  'قيمة الحصة: ${p.shareValue.value} ل.س • النوع: ${_shareTypeLabel(p.shareType.value)}'),
               trailing: IconButton(
-                icon: const Icon(Icons.delete, color: AppConstants.statusDanger),
-                onPressed: () => setState(() => _selectedPartners.removeAt(idx)),
+                icon: const Icon(Icons.delete,
+                    color: AppConstants.statusDanger),
+                onPressed: () =>
+                    setState(() => _selectedPartners.removeAt(idx)),
               ),
             ),
           );
         }),
       ],
+    );
+  }
+
+  String _shareTypeLabel(String? type) {
+    switch (type) {
+      case 'cash':
+        return 'نقدية';
+      case 'in_kind':
+        return 'عينية';
+      case 'effort':
+        return 'جهد';
+      default:
+        return 'غير محدد';
+    }
+  }
+
+  /// إضافة الشريك بعد التحقق الكامل.
+  ///
+  /// كان الزر يضيف الشريك حتى مع ترك قيمة الحصة والنسبة فارغتين
+  /// لأن `double.tryParse(...) ?? 0` يبتلع الفراغ ويحوّله صفراً.
+  void _addPartnerToList() {
+    if (_tempPartnerPersonId == null) {
+      setState(() => _partnerFieldError = 'person');
+      _showError('يرجى اختيار الشريك أولاً');
+      return;
+    }
+
+    final valueText = _tempShareValueController.text.trim();
+    final percentText = _tempSharePercentController.text.trim();
+
+    final value = double.tryParse(valueText);
+    if (valueText.isEmpty || value == null || value <= 0) {
+      setState(() => _partnerFieldError = 'value');
+      _showError('يرجى إدخال قيمة حصة صحيحة أكبر من صفر');
+      return;
+    }
+
+    final percent = double.tryParse(percentText);
+    if (percentText.isEmpty || percent == null || percent <= 0) {
+      setState(() => _partnerFieldError = 'percent');
+      _showError('يرجى إدخال نسبة صحيحة أكبر من صفر');
+      return;
+    }
+
+    if (percent > 100) {
+      setState(() => _partnerFieldError = 'percent');
+      _showError('النسبة لا يمكن أن تتجاوز 100%');
+      return;
+    }
+
+    if (_selectedPartners
+        .any((p) => p.personId.value == _tempPartnerPersonId)) {
+      _showError('هذا الشريك مضاف بالفعل');
+      return;
+    }
+
+    if (_totalSharePercent + percent > 100.01) {
+      _showError(
+          'المجموع سيتجاوز 100% (الحالي ${_totalSharePercent.toStringAsFixed(1)}%)');
+      return;
+    }
+
+    setState(() {
+      _partnerFieldError = null;
+      _selectedPartners.add(CompanyPartnersCompanion.insert(
+        companyId: 0,
+        personId: _tempPartnerPersonId!,
+        partnerType: const drift.Value('شريك مؤسس'),
+        shareType: drift.Value(_tempShareType),
+        shareValue: drift.Value(value),
+        sharePercentage: drift.Value(percent),
+      ));
+      _tempPartnerPersonId = null;
+      _tempShareValueController.clear();
+      _tempSharePercentController.clear();
+    });
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: AppConstants.statusDanger),
     );
   }
 
@@ -419,47 +721,53 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('تعيين المدير العام والمفوضين بالتوقيع:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text('تعيين المدير العام والمفوضين بالتوقيع:',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         if (widget.archiveContext?.isClosed == true) ...[
           const SizedBox(height: 8),
-          const Text('إدخال المديرين والمفوضين هنا للتوثيق التاريخي فقط، ولن ينشئ متابعة تأسيس.', style: TextStyle(color: AppConstants.textMuted)),
+          const Text(
+              'إدخال المديرين والمفوضين هنا للتوثيق التاريخي فقط، ولن ينشئ متابعة تأسيس.',
+              style: TextStyle(color: AppConstants.textMuted)),
         ],
         const SizedBox(height: 12),
         personsAsync.when(
           data: (persons) => Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.grey.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12)),
             child: Column(
               children: [
-                DropdownButtonFormField<int>(
-                  value: _tempDirectorPersonId,
-                  decoration: const InputDecoration(labelText: 'اختر الشخص من السجل'),
-                  items: persons.map((p) => DropdownMenuItem(value: p.id, child: Text(p.fullName))).toList(),
-                  onChanged: (val) => setState(() => _tempDirectorPersonId = val),
+                SearchablePicker<PersonEntity>(
+                  label: 'المدير / المفوض',
+                  hintText: 'ابحث بالاسم أو الهاتف',
+                  prefixIcon: const Icon(Icons.person_search),
+                  items: persons,
+                  labelOf: (p) => p.fullName,
+                  searchTermsOf: (p) => [p.phone1 ?? '', p.nationalId ?? ''],
+                  subtitleOf: (p) => p.phone1,
+                  value: _tempDirectorPersonId == null
+                      ? null
+                      : persons
+                          .where((p) => p.id == _tempDirectorPersonId)
+                          .firstOrNull,
+                  onSelected: (p) =>
+                      setState(() => _tempDirectorPersonId = p.id),
+                  createNewLabel: 'إضافة مدير جديد',
+                  onCreateNew: (typed) =>
+                      _createPersonInline(typed, 'إضافة مدير جديد'),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _tempAuthorityController,
-                  decoration: const InputDecoration(labelText: 'المنصب ونطاق الصلاحيات'),
+                  decoration: const InputDecoration(
+                      labelText: 'المنصب ونطاق الصلاحيات *'),
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.add),
                   label: const Text('إضافة المدير للقائمة'),
-                  onPressed: () {
-                    if (_tempDirectorPersonId != null) {
-                      setState(() {
-                        _selectedDirectors.add(CompanyDirectorsCompanion.insert(
-                          companyId: 0,
-                          personId: _tempDirectorPersonId!,
-                          roleType: const drift.Value('مدير عام'),
-                          authorityScope: drift.Value(_tempAuthorityController.text.trim()),
-                          appointmentDate: drift.Value(DateTime.now()),
-                        ));
-                        _tempDirectorPersonId = null;
-                      });
-                    }
-                  },
+                  onPressed: _addDirectorToList,
                 ),
               ],
             ),
@@ -468,24 +776,64 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
           error: (_, __) => const Text('خطأ في تحميل أسماء الأشخاص'),
         ),
         const SizedBox(height: 16),
-        const Text('قائمة المديرين والمفوضين المضافين:', style: TextStyle(fontWeight: FontWeight.bold)),
+        if (_selectedDirectors.isNotEmpty)
+          const Text('قائمة المديرين والمفوضين المضافين:',
+              style: TextStyle(fontWeight: FontWeight.bold)),
         ..._selectedDirectors.asMap().entries.map((entry) {
           final idx = entry.key;
           final d = entry.value;
+          final name = personsAsync.valueOrNull
+                  ?.where((x) => x.id == d.personId.value)
+                  .firstOrNull
+                  ?.fullName ??
+              'مدير #${d.personId.value}';
           return Card(
             child: ListTile(
               leading: const Icon(Icons.gavel, color: AppConstants.accentGold),
-              title: Text('مدير رقم ID: ${d.personId.value}'),
+              title: Text(name),
               subtitle: Text('الصلاحيات: ${d.authorityScope.value ?? ""}'),
               trailing: IconButton(
-                icon: const Icon(Icons.delete, color: AppConstants.statusDanger),
-                onPressed: () => setState(() => _selectedDirectors.removeAt(idx)),
+                icon: const Icon(Icons.delete,
+                    color: AppConstants.statusDanger),
+                onPressed: () =>
+                    setState(() => _selectedDirectors.removeAt(idx)),
               ),
             ),
           );
         }),
       ],
     );
+  }
+
+  /// إضافة المدير بعد التحقق.
+  ///
+  /// كان الزر يضيف مديراً بلا بيانات ويُفرغ الاختيار، فيبدو كأن
+  /// المدير "اختفى" بينما أُضيف سجل فارغ.
+  void _addDirectorToList() {
+    if (_tempDirectorPersonId == null) {
+      _showError('يرجى اختيار المدير أولاً');
+      return;
+    }
+    if (_tempAuthorityController.text.trim().isEmpty) {
+      _showError('يرجى إدخال المنصب ونطاق الصلاحيات');
+      return;
+    }
+    if (_selectedDirectors
+        .any((d) => d.personId.value == _tempDirectorPersonId)) {
+      _showError('هذا المدير مضاف بالفعل');
+      return;
+    }
+
+    setState(() {
+      _selectedDirectors.add(CompanyDirectorsCompanion.insert(
+        companyId: 0,
+        personId: _tempDirectorPersonId!,
+        roleType: const drift.Value('مدير عام'),
+        authorityScope: drift.Value(_tempAuthorityController.text.trim()),
+        appointmentDate: drift.Value(DateTime.now()),
+      ));
+      _tempDirectorPersonId = null;
+    });
   }
 
   void _onContinue() {
@@ -528,18 +876,23 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
   }
 
   Future<void> _validateAndSaveCompany() async {
-    // التحقق من عدم تكرار اسم الشركة
+    // المطابقة بعد تطبيع الهمزات والمسافات، وإلا اعتُبر
+    // "شركة الأمل" و"شركة الامل" مختلفين، أو تكرّر خطأ مطابقة زائفة.
     final companiesAsync = ref.read(allCompaniesProvider);
     final companies = companiesAsync.value ?? [];
-    final isDuplicate = companies.any((company) => 
-      company.name.toLowerCase().trim() == _nameController.text.toLowerCase().trim()
-    );
+    final target = normalizeArabic(_nameController.text);
 
-    if (isDuplicate) {
+    final duplicate = companies
+        .where((c) => normalizeArabic(c.name) == target)
+        .firstOrNull;
+
+    if (duplicate != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('اسم الشركة موجود مسبقاً!'),
+        SnackBar(
+          content: Text(
+              'يوجد شركة مسجّلة بهذا الاسم: «${duplicate.name}». غيّر الاسم أو افتح الشركة القائمة.'),
           backgroundColor: AppConstants.statusDanger,
+          duration: const Duration(seconds: 5),
         ),
       );
       return;
