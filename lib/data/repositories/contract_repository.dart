@@ -134,4 +134,41 @@ class ContractRepository {
       hasPostClosureActions: hasPostClosureActions,
     );
   }
+
+  /// رفع ملف Word كنسخة جديدة من العقد.
+  ///
+  /// يُخزَّن الملف مشفّراً مثل بقية المرفقات، ويأخذ رقم النسخة التالي
+  /// تلقائياً حتى لا تتضارب النسخ.
+  Future<int> addContractVersion({
+    required int contractId,
+    required File wordFile,
+    String? userRef,
+    String? notes,
+  }) async {
+    final filePath = await _storageService.saveAttachment(
+      sourceFile: wordFile,
+      folderType: 'contracts',
+      entityId: contractId,
+    );
+
+    final existing =
+        await _contractDao.watchContractVersions(contractId).first;
+    final nextVersion = existing.isEmpty
+        ? 1
+        : (existing
+                .map((v) => v.versionNumber)
+                .reduce((a, b) => a > b ? a : b) +
+            1);
+
+    return _contractDao.insertContractVersion(
+      ContractVersionsCompanion.insert(
+        contractId: contractId,
+        versionNumber: nextVersion,
+        filePath: Value(filePath),
+        editedBy: Value(userRef),
+        notes: Value(notes ?? 'نسخة مرفوعة يدوياً'),
+      ),
+    );
+  }
+
 }

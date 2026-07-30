@@ -113,7 +113,9 @@ class CasesScreen extends ConsumerWidget {
     bool pendingBase = false,
     bool nearSession = false,
   }) {
-    final caseItems = ref.watch(casesProvider);
+    // العدّ على القائمة الكاملة لا المفلترة: عدّ المفلترة يجعل الأرقام
+    // تتغيّر مع كل فلتر فيصعب معرفة الحجم الحقيقي لكل تصنيف.
+    final caseItems = ref.watch(allCasesUnfilteredProvider);
     int count;
     if (status != null) {
       count = caseItems.where((item) => item.status == status).length;
@@ -131,15 +133,46 @@ class CasesScreen extends ConsumerWidget {
       count = caseItems.length;
     }
 
+    // هل هذه الشريحة هي الفلتر المطبّق حالياً؟
+    final current = ref.watch(casesFilterProvider);
+    final isSelected = status != null
+        ? current.status == status
+        : deficient
+            ? current.deficient
+            : pendingBase
+                ? current.pendingBase
+                : nearSession
+                    ? current.nearSession
+                    : overdue
+                        ? current.overdue
+                        : false;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: FilterChip(
         label: Text('$label${count > 0 ? ' ($count)' : ''}'),
-        selected: false,
-        onSelected: (_) {},
+        selected: isSelected,
+        // كانت onSelected فارغة: الشريحة تعرض عدداً صحيحاً لكن الضغط
+        // عليها لا يفلتر شيئاً.
+        onSelected: (_) {
+          final notifier = ref.read(casesFilterProvider.notifier);
+          if (isSelected) {
+            notifier.state = const CasesFilter(); // إلغاء الفلتر
+            return;
+          }
+          notifier.state = CasesFilter(
+            status: status,
+            deficient: deficient,
+            overdue: overdue,
+            pendingBase: pendingBase,
+            nearSession: nearSession,
+          );
+        },
         backgroundColor: AppColors.cardBackground,
+        selectedColor: AppColors.primaryNavy.withValues(alpha: 0.15),
         labelStyle: AppTextStyles.bodySmall.copyWith(
           color: count > 0 ? AppColors.primaryNavy : AppColors.textSecondary,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
     );
@@ -182,6 +215,7 @@ class CasesFilter {
   final bool deficient;
   final bool nearSession;
   final bool pendingBase;
+  final bool overdue;
 
   const CasesFilter({
     this.type,
@@ -189,6 +223,7 @@ class CasesFilter {
     this.deficient = false,
     this.nearSession = false,
     this.pendingBase = false,
+    this.overdue = false,
   });
 
   bool get isEmpty =>
@@ -196,14 +231,16 @@ class CasesFilter {
       status == null &&
       !deficient &&
       !nearSession &&
-      !pendingBase;
+      !pendingBase &&
+      !overdue;
 
   int get activeCount =>
       (type != null ? 1 : 0) +
       (status != null ? 1 : 0) +
       (deficient ? 1 : 0) +
       (nearSession ? 1 : 0) +
-      (pendingBase ? 1 : 0);
+      (pendingBase ? 1 : 0) +
+      (overdue ? 1 : 0);
 }
 
 /// الفلتر المطبَّق على قائمة الدعاوى.
@@ -232,6 +269,10 @@ final casesProvider = Provider<List<Case>>((ref) {
     if (f.nearSession && c.nextSession == null) return false;
     if (f.pendingBase &&
         !(c.baseNumber == null || c.baseNumber!.isEmpty)) {
+      return false;
+    }
+    if (f.overdue &&
+        !(c.nextSession?.sessionDate.isBefore(DateTime.now()) ?? false)) {
       return false;
     }
     return true;

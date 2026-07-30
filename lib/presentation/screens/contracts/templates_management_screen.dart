@@ -110,17 +110,14 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
                                   const Chip(label: Text('افتراضي ⭐'), backgroundColor: AppConstants.accentGold)
                                 else
                                   TextButton(
+                                    onPressed: () => _setDefault(t),
                                     child: const Text('تعيين كافتراضي'),
-                                    onPressed: () {
-                                      // تعيين كافتراضي
-                                    },
                                   ),
                                 const Spacer(),
                                 IconButton(
                                   icon: const Icon(Icons.delete, color: AppConstants.statusDanger),
-                                  onPressed: () {
-                                    // حذف القالب
-                                  },
+                                  tooltip: 'حذف القالب',
+                                  onPressed: () => _deleteTemplate(t),
                                 ),
                               ],
                             ),
@@ -220,4 +217,82 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
       ),
     );
   }
+
+  /// تعيين قالب كافتراضي لنوعه.
+  ///
+  /// كان الزر يحمل جسماً فارغاً بتعليق فقط، فلا يتغيّر شيء عند الضغط.
+  Future<void> _setDefault(ContractTemplate t) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(databaseProvider).contractDao.setDefaultTemplate(t.id);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('تم تعيين «${t.templateName}» افتراضياً لعقود ${t.contractType}'),
+          backgroundColor: AppConstants.statusSuccess,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('تعذّر التعيين: $e'),
+          backgroundColor: AppConstants.statusDanger,
+        ),
+      );
+    }
+  }
+
+  /// حذف قالب بعد تأكيد صريح.
+  Future<void> _deleteTemplate(ContractTemplate t) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف القالب'),
+        content: Text(
+          'سيُحذف «${t.templateName}» من قائمة القوالب.\n'
+          'لن يتأثر أي عقد أُنشئ منه سابقاً.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.statusDanger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    try {
+      final removed = await ref
+          .read(databaseProvider)
+          .contractDao
+          .deleteContractTemplate(t.id);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(removed > 0
+              ? 'تم حذف «${t.templateName}»'
+              : 'لم يُعثر على القالب'),
+          backgroundColor: removed > 0
+              ? AppConstants.statusSuccess
+              : AppConstants.statusWarning,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر الحذف: $e'),
+          backgroundColor: AppConstants.statusDanger,
+        ),
+      );
+    }
+  }
+
 }

@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/enums/app_enums.dart';
 import '../../../data/database/database.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/auth_providers.dart';
 
 /// شاشة تفاصيل العقد الموحد بتبويباته السبعة ومحرر Word (ContractDetailScreen V6.2)
 class ContractDetailScreen extends ConsumerStatefulWidget {
@@ -246,9 +248,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                           style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentGold, foregroundColor: AppConstants.primaryNavy),
                           icon: const Icon(Icons.upload_file),
                           label: const Text('رفع ملف Word الآن'),
-                          onPressed: () {
-                            // إمكانية رفع ملف للنسخة
-                          },
+                          onPressed: () => _uploadVersionFile(contractId),
                         ),
                     ],
                   ),
@@ -364,4 +364,44 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
       },
     );
   }
+
+  /// رفع ملف Word كنسخة جديدة للعقد.
+  ///
+  /// كان الزر يحمل جسماً فارغاً بتعليق «إمكانية رفع ملف للنسخة»،
+  /// فيضغط المستخدم بلا أثر ويبقى العقد بلا ملف.
+  Future<void> _uploadVersionFile(int contractId) async {
+    final res = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['docx', 'doc', 'rtf', 'pdf'],
+    );
+    final path = res?.files.single.path;
+    if (path == null) return;
+    if (!mounted) return;
+
+    try {
+      await ref.read(contractRepositoryProvider).addContractVersion(
+            contractId: contractId,
+            wordFile: File(path),
+            userRef: ref.read(authControllerProvider).user?.fullName,
+            notes: 'رفع ملف للنسخة من شاشة تفاصيل العقد',
+          );
+      // سجل النسخ Stream حيّ فيتحدّث تلقائياً.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم رفع الملف كنسخة جديدة'),
+          backgroundColor: AppConstants.statusSuccess,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر الرفع: $e'),
+          backgroundColor: AppConstants.statusDanger,
+        ),
+      );
+    }
+  }
+
 }

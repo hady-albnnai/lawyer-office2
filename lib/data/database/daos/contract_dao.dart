@@ -95,6 +95,38 @@ class ContractDao extends DatabaseAccessor<AppDatabase> with _$ContractDaoMixin 
     return into(contractTemplates).insert(companion);
   }
 
+  /// تعيين قالب كافتراضي لنوع عقد، وإلغاء الافتراضي السابق لنفس النوع.
+  ///
+  /// يجري في معاملة واحدة: بقاء قالبين افتراضيين لنوع واحد يجعل
+  /// اختيار القالب عند إنشاء العقد غير محدد.
+  Future<void> setDefaultTemplate(int templateId) async {
+    await transaction(() async {
+      final target = await (select(contractTemplates)
+            ..where((t) => t.id.equals(templateId)))
+          .getSingleOrNull();
+      if (target == null) return;
+
+      await (update(contractTemplates)
+            ..where((t) => t.contractType.equals(target.contractType)))
+          .write(const ContractTemplatesCompanion(isDefault: Value(false)));
+
+      await (update(contractTemplates)..where((t) => t.id.equals(templateId)))
+          .write(const ContractTemplatesCompanion(isDefault: Value(true)));
+    });
+  }
+
+  /// حذف قالب من المكتب.
+  Future<int> deleteContractTemplate(int templateId) {
+    return (delete(contractTemplates)..where((t) => t.id.equals(templateId)))
+        .go();
+  }
+
+  /// جلب قالب واحد بمعرّفه.
+  Future<ContractTemplate?> getTemplateById(int id) {
+    return (select(contractTemplates)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+  }
+
   // ---------------------------------------------------------------------------
   // إدارة سجل النسخ والتعديلات (ContractVersions)
   // ---------------------------------------------------------------------------

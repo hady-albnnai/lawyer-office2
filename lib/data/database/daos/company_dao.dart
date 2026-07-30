@@ -59,6 +59,29 @@ class CompanyDao extends DatabaseAccessor<AppDatabase> with _$CompanyDaoMixin {
     return into(companyPhases).insert(companion);
   }
 
+  /// إتمام مرحلة تأسيس: تعيين الحالة مكتملة وتسجيل تاريخ الإتمام.
+  ///
+  /// يلتزم بدورة الحياة الموحدة: 1 = completed حسب LifecycleStatus.
+  Future<void> completeCompanyPhase(int phaseId, {String? refNumber}) {
+    return (update(companyPhases)..where((t) => t.id.equals(phaseId))).write(
+      CompanyPhasesCompanion(
+        status: const Value(1),
+        completedDate: Value(DateTime.now()),
+        refNumber: refNumber == null ? const Value.absent() : Value(refNumber),
+      ),
+    );
+  }
+
+  /// التراجع عن إتمام مرحلة (في حال الإتمام بالخطأ).
+  Future<void> reopenCompanyPhase(int phaseId) {
+    return (update(companyPhases)..where((t) => t.id.equals(phaseId))).write(
+      const CompanyPhasesCompanion(
+        status: Value(0),
+        completedDate: Value(null),
+      ),
+    );
+  }
+
   /// تحديث حالة أو تاريخ مرحلة تأسيس
   Future<bool> updateCompanyPhase(CompanyPhasesCompanion companion) {
     return update(companyPhases).replace(companion);

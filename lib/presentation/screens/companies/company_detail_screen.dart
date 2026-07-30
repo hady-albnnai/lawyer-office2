@@ -310,9 +310,7 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
                       subtitle: Text('الحالة: ${statusEnum.label} • الموعد المحدد: ${p.scheduledDate?.toString().substring(0, 10) ?? "---"}'),
                       trailing: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: isDone ? Colors.grey : AppConstants.statusSuccess),
-                        onPressed: isDone ? null : () async {
-                          // إتمام المرحلة
-                        },
+                        onPressed: isDone ? null : () => _completePhase(p),
                         child: Text(isDone ? 'مكتملة ✓' : 'إتمام المرحلة'),
                       ),
                     ),
@@ -381,4 +379,69 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
       },
     );
   }
+
+  /// إتمام مرحلة تأسيس فعلياً.
+  ///
+  /// كان الزر يحمل جسماً فارغاً بتعليق «إتمام المرحلة» فقط، فيبدو
+  /// للمستخدم أنه ضغط دون أثر ثم تبقى المرحلة معلّقة إلى الأبد.
+  Future<void> _completePhase(CompanyPhase phase) async {
+    final refController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('إتمام: ${phase.phaseName}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('سيُسجَّل تاريخ الإتمام اليوم.'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: refController,
+              decoration: const InputDecoration(
+                labelText: 'رقم المرجع / القيد (اختياري)',
+                hintText: 'مثال: رقم قيد السجل التجاري',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('إتمام'),
+          ),
+        ],
+      ),
+    );
+    final refText = refController.text.trim();
+    refController.dispose();
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(databaseProvider).companyDao.completeCompanyPhase(
+            phase.id,
+            refNumber: refText.isEmpty ? null : refText,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تم إتمام مرحلة: ${phase.phaseName}'),
+          backgroundColor: AppConstants.statusSuccess,
+        ),
+      );
+      setState(() {}); // إعادة بناء لتحديث الـ StreamBuilder
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر إتمام المرحلة: $e'),
+          backgroundColor: AppConstants.statusDanger,
+        ),
+      );
+    }
+  }
+
 }
