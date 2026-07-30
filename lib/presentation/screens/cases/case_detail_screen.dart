@@ -1236,7 +1236,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
             title: 'الوكالات القضائية',
             icon: Icons.verified_user,
             trailing: TextButton.icon(
-              onPressed: () => _showSnack('سيتم ربط الوكالات من شاشة المستندات العالمية.'),
+              onPressed: () => _linkPoaToCase(state),
               icon: const Icon(Icons.link),
               label: const Text('ربط وكالة'),
             ),
@@ -2654,6 +2654,82 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
         ),
       ),
     );
+  }
+
+  /// ربط وكالة قائمة بهذه الدعوى.
+  ///
+  /// كان الزر يعرض رسالة إحالة لشاشة أخرى رغم توفّر
+  /// PoaRepository.linkPoaToCase وجدول CasePoaLinks.
+  Future<void> _linkPoaToCase(CaseDetailState state) async {
+    final caseId = int.tryParse(state.caseItem?.id ?? '');
+    if (caseId == null) {
+      _showSnack('تعذر تحديد رقم الدعوى.', isError: true);
+      return;
+    }
+
+    final poas = await ref.read(allPoasProvider.future);
+    if (!mounted) return;
+
+    final linkedIds = state.agencies.map((a) => a.id).toSet();
+    final available =
+        poas.where((p) => !linkedIds.contains('${p.id}')).toList();
+
+    if (available.isEmpty) {
+      _showSnack('لا توجد وكالات غير مرتبطة بهذه الدعوى.');
+      return;
+    }
+
+    final picked = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('اختر وكالة للربط'),
+        children: [
+          SizedBox(
+            width: 420,
+            height: 360,
+            child: ListView.separated(
+              itemCount: available.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (_, i) {
+                final poa = available[i];
+                final expired = poa.expiryDate != null &&
+                    poa.expiryDate!.isBefore(DateTime.now());
+                return ListTile(
+                  leading: Icon(
+                    Icons.verified_user,
+                    color: expired ? AppColors.error : AppColors.primaryNavy,
+                  ),
+                  title: Text(poa.poaNumber?.isNotEmpty == true
+                      ? 'وكالة ${poa.poaNumber}'
+                      : 'وكالة #${poa.id}'),
+                  subtitle: Text(
+                    [
+                      if (poa.poaDate != null) _formatDate(poa.poaDate!),
+                      if (expired) 'منتهية الصلاحية',
+                      if (poa.status != 'active') poa.status,
+                    ].join(' • '),
+                  ),
+                  onTap: () => Navigator.pop(ctx, poa.id),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (picked == null) return;
+
+    try {
+      await ref.read(poaRepositoryProvider).linkPoaToCase(caseId, picked);
+      ref.invalidate(caseDetailFromRepoProvider);
+      ref.invalidate(allPoasProvider);
+      if (!mounted) return;
+      _showSnack('تم ربط الوكالة بالدعوى.');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('تعذّر ربط الوكالة: $e', isError: true);
+    }
   }
 
   /// ربط مستند موجود فعلاً في الأرشيف العام بهذه الدعوى.

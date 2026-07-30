@@ -61,24 +61,67 @@ class BackupService {
       final String zipFileName = 'SyrLawOffice_Backup_$timestamp.zip';
       final String fullDestPath = p.join(backupPath, zipFileName);
 
+      final sourceDir = Directory(sourcePath);
+      if (!await sourceDir.exists()) {
+        sendPort.send({
+          'success': false,
+          'error': 'مجلد بيانات التطبيق غير موجود: $sourcePath',
+        });
+        return;
+      }
+
       var encoder = ZipFileEncoder();
       encoder.create(fullDestPath);
 
-      final sourceDir = Directory(sourcePath);
-      if (await sourceDir.exists()) {
-        await for (var entity in sourceDir.list(recursive: false)) {
-          if (entity is File && entity.path.endsWith('.db')) {
-            // await إلزامي: addFile ترجع Future، وبدونها قد يُغلق
-            // الأرشيف قبل اكتمال الكتابة فتنتج نسخة احتياطية ناقصة.
-            await encoder.addFile(entity);
-          } else if (entity is Directory && entity.path.endsWith(AppConstants.filesDirectoryName) && includeAttachments) {
-            await encoder.addDirectory(entity);
-          }
+      // عدّ ما أُضيف فعلاً: أرشيف بلا قاعدة بيانات ليس نسخة احتياطية،
+      // والإبلاغ بنجاحه يجعل المستخدم يعتمد على ملف فارغ.
+      var addedDatabases = 0;
+      var addedDirectories = 0;
+
+      await for (var entity in sourceDir.list(recursive: false)) {
+        if (entity is File && entity.path.endsWith('.db')) {
+          // await إلزامي: addFile ترجع Future، وبدونها قد يُغلق
+          // الأرشيف قبل اكتمال الكتابة فتنتج نسخة احتياطية ناقصة.
+          await encoder.addFile(entity);
+          addedDatabases++;
+        } else if (entity is Directory &&
+            entity.path.endsWith(AppConstants.filesDirectoryName) &&
+            includeAttachments) {
+          await encoder.addDirectory(entity);
+          addedDirectories++;
         }
       }
 
       await encoder.close();
-      sendPort.send({'success': true, 'filePath': fullDestPath});
+
+      if (addedDatabases == 0) {
+        // نحذف الأرشيف الفارغ حتى لا يظهر في قائمة النسخ كأنه صالح.
+        try {
+          final empty = File(fullDestPath);
+          if (await empty.exists()) await empty.delete();
+        } catch (_) {}
+        sendPort.send({
+          'success': false,
+          'error': 'لم يُعثر على أي ملف قاعدة بيانات (.db) للنسخ.',
+        });
+        return;
+      }
+
+      final produced = File(fullDestPath);
+      if (!await produced.exists() || await produced.length() == 0) {
+        sendPort.send({
+          'success': false,
+          'error': 'تعذّر إنشاء ملف النسخة الاحتياطية أو أنه فارغ.',
+        });
+        return;
+      }
+
+      sendPort.send({
+        'success': true,
+        'filePath': fullDestPath,
+        'databases': addedDatabases,
+        'directories': addedDirectories,
+      });
     } catch (e) {
       sendPort.send({'success': false, 'error': e.toString()});
     }
