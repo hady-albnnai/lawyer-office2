@@ -265,3 +265,11 @@ final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return WorkOrderRepository(db.workOrderDao);
 });
+
+/// المحاكم النشطة من قاعدة البيانات.
+///
+/// ضروري لربط الدعوى بمحكمة حقيقية: تمرير فهرس قائمة معروضة بدل
+/// المعرّف الفعلي يكسر قيد المفتاح الأجنبي عند الحفظ.
+final activeCourtsProvider = StreamProvider<List<Court>>((ref) {
+  return ref.watch(settingsRepositoryProvider).watchCourts();
+});

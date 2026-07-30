@@ -110,6 +110,22 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   /// رقم الغرفة داخل محكمة المحافظة: 1..16 اعتيادياً مع السماح بالزيادة.
   int? _chamberNumber;
 
+  /// الدرجة القادمة من شاشة الأرشيف (صلح/بداية/استئناف/نقض).
+  /// تُعرض للقراءة ولا يُعاد سؤال المستخدم عنها.
+  String? _archiveCourtLevel;
+
+  /// محافظة مستخرجة من الأرشيف بانتظار مطابقتها بمعرّف محكمة حقيقي.
+  String? _pendingGovernorate;
+
+  /// طلب المستخدم تعديل النوع رغم قدومه من الأرشيف.
+  bool _overrideArchiveType = false;
+
+  /// هل النوع والدرجة محدَّدان مسبقاً من شاشة الأرشيف؟
+  bool get _cameFromArchive =>
+      widget.archiveContext != null &&
+      (widget.archiveContext!.caseType ?? '').isNotEmpty &&
+      !_overrideArchiveType;
+
   /// معاينة الرقم الذي سيأخذه الملف عند الحفظ. الرقم النهائي يُولَّد
   /// داخل معاملة الحفظ عبر OfficeFileRepository لضمان عدم التكرار،
   /// وهذه معاينة للعرض فقط.
@@ -166,20 +182,44 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SearchablePicker<String>(
-          label: 'المحكمة (المحافظة)',
-          hintText: 'اختر المحافظة',
-          prefixIcon: const Icon(Icons.account_balance),
-          items: _courtNames,
-          labelOf: (g) => g,
-          value: (_selectedCourtId != null &&
-                  _selectedCourtId! >= 0 &&
-                  _selectedCourtId! < _courtNames.length)
-              ? _courtNames[_selectedCourtId!]
-              : null,
-          onSelected: (gov) =>
-              setState(() => _selectedCourtId = _courtNames.indexOf(gov)),
-        ),
+        // المحاكم من قاعدة البيانات لا من قائمة ثابتة: courtId مفتاح
+        // أجنبي يشير إلى Courts.id، وتمرير فهرس القائمة المعروضة
+        // كان يكسر القيد عند الحفظ.
+        ref.watch(activeCourtsProvider).when(
+              loading: () => const LinearProgressIndicator(),
+              error: (e, _) => Text('تعذّر تحميل المحاكم: $e',
+                  style: AppTextStyles.bodySmall),
+              data: (courts) {
+                // مطابقة محافظة الأرشيف بمعرّف المحكمة مرة واحدة.
+                if (_pendingGovernorate != null && _selectedCourtId == null) {
+                  final match = courts
+                      .where((c) => c.name == _pendingGovernorate)
+                      .firstOrNull;
+                  if (match != null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        setState(() {
+                          _selectedCourtId = match.id;
+                          _pendingGovernorate = null;
+                        });
+                      }
+                    });
+                  }
+                }
+                return SearchablePicker<db.Court>(
+                label: 'المحكمة (المحافظة)',
+                hintText: 'اختر المحافظة',
+                prefixIcon: const Icon(Icons.account_balance),
+                items: courts,
+                labelOf: (c) => c.name,
+                searchTermsOf: (c) => [c.city ?? ''],
+                value: _selectedCourtId == null
+                    ? null
+                    : courts.where((c) => c.id == _selectedCourtId).firstOrNull,
+                  onSelected: (c) => setState(() => _selectedCourtId = c.id),
+                );
+              },
+            ),
         const SizedBox(height: 16),
         DropdownButtonFormField<int>(
           value: _chamberNumber,
@@ -281,12 +321,10 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       if (caseType.contains('تجار')) _caseType = CaseType.commercial;
       if (caseType.contains('شرع')) _caseType = CaseType.personalStatus;
       if (caseType.contains('إدار') || caseType.contains('ادار')) _caseType = CaseType.administrative;
-      // courtLevel في الأرشيف قد يحمل تسمية قديمة مركّبة؛ نستخرج
-      // منها المحافظة فقط ونتجاهل ما يتعلق بالدرجة.
-      final gov = _governorateFrom(archive.courtLevel);
-      if (gov != null) {
-        _selectedCourtId = _courtNames.indexOf(gov);
-      }
+      // الدرجة اختارها المستخدم قبل فتح الويزارد، فتُحفظ ولا يُعاد سؤاله.
+      _archiveCourtLevel = archive.courtLevel;
+      // المحافظة تُطابَق بمعرّف المحكمة الحقيقي بعد تحميل القائمة.
+      _pendingGovernorate = _governorateFrom(archive.courtLevel);
       if (archive.isClosed) {
         _nextSessionDate = null;
         _nextActionController.text = 'ملف أرشيف منتهٍ - لا يوجد موعد قادم';
@@ -924,28 +962,71 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       children: [
         _buildStepHeader(
           title: 'تصنيف الدعوى',
-          description: 'حدد نوع الدعوى والمحكمة',
+          description: _cameFromArchive
+              ? 'النوع والدرجة محدَّدان مسبقاً — حدد المحافظة والغرفة'
+              : 'حدد نوع الدعوى والمحكمة',
         ),
         const SizedBox(height: 24),
-        
-        // نوع الدعوى
-        DropdownButtonFormField<CaseType>(
-          value: _caseType,
-          items: CaseType.values.map((type) {
-            return DropdownMenuItem(
-              value: type,
-              child: Text(type.displayName),
-            );
-          }).toList(),
-          onChanged: (value) => setState(() => _caseType = value!),
-          decoration: InputDecoration(
-            labelText: 'نوع الدعوى',
-            border: OutlineInputBorder(
+
+        // النوع والدرجة: إن جاءا من شاشة الأرشيف فلا يُعاد سؤال
+        // المستخدم عنهما، إنما يُعرضان للقراءة مع إمكانية التعديل.
+        if (_cameFromArchive) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.info.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(8),
+              border:
+                  Border.all(color: AppColors.info.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.lock_outline,
+                    size: 18, color: AppColors.info),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('نوع الدعوى: ${_caseType.displayName}',
+                          style: AppTextStyles.labelMedium),
+                      if ((_archiveCourtLevel ?? '').isNotEmpty)
+                        Text('الدرجة: $_archiveCourtLevel',
+                            style: AppTextStyles.bodySmallSecondary),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      setState(() => _overrideArchiveType = true),
+                  child: const Text('تغيير'),
+                ),
+              ],
             ),
           ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ],
+
+        // يظهر عند الإنشاء العادي أو عند طلب التغيير صراحةً.
+        if (!_cameFromArchive) ...[
+          DropdownButtonFormField<CaseType>(
+            value: _caseType,
+            items: CaseType.values.map((type) {
+              return DropdownMenuItem(
+                value: type,
+                child: Text(type.displayName),
+              );
+            }).toList(),
+            onChanged: (value) => setState(() => _caseType = value!),
+            decoration: InputDecoration(
+              labelText: 'نوع الدعوى',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         
 
         // المحكمة والغرفة
@@ -1155,32 +1236,41 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         ),
         const SizedBox(height: 24),
         
-        // بحث عن خصم
-        TextField(
-          controller: _opponentSearchController,
-          decoration: InputDecoration(
-            labelText: 'بحث عن خصم',
-            hintText: 'ادخل اسم الخصم أو رقم هويته',
-            prefixIcon: const Icon(Icons.search),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+        // البحث وزر الإضافة جنباً إلى جنب: إن لم يجد المستخدم الخصم
+        // فالإجراء التالي الطبيعي هو إضافته فوراً لا البحث عن الزر.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _opponentSearchController,
+                decoration: InputDecoration(
+                  labelText: 'بحث عن خصم',
+                  hintText: 'ادخل اسم الخصم أو رقم هويته',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onChanged: (value) => _searchOpponents(value),
+              ),
             ),
-          ),
-          onChanged: (value) => _searchOpponents(value),
+            const SizedBox(width: 12),
+            SizedBox(
+              height: 56,
+              child: ElevatedButton.icon(
+                onPressed: () => _showAddOpponentDialog(context),
+                icon: const Icon(Icons.person_add),
+                label: const Text('إضافة خصم'),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
-        
+
         // قائمة الخصوم
         _buildOpponentList(),
         _buildConflictBanner(_selectedOpponentId, asClient: false),
-        
-        // أو إضافة خصم جديد
-        const SizedBox(height: 16),
-        TextButton.icon(
-          onPressed: () => _showAddOpponentDialog(context),
-          icon: const Icon(Icons.add),
-          label: const Text('إضافة خصم جديد'),
-        ),
       ],
     );
   }
@@ -1242,7 +1332,10 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     // تحفظ معرّفات (1..4) قد تقابل أشخاصاً مختلفين تماماً في قاعدة البيانات.
     final personsAsync = ref.watch(allPersonsProvider(null));
     final opponents = personsAsync.maybeWhen(
+      // استبعاد موكّل الدعوى نفسه: لا يصحّ أن يكون المرء خصم نفسه،
+      // وظهوره في القائمة يفتح باب خطأ إدخال يصعب تداركه لاحقاً.
       data: (persons) => persons
+          .where((p) => p.id != _selectedClientId)
           .map((p) => {
                 'id': p.id,
                 'name': p.fullName,
@@ -1370,34 +1463,57 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _attachmentPaths.length,
               itemBuilder: (context, index) {
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.cardBorder, width: 0.5),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.attach_file,
-                        color: AppColors.textSecondary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _attachmentControllers[index].text.isNotEmpty
-                              ? _attachmentControllers[index].text
-                              : _attachmentPaths[index].split(Platform.pathSeparator).last,
-                          style: AppTextStyles.bodyMedium,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                // الضغط على المرفق يفتحه: الموظف يحتاج التأكد مما رفعه
+                // قبل الحفظ، فعرض الاسم وحده لا يكفي.
+                return InkWell(
+                  onTap: () => _openPickedAttachment(index),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border:
+                          Border.all(color: AppColors.cardBorder, width: 0.5),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.attach_file,
+                          color: AppColors.textSecondary,
+                          size: 20,
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: AppColors.error),
-                        onPressed: () => _removeAttachment(index),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _attachmentControllers[index].text.isNotEmpty
+                                    ? _attachmentControllers[index].text
+                                    : _attachmentPaths[index]
+                                        .split(Platform.pathSeparator)
+                                        .last,
+                                style: AppTextStyles.bodyMedium,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text('اضغط للفتح والتحقق',
+                                  style: AppTextStyles.bodySmallSecondary),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'فتح',
+                          icon: const Icon(Icons.open_in_new,
+                              color: AppColors.primaryNavy),
+                          onPressed: () => _openPickedAttachment(index),
+                        ),
+                        IconButton(
+                          tooltip: 'حذف',
+                          icon:
+                              const Icon(Icons.delete, color: AppColors.error),
+                          onPressed: () => _removeAttachment(index),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -1441,6 +1557,24 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     });
   }
   
+  /// فتح مرفق مختار قبل الحفظ.
+  ///
+  /// الملف ما يزال في مساره الأصلي على القرص ولم يُشفَّر بعد، فيُفتح
+  /// مباشرة لا عبر مسار المخزن المشفّر.
+  Future<void> _openPickedAttachment(int index) async {
+    if (index < 0 || index >= _attachmentPaths.length) return;
+    final result = await ref
+        .read(attachmentServiceProvider)
+        .openLocalFile(_attachmentPaths[index]);
+    if (!mounted || result.success) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.message ?? 'تعذّر فتح الملف'),
+        backgroundColor: AppColors.error,
+      ),
+    );
+  }
+
   void _removeAttachment(int index) {
     setState(() {
       _attachmentPaths.removeAt(index);
@@ -1870,8 +2004,10 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         internalNumber: 'TMP',
         year: int.tryParse(_baseYearController.text) ?? DateTime.now().year,
         caseType: _caseType.toString().split('.').last,
-        // الدرجة لم تعد تُدمج هنا؛ تُدار عبر المراحل القضائية.
-        subType: Value(_caseType.displayName),
+        // الدرجة القادمة من الأرشيف تُحفظ كما هي؛ وإلا يُحفظ النوع.
+        subType: Value(_archiveCourtLevel?.trim().isNotEmpty == true
+            ? _archiveCourtLevel!.trim()
+            : _caseType.displayName),
         status: Value(widget.archiveContext?.isClosed == true ? 'closed' : 'registered'),
         courtId: Value(_selectedCourtId),
         baseNumber: Value(_baseNumberController.text.isNotEmpty ? _baseNumberController.text : null),
@@ -2095,6 +2231,15 @@ class _AddClientDialogState extends ConsumerState<AddClientDialog> {
   bool _saving = false;
   Future<void> _submitClient() async {
     if (_nameController.text.trim().isEmpty || _saving) return;
+    if (_isLegalEntity && _representativeController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('اسم ممثل $_opponentType إلزامي'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     setState(() => _saving = true);
     try {
       final personId = await ref.read(personRepositoryProvider).createPerson(
@@ -2475,13 +2620,20 @@ class _AddOpponentDialogState extends ConsumerState<AddOpponentDialog> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  /// اسم ممثل الشركة أو المؤسسة — إلزامي للأشخاص الاعتباريين.
+  final TextEditingController _representativeController =
+      TextEditingController();
   String _opponentType = 'شخص طبيعي';
+
+  /// الشركة والمؤسسة شخص اعتباري لا يحضر بنفسه، فلا بد من ممثل.
+  bool get _isLegalEntity => _opponentType != 'شخص طبيعي';
 
   @override
   void dispose() {
     _nameController.dispose();
     _idController.dispose();
     _phoneController.dispose();
+    _representativeController.dispose();
     super.dispose();
   }
 
@@ -2547,6 +2699,21 @@ class _AddOpponentDialogState extends ConsumerState<AddOpponentDialog> {
                 ),
               ),
             ),
+            if (_isLegalEntity) ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: _representativeController,
+                decoration: InputDecoration(
+                  labelText: 'اسم ممثل $_opponentType *',
+                  hintText: 'المدير العام أو المفوَّض بالتوقيع',
+                  prefixIcon: const Icon(Icons.badge_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -2582,6 +2749,21 @@ class _AddOpponentDialogState extends ConsumerState<AddOpponentDialog> {
           phone1: Value(_phoneController.text.trim().isEmpty ? null : _phoneController.text.trim()),
           whatsapp: Value(_phoneController.text.trim().isEmpty ? null : _phoneController.text.trim()),
         ),
+        // بيانات الشخص الاعتباري تُحفظ في جدولها لا كنص حر، فتبقى
+        // صفة الممثل متاحة عند الطباعة والمراسلات.
+        legalEntity: _isLegalEntity
+            ? db.LegalEntitiesCompanion.insert(
+                personId: 0, // يُضبط داخل المستودع بعد إنشاء الشخص
+                legalEntityName: _nameController.text.trim(),
+                entityType: Value(_opponentType),
+                representativeCapacity:
+                    Value(_representativeController.text.trim()),
+                registrationNumber: Value(
+                    _idController.text.trim().isEmpty
+                        ? null
+                        : _idController.text.trim()),
+              )
+            : null,
         initialRoles: [PersonRoleType.opponent],
       );
       ref.invalidate(allPersonsProvider(null));
