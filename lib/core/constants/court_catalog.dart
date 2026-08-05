@@ -123,7 +123,9 @@ class CourtCatalog {
   static const String cassationCriminal = 'cassation_criminal';
 
   static const String shariaCourt = 'sharia_court';
-  static const String appealPersonalStatus = 'appeal_personal_status';
+  // ملاحظة: لا توجد محكمة استئناف شرعية في سوريا. المحكمة الشرعية
+  // تحكم بالدرجة الأخيرة ويُطعن بأحكامها بالنقض مباشرة (المادة 498/د
+  // من قانون أصول المحاكمات المدنية 1/2016).
   static const String cassationPersonalStatus = 'cassation_personal_status';
 
   static const String administrativeCourt = 'administrative_court';
@@ -275,14 +277,7 @@ class CourtCatalog {
       degree: LitigationDegree.first,
       caseTypes: [CaseType.personalStatus],
       hasChambers: true,
-      appealsTo: [appealPersonalStatus],
-    ),
-    CourtKind(
-      id: appealPersonalStatus,
-      label: 'محكمة الاستئناف — غرفة الأحوال الشخصية',
-      degree: LitigationDegree.second,
-      caseTypes: [CaseType.personalStatus],
-      hasChambers: true,
+      // المحكمة الشرعية تحكم بالدرجة الأخيرة — الطعن بالنقض مباشرة.
       appealsTo: [cassationPersonalStatus],
     ),
     CourtKind(
@@ -524,7 +519,7 @@ class CourtCatalog {
     if (degree.contains('جناي')) return feloniesCourt;
     if (degree.contains('استئناف')) {
       if (isCriminal) return appealMisdemeanor;
-      if (isSharia) return appealPersonalStatus;
+      // لا يوجد استئناف شرعي: المحكمة الشرعية تحكم بالدرجة الأخيرة.
       if (isCommercial) return appealCommercial;
       return appealCivil;
     }
@@ -553,14 +548,14 @@ class CourtCatalog {
   /// اشتقاقها من الفهرس يمنع تباعد المصدرين.
   static Map<String, List<String>> archiveClassificationMap() {
     final map = <String, List<String>>{};
+    // التبويبات الرئيسية: العقارية فرع من المدنية، والعمالية تتبع
+    // للقضاء الإداري/البداية المدنية — لا تُعرض كتبويبات مستقلة.
     for (final caseType in [
       CaseType.civil,
       CaseType.personalStatus,
       CaseType.criminal,
       CaseType.commercial,
       CaseType.administrative,
-      CaseType.realEstate,
-      CaseType.labor,
     ]) {
       map[caseType.displayName] =
           forCaseType(caseType).map((k) => k.label).toList();

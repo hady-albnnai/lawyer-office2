@@ -157,6 +157,29 @@ void main() {
       expect(admin, contains(CourtCatalog.administrativeCourt));
     });
 
+    test('لا استئناف شرعي: المحكمة الشرعية تطعن بالنقض مباشرة', () {
+      // المادة 498/د من قانون أصول المحاكمات المدنية 1/2016:
+      // «تخضع الأحكام التي تصدرها المحكمة الشرعية لطرق الطعن
+      // المتعلقة بالأحكام الصادرة بالدرجة الأخيرة»
+      final next = CourtCatalog.nextStagesFrom(CourtCatalog.shariaCourt);
+      expect(next.map((k) => k.id),
+          contains(CourtCatalog.cassationPersonalStatus));
+      // لا توجد درجة ثانية بين الشرعية والنقض.
+      final secondDegree = next.where(
+          (k) => k.degree == LitigationDegree.second);
+      expect(secondDegree, isEmpty,
+          reason: 'لا يوجد استئناف شرعي في سوريا');
+    });
+
+    test('خارطة الأرشيف لا تُدرج العقارية والعمالية كتبوببات رئيسية', () {
+      // العقارية فرع من المدنية، والعمالية تتبع للقضاء الإداري/البداية.
+      final map = CourtCatalog.archiveClassificationMap();
+      expect(map.containsKey('عقارية'), isFalse);
+      expect(map.containsKey('عمالية'), isFalse);
+      expect(map.containsKey('مدنية'), isTrue);
+      expect(map.containsKey('أحوال شخصية'), isTrue);
+    });
+
     test('لا نقض إداري: أعلى درجة هي المحكمة الإدارية العليا', () {
       final admin = CourtCatalog.forCaseType(CaseType.administrative);
       final top = admin.where((k) => k.degree == LitigationDegree.cassation);
