@@ -266,13 +266,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.archiveContext == null ? 'إنشاء دعوى جديدة' : (widget.archiveContext!.isRunning ? 'إدخال دعوى أرشيفية جارية' : 'أرشفة دعوى منتهية')),
-        actions: [
-          if (_currentStep > 0)
-            TextButton(
-              onPressed: _previousStep,
-              child: const Text('السابق'),
-            ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -299,17 +292,29 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           border: Border.all(color: AppColors.cardBorder, width: 0.5),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // زر الرجوع (السابق)
+            if (_currentStep > 0)
+              TextButton.icon(
+                onPressed: _isSaving ? null : _previousStep,
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('السابق'),
+              )
+            else
+              const SizedBox.shrink(),
+            
+            // زر التالي أو حفظ
             if (_currentStep < _getLastStepIndex())
-              TextButton(
+              TextButton.icon(
                 onPressed: _isSaving ? null : _nextStep,
-                child: const Text('التالي'),
+                icon: const Icon(Icons.arrow_forward),
+                label: const Text('التالي'),
               ),
             if (_currentStep == _getLastStepIndex())
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: _isSaving ? null : _submitCase,
-                child: _isSaving 
+                icon: _isSaving 
                     ? const SizedBox(
                         width: 20,
                         height: 20,
@@ -318,7 +323,8 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                           color: AppColors.textOnLight,
                         ),
                       )
-                    : Text(widget.archiveContext == null ? 'إنشاء الدعوى' : (widget.archiveContext!.isRunning ? 'حفظ الدعوى الجارية' : 'حفظ الدعوى المنتهية')),
+                    : const Icon(Icons.save),
+                label: Text(widget.archiveContext == null ? 'إنشاء الدعوى' : (widget.archiveContext!.isRunning ? 'حفظ الدعوى الجارية' : 'حفظ الدعوى المنتهية')),
               ),
           ],
         ),
