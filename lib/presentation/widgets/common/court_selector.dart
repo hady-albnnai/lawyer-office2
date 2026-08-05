@@ -157,6 +157,15 @@ class CourtSelector extends ConsumerWidget {
                 ChoiceChip(
                   label: Text(degree.label),
                   selected: degree == activeDegree,
+                  labelStyle: TextStyle(
+                    color: degree == activeDegree 
+                        ? AppColors.primaryNavy 
+                        : AppColors.textPrimary,
+                    fontWeight: degree == activeDegree 
+                        ? FontWeight.bold 
+                        : FontWeight.normal,
+                  ),
+                  selectedColor: AppColors.primaryNavy.withOpacity(0.15),
                   onSelected: (_) {
                     // تغيير الدرجة يلغي كل ما بُني على الدرجة
                     // السابقة: النوع والسجل والغرفة.

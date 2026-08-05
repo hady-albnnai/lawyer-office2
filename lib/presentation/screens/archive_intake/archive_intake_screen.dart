@@ -195,8 +195,24 @@ const _documentTypeOptions = <String, String>{
 ///
 /// يدير دفعات إدخال الأرشيف الورقي والإلكتروني، يحفظ الملفات المستوردة، يكشف
 /// المكررات، ويسمح بمراجعة العناصر وربطها بملفات المكتب دون تجاوز مسارات العمل الرسمية.
-class ArchiveIntakeScreen extends ConsumerWidget {
+class ArchiveIntakeScreen extends ConsumerStatefulWidget {
   const ArchiveIntakeScreen({super.key});
+
+  @override
+  ConsumerState<ArchiveIntakeScreen> createState() => _ArchiveIntakeScreenState();
+}
+
+class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // إعادة تعيين المعالج عند فتح الشاشة أو الرجوع إليها
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(_archiveWizardProvider.notifier).state = const _ArchiveWizardSelection();
+      }
+    });
+  }
 
   String _normalizeSearchText(Object? value) {
     return (value ?? '')
@@ -213,7 +229,7 @@ class ArchiveIntakeScreen extends ConsumerWidget {
   bool _containsSearch(Object? source, String query) => _normalizeSearchText(source).contains(query);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final permissions = ref.watch(permissionServiceProvider);
     final query = GoRouterState.of(context).uri.queryParameters;
     final requestedStatus = query['status'];

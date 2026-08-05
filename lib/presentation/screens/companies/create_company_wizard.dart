@@ -186,12 +186,12 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
         label: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : AppConstants.textDark,
+            color: selected ? AppConstants.primaryNavy : AppConstants.textDark,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         selected: selected,
-        selectedColor: AppConstants.primaryNavy,
+        selectedColor: AppConstants.primaryNavy.withOpacity(0.15),
         backgroundColor: AppConstants.surfaceWhite,
         side: BorderSide(
           color: selected ? AppConstants.primaryNavy : AppConstants.textMuted,

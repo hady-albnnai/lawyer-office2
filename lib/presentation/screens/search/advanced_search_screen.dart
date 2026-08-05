@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../providers/app_providers.dart';
+import '../../theme/app_colors.dart';
 import '../persons/person_models.dart';
 
 /// شاشة البحث المتقدم الفوري والشامل في كل ملفات وأرشيف المكتب (AdvancedSearchScreen V6.2)
@@ -51,11 +52,19 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                     const SizedBox(width: 16),
                     Wrap(
                       spacing: 8,
-                      children: _filters.map((f) => ChoiceChip(
-                        label: Text(f),
-                        selected: _selectedFilter == f,
-                        onSelected: (_) => setState(() => _selectedFilter = f),
-                      )).toList(),
+                      children: _filters.map((f) {
+                        final selected = _selectedFilter == f;
+                        return ChoiceChip(
+                          label: Text(f),
+                          selected: selected,
+                          selectedColor: AppColors.primaryNavy.withOpacity(0.15),
+                          labelStyle: TextStyle(
+                            color: selected ? AppColors.primaryNavy : AppColors.textPrimary,
+                            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          onSelected: (_) => setState(() => _selectedFilter = f),
+                        );
+                      }).toList(),
                     ),
                   ],
                 ),

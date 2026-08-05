@@ -208,8 +208,10 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       final caseType = archive.caseType ?? '';
       if (caseType.contains('جزائ')) _caseType = CaseType.criminal;
       if (caseType.contains('تجار')) _caseType = CaseType.commercial;
-      if (caseType.contains('شرع')) _caseType = CaseType.personalStatus;
+      if (caseType.contains('شرع') || caseType.contains('احوال') || caseType.contains('شخصية')) _caseType = CaseType.personalStatus;
       if (caseType.contains('إدار') || caseType.contains('ادار')) _caseType = CaseType.administrative;
+      if (caseType.contains('عقار')) _caseType = CaseType.realEstate;
+      if (caseType.contains('عمال')) _caseType = CaseType.labor;
       // الدرجة اختارها المستخدم قبل فتح الويزارد، فتُحفظ ولا يُعاد سؤاله.
       _archiveCourtLevel = archive.courtLevel;
       // المحافظة تُطابَق بمعرّف المحكمة الحقيقي بعد تحميل القائمة.
@@ -1931,25 +1933,31 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     setState(() => _isSaving = true);
     
     try {
-      // التحقق من عدم تكرار الدعوى
+      // التحقق من عدم تكرار الدعوى (رقم الأساس + السنة)
       final casesAsync = ref.read(allCasesProvider);
       final cases = casesAsync.value ?? [];
-      final isDuplicate = cases.any((existingCase) => 
-        (existingCase.subject?.toLowerCase().trim() ?? '') == _subjectController.text.toLowerCase().trim() &&
-        (existingCase.baseNumber?.trim() ?? '') == _baseNumberController.text.trim()
-      );
+      final baseNumber = _baseNumberController.text.trim();
+      final year = int.tryParse(_baseYearController.text.trim()) ?? DateTime.now().year;
+      
+      // منع التكرار فقط إذا كان رقم الأساس غير فارغ
+      if (baseNumber.isNotEmpty) {
+        final isDuplicate = cases.any((existingCase) => 
+          (existingCase.baseNumber?.trim() ?? '') == baseNumber &&
+          (existingCase.year ?? 0) == year
+        );
 
-      if (isDuplicate) {
-        setState(() => _isSaving = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('دعوى بهذه البيانات موجودة مسبقاً!'),
-              backgroundColor: AppColors.error,
-            ),
-          );
+        if (isDuplicate) {
+          setState(() => _isSaving = false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('دعوى برقم الأساس $baseNumber لسنة $year موجودة مسبقاً!'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+          return;
         }
-        return;
       }
       
       // التحقق من صحة الوكالة إذا تم اختيارها
