@@ -837,7 +837,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
   }
   
   Future<void> _addAttachment() async {
-    final result = await file_picker.FilePicker.platform.pickFiles(
+    final result = await file_picker.FilePicker.pickFiles(
       allowMultiple: true,
       type: file_picker.FileType.custom,
       allowedExtensions: AppConstants.allowedAttachmentExtensions,
