@@ -1383,7 +1383,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                 'id': p.id,
                 'name': p.fullName,
                 'type': p.type == PersonType.legal.index ? 'شخص اعتباري' : 'شخص طبيعي',
-                'roles': p.roles, // إضافة الأدوار للتحقق
               })
           .toList(),
       orElse: () => const <Map<String, Object?>>[],
@@ -1431,8 +1430,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         itemBuilder: (context, index) {
           final opponent = filteredOpponents[index];
           final isSelected = _selectedOpponentId == opponent['id'];
-          final roles = opponent['roles'] as List<String>?;
-          final isAlsoClient = roles != null && roles.contains('client');
           
           return InkWell(
             onTap: () => setState(() => _selectedOpponentId = opponent['id'] as int?),
@@ -1464,29 +1461,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                                 ),
                               ),
                             ),
-                            // إشارة تحذير إذا كان الشخص أيضاً موكل
-                            if (isAlsoClient)
-                              InkWell(
-                                onTap: () => _showClientConflictWarning(opponent['id'] as int, opponent['name'] as String),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.warning.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.warning_amber, size: 14, color: AppColors.warning),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        'موكل أيضاً',
-                                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning, fontSize: 10),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                            // TODO: إضافة إشارة "موكل أيضاً" بعد إنشاء provider لجلب أدوار الشخص
                           ],
                         ),
                       ],
