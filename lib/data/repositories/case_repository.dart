@@ -199,6 +199,57 @@ class CaseRepository {
     return sessionId;
   }
 
+  /// تحديث بيانات الدعوى (رقم الأساس، المحكمة، إلخ)
+  Future<void> updateCase({
+    required int caseId,
+    String? baseNumber,
+    int? courtId,
+    String? courtKind,
+    int? chamberNumber,
+    String? status,
+  }) async {
+    await _caseDao.db.transaction(() async {
+      await (_caseDao.update(_caseDao.db.cases)..where((t) => t.id.equals(caseId))).write(
+        CasesCompanion(
+          baseNumber: baseNumber != null ? Value(baseNumber) : const Value.absent(),
+          courtId: courtId != null ? Value(courtId) : const Value.absent(),
+          courtKind: courtKind != null ? Value(courtKind) : const Value.absent(),
+          chamberNumber: chamberNumber != null ? Value(chamberNumber) : const Value.absent(),
+          status: status != null ? Value(status) : const Value.absent(),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+      // إغلاق النقص المتعلق برقم الأساس إذا تم إدخاله
+      if (baseNumber != null && baseNumber.isNotEmpty) {
+        await _deficiencyService.resolveDeficiency(
+          EntityType.caseEntity,
+          caseId,
+          'base_number',
+        );
+      }
+
+      // تسجيل الحدث في الخط الزمني
+      final updates = <String>[];
+      if (baseNumber != null) updates.add('رقم الأساس: $baseNumber');
+      if (courtId != null) updates.add('المحكمة');
+      if (status != null) updates.add('الحالة: $status');
+      
+      if (updates.isNotEmpty) {
+        await _caseDao.into(_caseDao.db.timelineEvents).insert(
+          TimelineEventsCompanion.insert(
+            entityType: EntityType.caseEntity.index,
+            entityId: caseId,
+            eventType: 'case_updated',
+            eventDate: Value(DateTime.now()),
+            description: 'تم تحديث بيانات الدعوى: ${updates.join('، ')}',
+            userRef: const Value('النظام'),
+          ),
+        );
+      }
+    });
+  }
+
   /// نقل الدعوى للمرحلة القضائية الأعلى (مثال: بداية ← استئناف ← نقض)
   /// القاعدة الذهبية V6.2: ينتقل القرار القضائي السابق وكل الثبوتيات المبرزة تلقائياً للمرحلة الجديدة
   Future<int> transferToNextPhase({

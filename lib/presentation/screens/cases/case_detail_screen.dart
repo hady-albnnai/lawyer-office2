@@ -266,6 +266,8 @@ final caseDetailProvider =
 
     return CaseDetailNotifier.fromRepository(
       caseItem,
+      ref,
+      caseId,
       parties: parties,
       sessions: sessions,
       phases: phases,
@@ -278,14 +280,19 @@ final caseDetailProvider =
 
 /// Notifier لإدارة كل عمليات الشاشة محلياً لحين الربط النهائي بمستودع Drift.
 class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
-  CaseDetailNotifier(Case? caseItem, List<DocumentItem> allDocuments)
+  final Ref _ref;
+  final int _caseId;
+  
+  CaseDetailNotifier(Case? caseItem, List<DocumentItem> allDocuments, this._ref, this._caseId)
       : super(_initialState(caseItem, allDocuments));
 
-  CaseDetailNotifier._(super.state);
+  CaseDetailNotifier._(super.state, this._ref, this._caseId);
 
   /// إنشاء الحالة من بيانات المستودع الحقيقي (Drift)
   factory CaseDetailNotifier.fromRepository(
-    dynamic caseItemDynamic, {
+    dynamic caseItemDynamic,
+    Ref ref,
+    int caseId, {
     List<dynamic> parties = const [],
     List<dynamic> sessions = const [],
     List<dynamic> phases = const [],
@@ -295,7 +302,7 @@ class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
   }) {
     final db.Case? caseItem = caseItemDynamic as db.Case?;
     if (caseItem == null) {
-      return CaseDetailNotifier(null, []);
+      return CaseDetailNotifier(null, [], ref, caseId);
     }
 
     final dbParties = parties.cast<db.CaseParty>();
@@ -343,6 +350,8 @@ class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
         sessions: uiCase.sessions,
         deficiencies: uiCase.deficiencies,
       ),
+      ref,
+      caseId,
     );
   }
 
@@ -850,6 +859,102 @@ class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
       ),
       deficiencies: updated,
     );
+  }
+
+  /// حل نقص موعد الجلسة بإضافة جلسة فعلية في قاعدة البيانات
+  Future<void> resolveNextSessionDeficiency({
+    required DateTime sessionDate,
+    required TimeOfDay sessionTime,
+    SessionType type = SessionType.ordinary,
+    String? notes,
+  }) async {
+    try {
+      // إضافة جلسة في قاعدة البيانات (يغلق النقص تلقائياً)
+      await _ref.read(caseRepositoryProvider).addSession(
+        session: db.CaseSessionsCompanion.insert(
+          caseId: _caseId,
+          sessionDate: DateTime(
+            sessionDate.year,
+            sessionDate.month,
+            sessionDate.day,
+            sessionTime.hour,
+            sessionTime.minute,
+          ),
+          sessionTime: drift.Value(
+            '${sessionTime.hour.toString().padLeft(2, '0')}:${sessionTime.minute.toString().padLeft(2, '0')}',
+          ),
+          sessionType: drift.Value(type.displayName),
+          notes: drift.Value(notes),
+        ),
+        caseTitle: state.caseItem?.title ?? 'دعوى $_caseId',
+        userRef: _ref.read(authControllerProvider).user?.fullName ?? 'المكتب',
+      );
+      
+      // تحديث UI
+      _ref.invalidate(caseSessionsProvider(_caseId));
+      _ref.invalidate(caseOpenDeficienciesProvider(_caseId));
+      _ref.invalidate(caseDetailProvider(_caseId));
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// حل نقص رقم الأساس بتحديثه في قاعدة البيانات
+  Future<void> resolveBaseNumberDeficiency(String baseNumber) async {
+    try {
+      // تحديث رقم الأساس في قاعدة البيانات
+      await _ref.read(caseRepositoryProvider).updateCase(
+        caseId: _caseId,
+        baseNumber: baseNumber,
+      );
+      
+      // إغلاق النقص
+      await _ref.read(deficiencyServiceProvider).resolveDeficiency(
+        EntityType.caseEntity,
+        _caseId,
+        'base_number',
+      );
+      
+      // تحديث UI
+      _ref.invalidate(caseDetailFromRepoProvider(_caseId));
+      _ref.invalidate(caseOpenDeficienciesProvider(_caseId));
+      _ref.invalidate(caseDetailProvider(_caseId));
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// حل نقص مستند برفعه في قاعدة البيانات
+  Future<void> resolveDocumentDeficiency({
+    required File file,
+    required String docName,
+    required String docType,
+  }) async {
+    try {
+      // رفع المستند في قاعدة البيانات
+      await _ref.read(documentRepositoryProvider).addDocument(
+        docName: docName,
+        docType: docType,
+        sourceFile: file,
+        entityType: EntityType.caseEntity.index,
+        entityId: _caseId,
+        userRef: _ref.read(authControllerProvider).user?.fullName ?? 'المكتب',
+      );
+      
+      // إغلاق النقص
+      await _ref.read(deficiencyServiceProvider).resolveDeficiency(
+        EntityType.caseEntity,
+        _caseId,
+        docType,
+      );
+      
+      // تحديث UI
+      _ref.invalidate(uiDocumentsProvider);
+      _ref.invalidate(caseOpenDeficienciesProvider(_caseId));
+      _ref.invalidate(caseDetailProvider(_caseId));
+    } catch (e) {
+      rethrow;
+    }
   }
 
   void addPhase(CasePhase phase) {
@@ -2267,46 +2372,291 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              backgroundColor: color.withOpacity(0.12),
-              child: Icon(deficiency.isResolved ? Icons.verified : Icons.error_outline, color: color),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  backgroundColor: color.withOpacity(0.12),
+                  child: Icon(deficiency.isResolved ? Icons.verified : Icons.error_outline, color: color),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: Text(deficiency.field, style: AppTextStyles.labelLarge)),
-                      _badge(deficiency.isResolved ? 'مكتمل' : _severityLabel(deficiency.severity), color),
+                      Row(
+                        children: [
+                          Expanded(child: Text(deficiency.field, style: AppTextStyles.labelLarge)),
+                          _badge(deficiency.isResolved ? 'مكتمل' : _severityLabel(deficiency.severity), color),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(deficiency.description, style: AppTextStyles.bodyMedium),
+                      const SizedBox(height: 4),
+                      Text(
+                        'تاريخ الرصد: ${_formatDate(deficiency.createdAt)}${deficiency.resolvedAt == null ? '' : ' • الإغلاق: ${_formatDate(deficiency.resolvedAt!)}'}',
+                        style: AppTextStyles.bodySmallSecondary,
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(deficiency.description, style: AppTextStyles.bodyMedium),
-                  const SizedBox(height: 4),
-                  Text(
-                    'تاريخ الرصد: ${_formatDate(deficiency.createdAt)}${deficiency.resolvedAt == null ? '' : ' • الإغلاق: ${_formatDate(deficiency.resolvedAt!)}'}',
-                    style: AppTextStyles.bodySmallSecondary,
+                ),
+              ],
+            ),
+            if (!deficiency.isResolved) ...[
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _buildContextualResolveButton(deficiency),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: () => ref
+                        .read(caseDetailProvider(widget.caseId).notifier)
+                        .resolveDeficiency(deficiency.id),
+                    icon: const Icon(Icons.done),
+                    label: const Text('إغلاق'),
                   ),
                 ],
               ),
-            ),
-            if (!deficiency.isResolved)
-              TextButton.icon(
-                onPressed: () => ref
-                    .read(caseDetailProvider(widget.caseId).notifier)
-                    .resolveDeficiency(deficiency.id),
-                icon: const Icon(Icons.done),
-                label: const Text('إغلاق'),
-              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  /// بناء زر الحل السياقي حسب نوع النقص
+  Widget _buildContextualResolveButton(CaseDeficiency deficiency) {
+    switch (deficiency.field) {
+      case 'next_session_date':
+        return ElevatedButton.icon(
+          onPressed: () => _showAddSessionFromDeficiencyDialog(),
+          icon: const Icon(Icons.calendar_today),
+          label: const Text('إضافة موعد'),
+        );
+        
+      case 'base_number':
+        return ElevatedButton.icon(
+          onPressed: () => _showEditBaseNumberFromDeficiencyDialog(),
+          icon: const Icon(Icons.edit),
+          label: const Text('إدخال الرقم'),
+        );
+        
+      case 'poa_attachment':
+      case 'representative_doc':
+        return ElevatedButton.icon(
+          onPressed: () => _showUploadDocumentFromDeficiencyDialog(deficiency.field),
+          icon: const Icon(Icons.upload_file),
+          label: const Text('رفع الملف'),
+        );
+        
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  /// Dialog لإضافة موعد جلسة من نقص
+  Future<void> _showAddSessionFromDeficiencyDialog() async {
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 7));
+    TimeOfDay selectedTime = const TimeOfDay(hour: 9, minute: 0);
+    final notesController = TextEditingController();
+    
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setLocalState) => AlertDialog(
+          title: const Text('إضافة موعد جلسة'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: Text('التاريخ: ${_formatDate(selectedDate)}')),
+                    TextButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (picked != null) {
+                          setLocalState(() => selectedDate = picked);
+                        }
+                      },
+                      icon: const Icon(Icons.calendar_today),
+                      label: const Text('اختيار'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: Text('الوقت: ${_formatTime(selectedTime)}')),
+                    TextButton.icon(
+                      onPressed: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (picked != null) {
+                          setLocalState(() => selectedTime = picked);
+                        }
+                      },
+                      icon: const Icon(Icons.access_time),
+                      label: const Text('اختيار'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'ملاحظات'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await ref.read(caseDetailProvider(widget.caseId).notifier)
+                      .resolveNextSessionDeficiency(
+                    sessionDate: selectedDate,
+                    sessionTime: selectedTime,
+                    notes: notesController.text.trim().isEmpty ? null : notesController.text.trim(),
+                  );
+                  
+                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                  _showSnack('تمت إضافة الجلسة وإغلاق النقص.');
+                } catch (e) {
+                  _showSnack('تعذر إضافة الجلسة: $e', isError: true);
+                }
+              },
+              child: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
+    
+    notesController.dispose();
+  }
+
+  /// Dialog لتعديل رقم الأساس من نقص
+  Future<void> _showEditBaseNumberFromDeficiencyDialog() async {
+    final controller = TextEditingController();
+    
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('إدخال رقم الأساس'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'رقم الأساس'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final baseNumber = controller.text.trim();
+              if (baseNumber.isEmpty) {
+                _showSnack('يرجى إدخال رقم الأساس', isError: true);
+                return;
+              }
+              
+              try {
+                await ref.read(caseDetailProvider(widget.caseId).notifier)
+                    .resolveBaseNumberDeficiency(baseNumber);
+                
+                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                _showSnack('تم تحديث رقم الأساس وإغلاق النقص.');
+              } catch (e) {
+                _showSnack('تعذر تحديث رقم الأساس: $e', isError: true);
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+    
+    controller.dispose();
+  }
+
+  /// Dialog لرفع مستند من نقص
+  Future<void> _showUploadDocumentFromDeficiencyDialog(String docType) async {
+    final attachments = ref.read(attachmentServiceProvider);
+    final pick = await attachments.pickAttachment();
+    
+    if (pick.rejectionReason != null) {
+      _showSnack(pick.rejectionReason!, isError: true);
+      return;
+    }
+    
+    if (!pick.isAccepted || pick.file == null) return;
+    
+    final file = pick.file!;
+    final fileName = p.basename(file.path);
+    
+    final docNameController = TextEditingController(text: fileName);
+    
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('رفع مستند'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('الملف: $fileName'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: docNameController,
+              decoration: const InputDecoration(labelText: 'اسم المستند'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await ref.read(caseDetailProvider(widget.caseId).notifier)
+                    .resolveDocumentDeficiency(
+                  file: file,
+                  docName: docNameController.text.trim().isEmpty ? fileName : docNameController.text.trim(),
+                  docType: docType,
+                );
+                
+                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                _showSnack('تم رفع المستند وإغلاق النقص.');
+              } catch (e) {
+                _showSnack('تعذر رفع المستند: $e', isError: true);
+              }
+            },
+            child: const Text('رفع'),
+          ),
+        ],
+      ),
+    );
+    
+    docNameController.dispose();
   }
 
   Widget _timelineTile(CaseTimelineEvent event) {
