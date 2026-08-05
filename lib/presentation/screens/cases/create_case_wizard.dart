@@ -267,73 +267,127 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       appBar: AppBar(
         title: Text(widget.archiveContext == null ? 'إنشاء دعوى جديدة' : (widget.archiveContext!.isRunning ? 'إدخال دعوى أرشيفية جارية' : 'أرشفة دعوى منتهية')),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // شريط التقدم
-            _buildProgressBar(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: ArchiveContextBanner(contextInfo: widget.archiveContext),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.1, 0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
             ),
-            
-            // المحتوى
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: _buildCurrentStepContent(),
-            ),
-          ],
+          );
+        },
+        child: SingleChildScrollView(
+          key: ValueKey<int>(_currentStep),
+          child: Column(
+            children: [
+              // شريط التقدم
+              _buildProgressBar(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: ArchiveContextBanner(contextInfo: widget.archiveContext),
+              ),
+              
+              // المحتوى
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: _buildCurrentStepContent(),
+              ),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          border: Border.all(color: AppColors.cardBorder, width: 0.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // زر الرجوع (السابق)
-            if (_currentStep > 0)
-              TextButton.icon(
-                onPressed: _isSaving ? null : _previousStep,
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('السابق'),
-              )
-            else
-              const SizedBox.shrink(),
-            
-            // زر التالي أو حفظ
-            if (_currentStep < _getLastStepIndex())
-              TextButton.icon(
-                onPressed: _isSaving ? null : _nextStep,
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('التالي'),
-              ),
-            if (_currentStep == _getLastStepIndex())
-              ElevatedButton.icon(
-                onPressed: _isSaving ? null : _submitCase,
-                icon: _isSaving 
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.textOnLight,
-                        ),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(widget.archiveContext == null ? 'إنشاء الدعوى' : (widget.archiveContext!.isRunning ? 'حفظ الدعوى الجارية' : 'حفظ الدعوى المنتهية')),
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
           ],
+        ),
+        child: SafeArea(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // زر الرجوع (السابق)
+              if (_currentStep > 0)
+                ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _previousStep,
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('السابق'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.cardBorder,
+                    foregroundColor: AppColors.primaryNavy,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                )
+              else
+                const SizedBox(width: 120),
+              
+              // زر التالي أو حفظ
+              if (_currentStep < _getLastStepIndex())
+                ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _nextStep,
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('التالي'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryNavy,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                ),
+              if (_currentStep == _getLastStepIndex())
+                ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _submitCase,
+                  icon: _isSaving 
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.save),
+                  label: Text(widget.archiveContext == null 
+                      ? 'إنشاء الدعوى' 
+                      : (widget.archiveContext!.isRunning 
+                          ? 'حفظ الدعوى الجارية' 
+                          : 'حفظ الدعوى المنتهية')),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   // ===========================================================================
-  // شريط التقدم
+  // شريط التقدم (Stepper حديث)
   // ===========================================================================
   
   Widget _buildProgressBar() {
@@ -341,79 +395,124 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     final totalSteps = lastStep + 1;
     
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: AppColors.cardBackground,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // الخطوات
-          Row(
-            children: List.generate(totalSteps, (index) => _buildStepIndicator(index)),
-          ),
-          const SizedBox(height: 8),
-          
-          // أسماء الخطوات
-          Row(
-            children: List.generate(totalSteps, (index) => _buildStepLabel(index)),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-    );
-  }
-  
-  Widget _buildStepIndicator(int index) {
-    final isCompleted = index < _currentStep;
-    final isCurrent = index == _currentStep;
-    
-    return Expanded(
-      child: Container(
-        height: 4,
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        decoration: BoxDecoration(
-          color: isCompleted 
-              ? AppColors.success 
-              : isCurrent 
-                  ? AppColors.primaryNavy 
-                  : AppColors.cardBorder,
-          borderRadius: BorderRadius.circular(2),
-        ),
+      child: Row(
+        children: List.generate(totalSteps, (index) {
+          final isCompleted = index < _currentStep;
+          final isCurrent = index == _currentStep;
+          final isLast = index == totalSteps - 1;
+          
+          return Expanded(
+            child: Row(
+              children: [
+                // الدائرة مع الأيقونة
+                Expanded(
+                  flex: 0,
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCompleted 
+                              ? AppColors.success 
+                              : isCurrent 
+                                  ? AppColors.primaryNavy 
+                                  : AppColors.cardBorder,
+                          boxShadow: isCurrent 
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.primaryNavy.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: isCompleted
+                              ? const Icon(Icons.check, color: Colors.white, size: 24)
+                              : Icon(
+                                  _getStepIcon(index),
+                                  color: isCurrent ? Colors.white : AppColors.textSecondary,
+                                  size: 24,
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _getStepLabel(index),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                          color: isCompleted || isCurrent 
+                              ? AppColors.primaryNavy 
+                              : AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                // الخط الواصل
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: isCompleted 
+                            ? AppColors.success 
+                            : AppColors.cardBorder,
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
   
-  Widget _buildStepLabel(int index) {
-    final isCompleted = index < _currentStep;
-    final isCurrent = index == _currentStep;
-    
-    String label;
+  IconData _getStepIcon(int index) {
     switch (index) {
-      case 0: label = 'الموكل'; break;
-      case 1: label = 'التصنيف'; break; // نقلت من الخطوة 3
-      case 2: label = 'الوكالة'; break; // نقلت من الخطوة 2
-      case 3: label = 'البيانات'; break;
-      case 4: label = 'الطلبات'; break;
-      case 5: label = 'الخصم'; break;
-      case 6: label = 'المرفقات'; break;
-      case 7: label = 'الموعد'; break;
-      default: label = '';
+      case 0: return Icons.person;
+      case 1: return Icons.category;
+      case 2: return Icons.verified_user;
+      case 3: return Icons.description;
+      case 4: return Icons.gavel;
+      case 5: return Icons.person_off;
+      case 6: return Icons.attach_file;
+      case 7: return Icons.calendar_today;
+      default: return Icons.circle;
     }
-    
-    return Expanded(
-      child: Text(
-        label,
-        style: AppTextStyles.bodySmall.copyWith(
-          color: isCompleted 
-              ? AppColors.success 
-              : isCurrent 
-                  ? AppColors.primaryNavy 
-                  : AppColors.textSecondary,
-          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-        ),
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
+  }
+  
+  String _getStepLabel(int index) {
+    switch (index) {
+      case 0: return 'الموكل';
+      case 1: return 'التصنيف';
+      case 2: return 'الوكالة';
+      case 3: return 'البيانات';
+      case 4: return 'الطلبات';
+      case 5: return 'الخصم';
+      case 6: return 'المرفقات';
+      case 7: return 'الموعد';
+      default: return '';
+    }
   }
 
   // ===========================================================================
@@ -449,23 +548,57 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder, width: 0.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AppTextStyles.headline4.copyWith(color: AppColors.primaryNavy),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryNavy.withOpacity(0.1),
+            AppColors.cardBackground,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primaryNavy.withOpacity(0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(height: 8),
-          Text(
-            description,
-            style: AppTextStyles.bodySmallSecondary,
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryNavy.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              _getStepIcon(_currentStep),
+              color: AppColors.primaryNavy,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.headline4.copyWith(color: AppColors.primaryNavy),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: AppTextStyles.bodySmallSecondary,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -497,8 +630,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                   labelText: 'بحث عن موكل',
                   hintText: 'ادخل اسم الموكل أو رقم هويته',
                   prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: AppColors.cardBackground,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                   ),
                 ),
                 onChanged: _searchClients,
@@ -547,7 +691,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.cardBorder, width: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               color: AppColors.cardBackground,
             ),
             child: Text(
@@ -563,7 +707,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         return Container(
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.cardBorder, width: 0.5),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 280),
@@ -663,8 +807,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             labelText: 'بحث عن وكالة',
             hintText: 'ادخل رقم الوكالة أو اسم الموكل',
             prefixIcon: const Icon(Icons.search),
+            filled: true,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
           ),
           onChanged: (value) => _searchPoas(value),
@@ -703,7 +858,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           border: Border.all(color: AppColors.cardBorder, width: 0.5),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           color: AppColors.cardBackground,
         ),
         child: Text(
@@ -743,7 +898,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.cardBorder, width: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               color: AppColors.cardBackground,
             ),
             child: Text(
@@ -759,7 +914,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         return Container(
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.cardBorder, width: 0.5),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: ListView.builder(
             shrinkWrap: true,
@@ -1018,7 +1173,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.info.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border:
                   Border.all(color: AppColors.info.withValues(alpha: 0.25)),
             ),
@@ -1063,8 +1218,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             onChanged: (value) => setState(() => _caseType = value!),
             decoration: InputDecoration(
               labelText: 'نوع الدعوى',
+              filled: true,
+              fillColor: AppColors.cardBackground,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.cardBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.cardBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
               ),
             ),
           ),
@@ -1085,8 +1251,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                 decoration: InputDecoration(
                   labelText: 'رقم الأساس',
                   hintText: 'مثال: 12345',
+                  filled: true,
+                  fillColor: AppColors.cardBackground,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                   ),
                   errorText: _baseNumberController.text.isNotEmpty && int.tryParse(_baseNumberController.text.trim()) == null ? 'يرجى إدخال رقم صالح' : null,
                 ),
@@ -1101,8 +1278,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                 decoration: InputDecoration(
                   labelText: 'سنة الأساس',
                   hintText: 'مثال: 2026',
+                  filled: true,
+                  fillColor: AppColors.cardBackground,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                   ),
                   errorText: _baseYearController.text.isNotEmpty && !_isValidYear(_baseYearController.text.trim()) ? 'يرجى إدخال سنة صالحة (1900-2030)' : null,
                 ),
@@ -1166,7 +1354,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             filled: true,
             fillColor: AppColors.cardBorder.withValues(alpha: 0.15),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
         ),
@@ -1175,7 +1363,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.info.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: AppColors.info.withValues(alpha: 0.3),
             ),
@@ -1206,8 +1394,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             labelText: 'موضوع الدعوى',
             hintText: 'مثال: تعويض عن ضرر مادي',
             prefixIcon: const Icon(Icons.gavel),
+            filled: true,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
           ),
           maxLines: 2,
@@ -1241,8 +1440,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           decoration: InputDecoration(
             labelText: 'الطلب',
             hintText: 'مثال: مبلغ 10,000,000 ل.س كتعويض عن الأضرار',
+            filled: true,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
           ),
           maxLines: 3,
@@ -1255,8 +1465,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           decoration: InputDecoration(
             labelText: 'التفاصيل',
             hintText: 'ادخل تفاصيل إضافية عن الدعوى',
+            filled: true,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
           ),
           maxLines: 5,
@@ -1291,8 +1512,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                   labelText: 'بحث عن خصم',
                   hintText: 'ادخل اسم الخصم أو رقم هويته',
                   prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: AppColors.cardBackground,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                   ),
                 ),
                 onChanged: (value) => _searchOpponents(value),
@@ -1405,7 +1637,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           border: Border.all(color: AppColors.cardBorder, width: 0.5),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           color: AppColors.cardBackground,
         ),
         child: Text(
@@ -1421,7 +1653,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.cardBorder, width: 0.5),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: ListView.builder(
         shrinkWrap: true,
@@ -1609,7 +1841,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               border: Border.all(color: AppColors.cardBorder, width: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Wrap(
               spacing: 8,
@@ -1633,7 +1865,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           Container(
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.cardBorder, width: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: ListView.builder(
               shrinkWrap: true,
@@ -1814,10 +2046,23 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'اسم الوثيقة',
                     hintText: 'مثال: تقرير خبير',
-                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: AppColors.cardBackground,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.cardBorder),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
+                    ),
                   ),
                   onSubmitted: (value) {
                     if (value.trim().isNotEmpty) {
@@ -1924,7 +2169,20 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             decoration: InputDecoration(
               labelText: 'ملاحظة أرشيفية اختيارية',
               hintText: 'مثال: الملف منتهٍ بحكم مبرم / محفوظ ورقياً',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              filled: true,
+              fillColor: AppColors.cardBackground,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.cardBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.cardBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
+              ),
             ),
           ),
         ],
@@ -1985,8 +2243,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           decoration: InputDecoration(
             labelText: 'الإجراء المطلوب',
             hintText: 'مثال: مرافعة أولى، تقديم لائحة دعوى، إثبات',
+            filled: true,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
           ),
         ),
@@ -1999,7 +2268,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             decoration: BoxDecoration(
               color: AppColors.warning.withOpacity(0.1),
               border: Border.all(color: AppColors.warning, width: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
@@ -2481,8 +2750,19 @@ class _AddClientDialogState extends ConsumerState<AddClientDialog> {
               controller: _nameController,
               decoration: InputDecoration(
                 labelText: 'الاسم الكامل',
+                filled: true,
+                fillColor: AppColors.cardBackground,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                 ),
               ),
             ),
@@ -2491,8 +2771,19 @@ class _AddClientDialogState extends ConsumerState<AddClientDialog> {
               controller: _idController,
               decoration: InputDecoration(
                 labelText: 'رقم الهوية',
+                filled: true,
+                fillColor: AppColors.cardBackground,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                 ),
               ),
             ),
@@ -2501,8 +2792,19 @@ class _AddClientDialogState extends ConsumerState<AddClientDialog> {
               controller: _phoneController,
               decoration: InputDecoration(
                 labelText: 'رقم الهاتف',
+                filled: true,
+                fillColor: AppColors.cardBackground,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                 ),
               ),
               keyboardType: TextInputType.phone,
@@ -2518,8 +2820,19 @@ class _AddClientDialogState extends ConsumerState<AddClientDialog> {
               onChanged: (value) => setState(() => _clientType = value!),
               decoration: InputDecoration(
                 labelText: 'نوع الموكل',
+                filled: true,
+                fillColor: AppColors.cardBackground,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                 ),
               ),
             ),
@@ -2643,7 +2956,23 @@ class _AddPoaDialogState extends ConsumerState<AddPoaDialog> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'اسم النوع'),
+          decoration: InputDecoration(
+            labelText: 'اسم النوع',
+            filled: true,
+            fillColor: AppColors.cardBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
+            ),
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
@@ -2664,7 +2993,20 @@ class _AddPoaDialogState extends ConsumerState<AddPoaDialog> {
 
   InputDecoration _dec(String label) => InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        filled: true,
+        fillColor: AppColors.cardBackground,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.cardBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
+        ),
       );
 
   @override
@@ -2820,7 +3162,7 @@ class _AddPoaDialogState extends ConsumerState<AddPoaDialog> {
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: AppColors.warning.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
                                     'لا يوجد مندوبين مسجلين لفرع $_barBranch',
@@ -3019,8 +3361,19 @@ class _AddOpponentDialogState extends ConsumerState<AddOpponentDialog> {
               controller: _nameController,
               decoration: InputDecoration(
                 labelText: 'الاسم الكامل',
+                filled: true,
+                fillColor: AppColors.cardBackground,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                 ),
               ),
             ),
@@ -3029,8 +3382,19 @@ class _AddOpponentDialogState extends ConsumerState<AddOpponentDialog> {
               controller: _idController,
               decoration: InputDecoration(
                 labelText: 'رقم الهوية',
+                filled: true,
+                fillColor: AppColors.cardBackground,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                 ),
               ),
             ),
@@ -3039,8 +3403,19 @@ class _AddOpponentDialogState extends ConsumerState<AddOpponentDialog> {
               controller: _phoneController,
               decoration: InputDecoration(
                 labelText: 'رقم الهاتف',
+                filled: true,
+                fillColor: AppColors.cardBackground,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                 ),
               ),
               keyboardType: TextInputType.phone,
@@ -3056,8 +3431,19 @@ class _AddOpponentDialogState extends ConsumerState<AddOpponentDialog> {
               onChanged: (value) => setState(() => _opponentType = value!),
               decoration: InputDecoration(
                 labelText: 'نوع الخصم',
+                filled: true,
+                fillColor: AppColors.cardBackground,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.cardBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                 ),
               ),
             ),
@@ -3069,8 +3455,19 @@ class _AddOpponentDialogState extends ConsumerState<AddOpponentDialog> {
                   labelText: 'اسم ممثل $_opponentType *',
                   hintText: 'المدير العام أو المفوَّض بالتوقيع',
                   prefixIcon: const Icon(Icons.badge_outlined),
+                  filled: true,
+                  fillColor: AppColors.cardBackground,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                   ),
                 ),
                 onChanged: (_) => setState(() {}),

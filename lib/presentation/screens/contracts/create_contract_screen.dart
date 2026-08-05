@@ -78,7 +78,22 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
-        content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: 'القيمة الجديدة')),
+        content: TextField(controller: controller, autofocus: true, decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'القيمة الجديدة')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
           ElevatedButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('إضافة')),
@@ -112,7 +127,22 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _contractType,
-                        decoration: const InputDecoration(labelText: 'نوع العقد *'),
+                        decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'نوع العقد *'),
                         items: _types.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                         onChanged: (val) => setState(() => _contractType = val!),
                       ),
@@ -122,7 +152,22 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                       flex: 2,
                       child: TextFormField(
                         controller: _titleController,
-                        decoration: const InputDecoration(labelText: 'عنوان العقد المميز * (مثال: عقد بيع شقة بدمشق - المزة)'),
+                        decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'عنوان العقد المميز * (مثال: عقد بيع شقة بدمشق - المزة)'),
                         validator: (val) => val == null || val.trim().isEmpty ? 'عنوان العقد إلزامي' : null,
                       ),
                     ),
@@ -214,7 +259,7 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                             labelText: 'تاريخ البدء *',
                             prefixIcon: const Icon(Icons.calendar_today),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: Text(
@@ -233,7 +278,7 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                             labelText: 'تاريخ الانتهاء *',
                             prefixIcon: const Icon(Icons.calendar_today),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             errorText: _endDate.isBefore(_startDate) ? 'تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء' : null,
                           ),
@@ -256,7 +301,22 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                       child: TextFormField(
                         controller: _valueController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'القيمة المالية الإجمالية *'),
+                        decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'القيمة المالية الإجمالية *'),
                         validator: (value) {
                           if (value?.trim().isEmpty ?? true) return 'القيمة المالية إلزامية';
                           final numericValue = double.tryParse(value!.trim());
@@ -270,7 +330,22 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                       width: 120,
                       child: DropdownButtonFormField<String>(
                         value: _currency,
-                        decoration: const InputDecoration(labelText: 'العملة'),
+                        decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'العملة'),
                         items: ['ل.س', 'دولار', 'يورو'].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                         onChanged: (val) => setState(() => _currency = val!),
                       ),
@@ -279,7 +354,22 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                     Expanded(
                       child: TextFormField(
                         controller: _locationController,
-                        decoration: const InputDecoration(labelText: 'مكان إبرام العقد'),
+                        decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'مكان إبرام العقد'),
                       ),
                     ),
                   ],
@@ -332,12 +422,42 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _reminderPhoneController,
-                              decoration: const InputDecoration(labelText: 'رقم هاتف التواصل عند التذكير', prefixIcon: Icon(Icons.phone_in_talk)),
+                              decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'رقم هاتف التواصل عند التذكير', prefixIcon: Icon(Icons.phone_in_talk)),
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _reminderNoteController,
-                              decoration: const InputDecoration(labelText: 'ملاحظة التذكير (ستظهر في مهام اليوم عندما يحين الموعد)'),
+                              decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'ملاحظة التذكير (ستظهر في مهام اليوم عندما يحين الموعد)'),
                             ),
                           ],
                         ],

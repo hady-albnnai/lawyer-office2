@@ -73,7 +73,22 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
-        content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: 'القيمة الجديدة')),
+        content: TextField(controller: controller, autofocus: true, decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'القيمة الجديدة')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
           ElevatedButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('إضافة')),
@@ -451,7 +466,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: AppConstants.primaryNavy.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   _getStepIcon(_currentStep),
@@ -780,7 +795,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
           Container(
             decoration: BoxDecoration(
               border: Border.all(color: AppConstants.backgroundLight, width: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: ListView.builder(
               shrinkWrap: true,

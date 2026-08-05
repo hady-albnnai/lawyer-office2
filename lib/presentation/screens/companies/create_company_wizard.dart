@@ -223,7 +223,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
-        content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: 'القيمة الجديدة')),
+        content: TextField(controller: controller, autofocus: true, decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'القيمة الجديدة')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
           ElevatedButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('إضافة')),
@@ -272,13 +287,47 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
       children: [
         TextFormField(
           controller: _nameController,
-          decoration: const InputDecoration(labelText: 'الاسم التجاري للشركة *', prefixIcon: Icon(Icons.business)),
+          decoration: InputDecoration(
+            labelText: 'الاسم التجاري للشركة *',
+            prefixIcon: Icon(Icons.business),
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+          ),
           validator: (value) => (value?.trim().isEmpty ?? true) ? 'الاسم التجاري إلزامي' : null,
         ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _activityController,
-          decoration: const InputDecoration(labelText: 'الغاية / نشاط الشركة *', prefixIcon: Icon(Icons.work)),
+          decoration: InputDecoration(
+            labelText: 'الغاية / نشاط الشركة *',
+            prefixIcon: Icon(Icons.work),
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+          ),
           validator: (value) => (value?.trim().isEmpty ?? true) ? 'النشاط إلزامي' : null,
         ),
         const SizedBox(height: 12),
@@ -288,7 +337,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
               child: TextFormField(
                 controller: _capitalController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'رأس المال المكتتب به (ل.س) *'),
+                decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'رأس المال المكتتب به (ل.س) *'),
                 validator: (value) {
                   if (value?.trim().isEmpty ?? true) return 'رأس المال إلزامي';
                   final capital = double.tryParse(value!.trim());
@@ -302,7 +366,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
               child: TextFormField(
                 controller: _paidCapitalController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'رأس المال المدفوع (ل.س) *'),
+                decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'رأس المال المدفوع (ل.س) *'),
                 validator: (value) {
                   if (value?.trim().isEmpty ?? true) return 'رأس المال المدفوع إلزامي';
                   final paidCapital = double.tryParse(value!.trim());
@@ -322,7 +401,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
               child: TextFormField(
                 controller: _durationController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'مدة الشركة (بالسنوات)'),
+                decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'مدة الشركة (بالسنوات)'),
                 validator: (value) {
                   if (value?.trim().isEmpty ?? true) return 'المدة إلزامية';
                   final duration = int.tryParse(value!.trim());
@@ -336,7 +430,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
             Expanded(
               child: TextFormField(
                 controller: _addressController,
-                decoration: const InputDecoration(labelText: 'المقر الرئيسي / المحافظة *'),
+                decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'المقر الرئيسي / المحافظة *'),
                 validator: (value) => (value?.trim().isEmpty ?? true) ? 'المقر الرئيسي إلزامي' : null,
               ),
             ),
@@ -345,7 +454,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
         const SizedBox(height: 12),
         TextFormField(
           controller: _propertyDetailsController,
-          decoration: const InputDecoration(labelText: 'بيانات وصفة المقر (عقد إيجار / ملك / رقم قيد)', prefixIcon: Icon(Icons.location_city)),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'بيانات وصفة المقر (عقد إيجار / ملك / رقم قيد)', prefixIcon: Icon(Icons.location_city)),
         ),
       ],
     );
@@ -398,7 +522,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                 TextFormField(
                   controller: nameCtrl,
                   autofocus: true,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+
                     labelText: 'الاسم الثلاثي *',
                     hintText: 'مثال: أحمد محمد العلي',
                     prefixIcon: Icon(Icons.person),
@@ -416,7 +555,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                 TextFormField(
                   controller: phoneCtrl,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+
                     labelText: 'رقم الهاتف *',
                     hintText: 'مثال: 0999123456',
                     prefixIcon: Icon(Icons.phone),
@@ -429,7 +583,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                 TextFormField(
                   controller: emailCtrl,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+
                     labelText: 'البريد الإلكتروني',
                     prefixIcon: Icon(Icons.email),
                   ),
@@ -444,7 +613,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: addressCtrl,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+
                     labelText: 'عنوان الإقامة',
                     prefixIcon: Icon(Icons.home),
                   ),
@@ -558,7 +742,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                       child: DropdownButtonFormField<String>(
                         value: _tempShareType,
                         decoration:
-                            const InputDecoration(labelText: 'نوع الحصة'),
+                            InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+labelText: 'نوع الحصة'),
                         items: const [
                           DropdownMenuItem(value: 'cash', child: Text('نقدية')),
                           DropdownMenuItem(
@@ -800,7 +999,22 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _tempAuthorityController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
+            filled: true,
+            fillColor: AppConstants.surfaceWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+
                       labelText: 'المنصب ونطاق الصلاحيات *'),
                 ),
                 const SizedBox(height: 12),
