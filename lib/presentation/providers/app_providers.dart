@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/drift.dart';
 import '../../core/enums/app_enums.dart';
 import '../../data/database/database.dart';
 import '../../data/services/conflict_of_interest_service.dart';
@@ -298,7 +299,7 @@ final poasByPrincipalProvider = FutureProvider.family<List<PowersOfAttorneyData>
   
   // الحصول على معرّفات الوكالات المرتبطة بهذا الشخص كموكل
   final poaIds = await (db.select(db.poaParties)
-        ..where((t) => t.personId.equals(principalId).and(t.partyRole.equals('principal'))))
+        ..where((t) => t.personId.equals(principalId) & t.partyRole.equals('principal')))
       .map((t) => t.poaId)
       .get();
   
