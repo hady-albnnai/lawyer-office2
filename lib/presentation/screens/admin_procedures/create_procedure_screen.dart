@@ -162,75 +162,123 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
       appBar: AppBar(
         title: Text(widget.archiveContext == null ? 'تسجيل معاملة وإجراء إداري جديد' : (widget.archiveContext!.isRunning ? 'إدخال إجراء أرشيفي جارٍ' : 'أرشفة إجراء منتهٍ')),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // شريط التقدم
-            _buildProgressBar(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: ArchiveContextBanner(contextInfo: widget.archiveContext),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.1, 0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
             ),
-            
-            // المحتوى
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: _buildCurrentStepContent(),
-            ),
-          ],
+          );
+        },
+        child: SingleChildScrollView(
+          key: ValueKey<int>(_currentStep),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: ArchiveContextBanner(contextInfo: widget.archiveContext),
+              ),
+              
+              // المحتوى
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: _buildCurrentStepContent(),
+              ),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppConstants.cardBackground,
-          border: Border.all(color: AppConstants.cardBorder, width: 0.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // زر الرجوع (السابق)
-            if (_currentStep > 0)
-              TextButton.icon(
-                onPressed: _isSaving ? null : _previousStep,
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('السابق'),
-              )
-            else
-              const SizedBox.shrink(),
-            
-            // زر التالي أو حفظ
-            if (_currentStep < lastStep)
-              TextButton.icon(
-                onPressed: _isSaving ? null : _nextStep,
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('التالي'),
-              ),
-            if (_currentStep == lastStep)
-              ElevatedButton.icon(
-                onPressed: _isSaving ? null : _saveProcedure,
-                icon: _isSaving 
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(widget.archiveContext?.isClosed == true 
-                    ? 'حفظ الإجراء في الأرشيف المنتهي' 
-                    : 'اعتماد وحفظ المعاملة'),
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
           ],
+        ),
+        child: SafeArea(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // زر الرجوع (السابق)
+              if (_currentStep > 0)
+                ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _previousStep,
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('السابق'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.cardBorder,
+                    foregroundColor: AppConstants.primaryNavy,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                )
+              else
+                const SizedBox(width: 120),
+              
+              // زر التالي أو حفظ
+              if (_currentStep < lastStep)
+                ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _nextStep,
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('التالي'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.primaryNavy,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                ),
+              if (_currentStep == lastStep)
+                ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _saveProcedure,
+                  icon: _isSaving 
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.save),
+                  label: Text(widget.archiveContext?.isClosed == true 
+                      ? 'حفظ في الأرشيف' 
+                      : 'اعتماد وحفظ'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.statusSuccess,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   // ===========================================================================
-  // شريط التقدم
+  // شريط التقدم (Stepper حديث)
   // ===========================================================================
   
   Widget _buildProgressBar() {
@@ -238,76 +286,116 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
     final totalSteps = lastStep + 1;
     
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: AppConstants.cardBackground,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // الخطوات
-          Row(
-            children: List.generate(totalSteps, (index) => _buildStepIndicator(index)),
-          ),
-          const SizedBox(height: 8),
-          
-          // أسماء الخطوات
-          Row(
-            children: List.generate(totalSteps, (index) => _buildStepLabel(index)),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppConstants.cardBackground,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-    );
-  }
-  
-  Widget _buildStepIndicator(int index) {
-    final isCompleted = index < _currentStep;
-    final isCurrent = index == _currentStep;
-    
-    return Expanded(
-      child: Container(
-        height: 4,
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        decoration: BoxDecoration(
-          color: isCompleted 
-              ? AppConstants.statusSuccess 
-              : isCurrent 
-                  ? AppConstants.primaryNavy 
-                  : AppConstants.cardBorder,
-          borderRadius: BorderRadius.circular(2),
-        ),
+      child: Row(
+        children: List.generate(totalSteps, (index) {
+          final isCompleted = index < _currentStep;
+          final isCurrent = index == _currentStep;
+          final isLast = index == totalSteps - 1;
+          
+          return Expanded(
+            child: Row(
+              children: [
+                // الدائرة مع الأيقونة
+                Expanded(
+                  flex: 0,
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCompleted 
+                              ? AppConstants.statusSuccess 
+                              : isCurrent 
+                                  ? AppConstants.primaryNavy 
+                                  : AppConstants.cardBorder,
+                          boxShadow: isCurrent 
+                              ? [
+                                  BoxShadow(
+                                    color: AppConstants.primaryNavy.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: isCompleted
+                              ? const Icon(Icons.check, color: Colors.white, size: 24)
+                              : Icon(
+                                  _getStepIcon(index),
+                                  color: isCurrent ? Colors.white : AppConstants.textMuted,
+                                  size: 24,
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _getStepLabel(index),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                          color: isCompleted || isCurrent 
+                              ? AppConstants.primaryNavy 
+                              : AppConstants.textMuted,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                // الخط الواصل
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: isCompleted 
+                            ? AppConstants.statusSuccess 
+                            : AppConstants.cardBorder,
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
   
-  Widget _buildStepLabel(int index) {
-    final isCompleted = index < _currentStep;
-    final isCurrent = index == _currentStep;
-    
-    String label;
+  IconData _getStepIcon(int index) {
     switch (index) {
-      case 0: label = 'التصنيف'; break;
-      case 1: label = 'الموكل والبيانات'; break;
-      case 2: label = 'المرفقات'; break;
-      case 3: label = 'الموعد'; break;
-      default: label = '';
+      case 0: return Icons.category;
+      case 1: return Icons.person;
+      case 2: return Icons.attach_file;
+      case 3: return Icons.calendar_today;
+      default: return Icons.circle;
     }
-    
-    return Expanded(
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          color: isCompleted 
-              ? AppConstants.statusSuccess 
-              : isCurrent 
-                  ? AppConstants.primaryNavy 
-                  : AppConstants.textMuted,
-          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-        ),
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
+  }
+  
+  String _getStepLabel(int index) {
+    switch (index) {
+      case 0: return 'التصنيف';
+      case 1: return 'الموكل والبيانات';
+      case 2: return 'المرفقات';
+      case 3: return 'الموعد';
+      default: return '';
+    }
   }
 
   // ===========================================================================
@@ -335,23 +423,69 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppConstants.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppConstants.cardBorder, width: 0.5),
+        gradient: LinearGradient(
+          colors: [
+            AppConstants.primaryNavy.withOpacity(0.1),
+            AppConstants.cardBackground,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppConstants.primaryNavy.withOpacity(0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            description,
-            style: TextStyle(fontSize: 14, color: AppConstants.textMuted),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppConstants.primaryNavy.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _getStepIcon(_currentStep),
+                  color: AppConstants.primaryNavy,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppConstants.primaryNavy,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppConstants.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -379,7 +513,23 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _category,
-                  decoration: const InputDecoration(labelText: 'التصنيف الرئيسي *'),
+                  decoration: InputDecoration(
+                    labelText: 'التصنيف الرئيسي *',
+                    filled: true,
+                    fillColor: AppConstants.cardBackground,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppConstants.cardBorder),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppConstants.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+                    ),
+                  ),
                   items: _subTypesMap.keys.map((k) => DropdownMenuItem(value: k, child: Text(k))).toList(),
                   onChanged: (val) {
                     setState(() {
@@ -395,7 +545,23 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _subType,
-                  decoration: const InputDecoration(labelText: 'النوع الفرعي *'),
+                  decoration: InputDecoration(
+                    labelText: 'النوع الفرعي *',
+                    filled: true,
+                    fillColor: AppConstants.cardBackground,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppConstants.cardBorder),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppConstants.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+                    ),
+                  ),
                   items: _subTypesMap[_category]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                   onChanged: (val) => setState(() => _subType = val!),
                 ),
@@ -514,7 +680,25 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
         const SizedBox(height: 16),
         TextFormField(
           controller: _titleController,
-          decoration: const InputDecoration(labelText: 'عنوان المعاملة *', prefixIcon: Icon(Icons.title)),
+          decoration: InputDecoration(
+            labelText: 'عنوان المعاملة *',
+            hintText: 'مثال: معاملة حصر إرث',
+            prefixIcon: const Icon(Icons.title),
+            filled: true,
+            fillColor: AppConstants.cardBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.cardBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+            ),
+          ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -522,14 +706,50 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
             Expanded(
               child: TextFormField(
                 controller: _deptController,
-                decoration: const InputDecoration(labelText: 'الدائرة أو الجهة المسجل لديها *', prefixIcon: Icon(Icons.account_balance)),
+                decoration: InputDecoration(
+                  labelText: 'الدائرة أو الجهة المسجل لديها *',
+                  hintText: 'مثال: محكمة الصلح',
+                  prefixIcon: const Icon(Icons.account_balance),
+                  filled: true,
+                  fillColor: AppConstants.cardBackground,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppConstants.cardBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppConstants.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: TextFormField(
                 controller: _transNumController,
-                decoration: const InputDecoration(labelText: 'رقم الطلب / المعاملة (إن وجد)', prefixIcon: Icon(Icons.numbers)),
+                decoration: InputDecoration(
+                  labelText: 'رقم الطلب / المعاملة (إن وجد)',
+                  hintText: 'مثال: 12345',
+                  prefixIcon: const Icon(Icons.numbers),
+                  filled: true,
+                  fillColor: AppConstants.cardBackground,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppConstants.cardBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppConstants.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+                  ),
+                ),
               ),
             ),
           ],
