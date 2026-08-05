@@ -1235,7 +1235,6 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
       await _showMiscArchiveEntry(context, ref, s);
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('سيتم فتح شاشة الإدخال الرسمية. الاختيار: ${_archiveSummary(s)}'), backgroundColor: AppColors.success));
     context.go(_routeWithArchiveQuery(route, s));
   }
 

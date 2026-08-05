@@ -832,12 +832,38 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                                     : 'غير محدد',
                                 style: AppTextStyles.bodySmallSecondary,
                               ),
-                              if (isSelected)
+                              const SizedBox(height: 4),
+                              // زر فتح تفاصيل الوكالة
+                              InkWell(
+                                onTap: () => _openPoaDetails(poa.id),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.info.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: AppColors.info.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.open_in_new, size: 14, color: AppColors.info),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'فتح',
+                                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.info),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (isSelected) ...[
+                                const SizedBox(height: 4),
                                 const Icon(
                                   Icons.check_circle,
                                   color: AppColors.success,
                                   size: 20,
                                 ),
+                              ],
                             ],
                           ),
                         ],
@@ -928,6 +954,11 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   
   void _searchPoas(String query) {
     setState(() => _poaSearchQuery = query);
+  }
+
+  /// فتح شاشة تفاصيل الوكالة للمراجعة
+  void _openPoaDetails(int poaId) {
+    context.push('/poa/$poaId');
   }
 
   void _searchOpponents(String query) {
@@ -1352,6 +1383,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                 'id': p.id,
                 'name': p.fullName,
                 'type': p.type == PersonType.legal.index ? 'شخص اعتباري' : 'شخص طبيعي',
+                'roles': p.roles, // إضافة الأدوار للتحقق
               })
           .toList(),
       orElse: () => const <Map<String, Object?>>[],
@@ -1399,6 +1431,8 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         itemBuilder: (context, index) {
           final opponent = filteredOpponents[index];
           final isSelected = _selectedOpponentId == opponent['id'];
+          final roles = opponent['roles'] as List<String>?;
+          final isAlsoClient = roles != null && roles.contains('client');
           
           return InkWell(
             onTap: () => setState(() => _selectedOpponentId = opponent['id'] as int?),
@@ -1416,10 +1450,46 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                     size: 20,
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    opponent['name'] as String,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                opponent['name'] as String,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                            // إشارة تحذير إذا كان الشخص أيضاً موكل
+                            if (isAlsoClient)
+                              InkWell(
+                                onTap: () => _showClientConflictWarning(opponent['id'] as int, opponent['name'] as String),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.warning.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.warning_amber, size: 14, color: AppColors.warning),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        'موكل أيضاً',
+                                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning, fontSize: 10),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   const Spacer(),
@@ -1438,6 +1508,71 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// عرض تحذير تعارض الأدوار (شخص هو موكل وخصم في نفس الوقت)
+  void _showClientConflictWarning(int personId, String personName) {
+    // جلب الدعاوى التي يكون فيها هذا الشخص موكلاً
+    final cases = ref.read(allCasesProvider).value ?? [];
+    final clientCases = cases.where((c) {
+      // التحقق إذا كان الشخص موكل في هذه الدعوى
+      // هذا يحتاج query في قاعدة البيانات - نستخدم حل مؤقت
+      return false; // placeholder
+    }).toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber, color: AppColors.warning),
+            const SizedBox(width: 8),
+            const Text('تعارض أدوار'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'الشخص "$personName" هو موكل في دعاوى أخرى.',
+              style: AppTextStyles.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'هل أنت متأكد من إضافته كخصم في هذه الدعوى؟',
+              style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '⚠️ تحذير: قد يؤدي هذا إلى تعارض في المصالح أو مشاكل قانونية.',
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() => _selectedOpponentId = personId);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
+            child: const Text('متابعة على أي حال'),
+          ),
+        ],
       ),
     );
   }
