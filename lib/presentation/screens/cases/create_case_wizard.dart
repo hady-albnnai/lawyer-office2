@@ -289,12 +289,12 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            if (_currentStep < 7)
+            if (_currentStep < 6)
               TextButton(
                 onPressed: _isSaving ? null : _nextStep,
                 child: const Text('التالي'),
               ),
-            if (_currentStep == 7)
+            if (_currentStep == 6)
               ElevatedButton(
                 onPressed: _isSaving ? null : _submitCase,
                 child: _isSaving 
@@ -327,13 +327,13 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         children: [
           // الخطوات
           Row(
-            children: List.generate(8, (index) => _buildStepIndicator(index)),
+            children: List.generate(7, (index) => _buildStepIndicator(index)),
           ),
           const SizedBox(height: 8),
           
           // أسماء الخطوات
           Row(
-            children: List.generate(8, (index) => _buildStepLabel(index)),
+            children: List.generate(7, (index) => _buildStepLabel(index)),
           ),
         ],
       ),
@@ -369,11 +369,10 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       case 0: label = 'الموكل'; break;
       case 1: label = 'الوكالة'; break;
       case 2: label = 'التصنيف'; break;
-      case 3: label = 'البيانات الأساسية'; break;
-      case 4: label = 'الموضوع والطلبات'; break;
+      case 3: label = 'البيانات'; break;
+      case 4: label = 'الطلبات'; break;
       case 5: label = 'الخصم'; break;
       case 6: label = 'المرفقات'; break;
-      case 7: label = 'الموعد القادم'; break;
       default: label = '';
     }
     
@@ -415,8 +414,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         return _buildOpponentStep();
       case 6:
         return _buildAttachmentsStep();
-      case 7:
-        return _buildNextSessionStep();
       default:
         return const SizedBox();
     }
@@ -1325,17 +1322,50 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   // ===========================================================================
   
   Widget _buildAttachmentsStep() {
+    final expectedDocs = _defaultDocumentsFor(widget.archiveContext?.status ?? 'running');
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildStepHeader(
           title: 'المرفقات',
-          description: 'أرفق مستندات الدعوى (اختياري)',
+          description: 'اختر نوع الوثيقة ثم ارفع الملف المقابل',
         ),
         const SizedBox(height: 24),
         
+        // الوثائق المتوقعة
+        if (expectedDocs.isNotEmpty) ...[
+          Text(
+            'الوثائق المتوقعة لهذه الدعوى:',
+            style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              border: Border.all(color: AppColors.cardBorder, width: 0.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: expectedDocs.map((doc) => Chip(
+                label: Text(doc),
+                avatar: const Icon(Icons.description, size: 16),
+              )).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        
         // قائمة المرفقات
         if (_attachmentPaths.isNotEmpty) ...[
+          Text(
+            'المرفقات المرفوعة:',
+            style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy),
+          ),
+          const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.cardBorder, width: 0.5),
@@ -1346,8 +1376,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _attachmentPaths.length,
               itemBuilder: (context, index) {
-                // الضغط على المرفق يفتحه: الموظف يحتاج التأكد مما رفعه
-                // قبل الحفظ، فعرض الاسم وحده لا يكفي.
                 return InkWell(
                   onTap: () => _openPickedAttachment(index),
                   child: Container(
@@ -1405,9 +1433,9 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           const SizedBox(height: 16),
         ],
         
-        // زر إضافة مرفق
+        // زر إضافة مرفق مع اختيار النوع
         ElevatedButton.icon(
-          onPressed: _addAttachment,
+          onPressed: () => _addAttachmentWithDocType(expectedDocs),
           icon: const Icon(Icons.attach_file),
           label: const Text('إضافة مرفق'),
         ),
@@ -1436,6 +1464,128 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       for (final file in picked) {
         _attachmentPaths.add(file.path!);
         _attachmentControllers.add(TextEditingController(text: file.name));
+      }
+    });
+  }
+  
+  /// الوثائق المتوقعة بناءً على نوع الدعوى وحالتها
+  List<String> _defaultDocumentsFor(String status) {
+    final docs = <String>[];
+    
+    // وثائق مشتركة لجميع الدعاوى
+    docs.addAll([
+      'استدعاء الدعوى',
+      'الوكالة',
+      'هوية الموكل',
+      'إيصال رسوم قضائية',
+    ]);
+    
+    // وثائق حسب نوع الدعوى
+    switch (_caseType) {
+      case CaseType.civil:
+        docs.addAll(['عقد', 'فواتير', 'مراسلات']);
+        break;
+      case CaseType.criminal:
+        docs.addAll(['محضر شرطة', 'تقرير طبي', 'شهادات شهود']);
+        break;
+      case CaseType.personalStatus:
+        docs.addAll(['قيد عائلي', 'عقد زواج', 'شهادة ميلاد']);
+        break;
+      case CaseType.commercial:
+        docs.addAll(['سجل تجاري', 'عقد شركة', 'فواتير تجارية']);
+        break;
+      case CaseType.labor:
+        docs.addAll(['عقد عمل', 'كشف رواتب', 'إنذار']);
+        break;
+      case CaseType.realEstate:
+        docs.addAll(['سند ملكية', 'مخطط عقاري', 'بيان مساحة']);
+        break;
+    }
+    
+    return docs;
+  }
+  
+  /// إضافة مرفق مع اختيار نوع الوثيقة أولاً
+  Future<void> _addAttachmentWithDocType(List<String> expectedDocs) async {
+    // اختيار نوع الوثيقة
+    String? selectedDocType = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('اختر نوع الوثيقة'),
+        content: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'الوثائق المتوقعة:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: expectedDocs.map((doc) => ActionChip(
+                    label: Text(doc),
+                    onPressed: () => Navigator.pop(context, doc),
+                  )).toList(),
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+                const Text(
+                  'أو أدخل اسم وثيقة مخصص:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  decoration: const InputDecoration(
+                    labelText: 'اسم الوثيقة',
+                    hintText: 'مثال: تقرير خبير',
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (value) {
+                    if (value.trim().isNotEmpty) {
+                      Navigator.pop(context, value.trim());
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+        ],
+      ),
+    );
+    
+    if (selectedDocType == null || selectedDocType.isEmpty) return;
+    
+    // اختيار الملف
+    final result = await file_picker.FilePicker.pickFiles(
+      allowMultiple: true,
+      type: file_picker.FileType.custom,
+      allowedExtensions: AppConstants.allowedAttachmentExtensions,
+    );
+    
+    if (result == null) return;
+    final picked = result.files.where((f) => (f.path ?? '').isNotEmpty).toList();
+    if (picked.isEmpty) return;
+    
+    setState(() {
+      for (final file in picked) {
+        _attachmentPaths.add(file.path!);
+        // استخدام اسم الوثيقة المختار كـ label
+        final label = picked.length == 1 
+            ? selectedDocType 
+            : '$selectedDocType (${file.name})';
+        _attachmentControllers.add(TextEditingController(text: label));
       }
     });
   }
@@ -1681,7 +1831,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       return;
     }
     
-    if (_currentStep < 7) {
+    if (_currentStep < 6) {
       setState(() => _currentStep++);
     }
   }
@@ -1733,25 +1883,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('يرجى اختيار الخصم'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-          return false;
-        }
-        break;
-      case 7: // الموعد القادم
-        if (widget.archiveContext?.isClosed == true) {
-          return true;
-        }
-        // الأرشيف الجاري: دعوى قديمة مستوردة قد لا يكون لها موعد محدد بعد،
-        // فلا يُحبس الحفظ. يُسجَّل نقص «موعد الجلسة» تلقائياً لاحقاً.
-        if (widget.archiveContext?.isRunning == true && _nextSessionDate == null) {
-          return true;
-        }
-        if (_nextSessionDate == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('يرجى تحديد موعد الجلسة القادمة'),
               backgroundColor: AppColors.error,
             ),
           );
@@ -1905,7 +2036,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                 'الحالة: ${widget.archiveContext!.statusLabel}',
                 if (widget.archiveContext!.isClosed && _nextActionController.text.trim().isNotEmpty) 'ملاحظة أرشيفية: ${_nextActionController.text.trim()}',
               ].join('\n')),
-        nextSessionDate: Value(widget.archiveContext?.isClosed == true ? null : _nextSessionDate),
+        nextSessionDate: const Value(null),
         isUrgent: Value(_isUrgent),
       );
       
