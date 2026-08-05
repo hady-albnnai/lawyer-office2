@@ -1567,10 +1567,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        
-        // المحكمة والغرفة
-        _buildCourtAndChamberFields(),
         const SizedBox(height: 24),
         
         // تنبيه
