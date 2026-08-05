@@ -21,6 +21,7 @@ import '../../../core/enums/app_enums.dart';
 
 import '../../../data/database/database.dart' as db;
 import '../../../data/services/conflict_of_interest_service.dart';
+import '../../../data/services/poa_filter_service.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/ui_data_providers.dart';
@@ -381,8 +382,8 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     String label;
     switch (index) {
       case 0: label = 'الموكل'; break;
-      case 1: label = 'الوكالة'; break;
-      case 2: label = 'التصنيف'; break;
+      case 1: label = 'التصنيف'; break; // نقلت من الخطوة 3
+      case 2: label = 'الوكالة'; break; // نقلت من الخطوة 2
       case 3: label = 'البيانات'; break;
       case 4: label = 'الطلبات'; break;
       case 5: label = 'الخصم'; break;
@@ -418,9 +419,9 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       case 0:
         return _buildClientStep();
       case 1:
-        return _buildPoaStep();
+        return _buildClassificationStep(); // نقلت من الخطوة 3
       case 2:
-        return _buildClassificationStep();
+        return _buildPoaStep(); // نقلت من الخطوة 2
       case 3:
         return _buildBasicDataStep();
       case 4:
@@ -690,37 +691,8 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   }
   
   Widget _buildPoaList() {
-    // الوكالات الحقيقية من قاعدة البيانات؛ القائمة الثابتة السابقة كانت تربط
-    // الدعوى بمعرّف سند توكيل قد لا يكون موجوداً أصلاً.
-    final poasAsync = ref.watch(allPoasProvider);
-    if (poasAsync.isLoading) {
-      return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
-    }
-    final poas = poasAsync.maybeWhen(
-      data: (records) => records
-          .map((r) => {
-                'id': r.id,
-                'number': r.poaNumber ?? 'وكالة #${r.id}',
-                'client': r.sourceType == 'notary' ? 'كاتب عدل' : 'مندوب نقابة',
-                'type': PoaType.values[r.poaType.clamp(0, PoaType.values.length - 1)].label,
-                'date': r.poaDate == null
-                    ? 'غير محدد'
-                    : '${r.poaDate!.year}-${r.poaDate!.month.toString().padLeft(2, '0')}-${r.poaDate!.day.toString().padLeft(2, '0')}',
-              })
-          .toList(),
-      orElse: () => const <Map<String, Object?>>[],
-    );
-
-    // تصفية الوكالات حسب البحث
-    final query = _poaSearchQuery.trim().toLowerCase();
-    final filteredPoas = poas.where((poa) {
-      if (query.isEmpty) return true;
-      return (poa['number'] as String).toLowerCase().contains(query) ||
-             (poa['client'] as String).toLowerCase().contains(query) ||
-             (poa['type'] as String).toLowerCase().contains(query);
-    }).toList();
-
-    if (filteredPoas.isEmpty) {
+    // الوكالات المفلترة حسب الموكل ونوع الدعوى
+    if (_selectedClientId == null) {
       return Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -729,86 +701,223 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           color: AppColors.cardBackground,
         ),
         child: Text(
-          query.isEmpty
-              ? 'لا توجد وكالات مسجلة بعد — أضف سند التوكيل من شاشة الوكالات.'
-              : 'لا توجد وكالات مطابقة للبحث — أضف سند التوكيل من شاشة الوكالات.',
+          'يرجى اختيار الموكل أولاً من الخطوة السابقة.',
           style: AppTextStyles.bodyMediumSecondary,
           textAlign: TextAlign.center,
         ),
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.cardBorder, width: 0.5),
-        borderRadius: BorderRadius.circular(8),
+    final filteredPoasAsync = ref.watch(filteredPoasProvider((
+      principalId: _selectedClientId,
+      caseType: _caseType.index,
+    )));
+
+    return filteredPoasAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
       ),
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: filteredPoas.length,
-        itemBuilder: (context, index) {
-          final poa = filteredPoas[index];
-          final isSelected = _selectedPoaId == poa['id'];
-          
-          return InkWell(
-            onTap: () => setState(() => _selectedPoaId = poa['id'] as int?),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primaryNavy.withOpacity(0.1) : AppColors.cardBackground,
-                border: Border.all(color: AppColors.cardBorder, width: 0.5),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.verified_user,
-                    color: isSelected ? AppColors.primaryNavy : AppColors.textSecondary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        poa['number'] as String,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'الموكل: ${poa['client'] as String}',
-                        style: AppTextStyles.bodySmallSecondary,
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        poa['type'] as String,
-                        style: AppTextStyles.bodySmall,
-                      ),
-                      Text(
-                        poa['date'] as String,
-                        style: AppTextStyles.bodySmallSecondary,
-                      ),
-                    ],
-                  ),
-                  if (isSelected)
-                    const Icon(
-                      Icons.check_circle,
-                      color: AppColors.success,
-                      size: 20,
-                    ),
-                ],
-              ),
+      error: (e, _) => Text(
+        'تعذر تحميل الوكالات: $e',
+        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+      ),
+      data: (results) {
+        // تصفية الوكالات حسب البحث
+        final query = _poaSearchQuery.trim().toLowerCase();
+        final filteredResults = results.where((result) {
+          if (query.isEmpty) return true;
+          final poa = result.poa;
+          return (poa.poaNumber ?? '').toLowerCase().contains(query) ||
+              (poa.subType ?? '').toLowerCase().contains(query);
+        }).toList();
+
+        if (filteredResults.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.cardBorder, width: 0.5),
+              borderRadius: BorderRadius.circular(8),
+              color: AppColors.cardBackground,
+            ),
+            child: Text(
+              query.isEmpty
+                  ? 'لا توجد وكالات مسجلة لهذا الموكل — أضف وكالة جديدة.'
+                  : 'لا توجد وكالات مطابقة للبحث — أضف وكالة جديدة.',
+              style: AppTextStyles.bodyMediumSecondary,
+              textAlign: TextAlign.center,
             ),
           );
-        },
-      ),
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.cardBorder, width: 0.5),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filteredResults.length,
+            itemBuilder: (context, index) {
+              final result = filteredResults[index];
+              final poa = result.poa;
+              final isSelected = _selectedPoaId == poa.id;
+              final isGeneral = poa.poaType == 0; // عامة
+              final isValid = result.isValid;
+
+              return InkWell(
+                onTap: isValid || result.canOverride
+                    ? () => setState(() => _selectedPoaId = poa.id)
+                    : null,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primaryNavy.withOpacity(0.1)
+                        : AppColors.cardBackground,
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primaryNavy
+                          : (isValid
+                              ? AppColors.cardBorder
+                              : AppColors.warning),
+                      width: isSelected ? 2 : 0.5,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.verified_user,
+                            color: isSelected
+                                ? AppColors.primaryNavy
+                                : (isValid
+                                    ? AppColors.success
+                                    : AppColors.warning),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  poa.poaNumber ?? 'وكالة #${poa.id}',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                // شارة نوع الوكالة
+                                _buildPoaTypeBadge(poa, isGeneral),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                poa.poaDate != null
+                                    ? '${poa.poaDate!.year}-${poa.poaDate!.month.toString().padLeft(2, '0')}-${poa.poaDate!.day.toString().padLeft(2, '0')}'
+                                    : 'غير محدد',
+                                style: AppTextStyles.bodySmallSecondary,
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.success,
+                                  size: 20,
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      // تحذير إذا كانت الوكالة غير صالحة
+                      if (!isValid && result.reason != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.warning,
+                                color: AppColors.warning,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  result.reason!,
+                                  style: AppTextStyles.bodySmall
+                                      .copyWith(color: AppColors.warning),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (result.canOverride) ...[
+                          const SizedBox(height: 4),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton(
+                              onPressed: () => setState(() => _selectedPoaId = poa.id),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.warning,
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text('تجاوز التحذير'),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
+  }
+
+  /// شارة نوع الوكالة (عامة/خاصة)
+  Widget _buildPoaTypeBadge(db.PowersOfAttorneyData poa, bool isGeneral) {
+    if (isGeneral) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: AppColors.success.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'عامة - صالحة لكل الدعاوى',
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.success),
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: AppColors.info.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'خاصة - ${poa.subType ?? 'غير محدد'}',
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.info),
+        ),
+      );
+    }
   }
   
   void _searchPoas(String query) {
@@ -1881,7 +1990,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           return false;
         }
         break;
-      case 2: // التصنيف
+      case 1: // التصنيف (نقلت من الخطوة 3)
         if (_selectedCourtId == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1891,6 +2000,9 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           );
           return false;
         }
+        break;
+      case 2: // الوكالة (نقلت من الخطوة 2)
+        // الوكالة اختيارية - يمكن تأجيلها
         break;
       case 3: // البيانات الأساسية
         // العنوان والموضوع صارا حقلاً واحداً؛ التحقق على الموضوع.

@@ -8,6 +8,7 @@ import '../../data/services/deficiency_service.dart';
 import '../../data/services/attachment_service.dart';
 import '../../data/services/file_storage_service.dart';
 import '../../data/services/backup_service.dart';
+import '../../data/services/poa_filter_service.dart';
 import '../../data/repositories/person_repository.dart';
 import '../../data/repositories/poa_repository.dart';
 import '../../data/repositories/case_repository.dart';
@@ -278,3 +279,65 @@ final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return WorkOrderRepository(db.workOrderDao);
 });
+
+// =============================================================================
+// 5. مزودات فلترة الوكالات (PoA Filter Providers)
+// =============================================================================
+
+/// خدمة فلترة الوكالات
+final poaFilterServiceProvider = Provider<PoaFilterService>((ref) {
+  return PoaFilterService();
+});
+
+/// الوكالات الخاصة بموكل معين
+final poasByPrincipalProvider = FutureProvider.family<List<PowersOfAttorneyData>, int?>((ref, principalId) async {
+  if (principalId == null) return [];
+  
+  final allPoas = await ref.watch(allPoasProvider.future);
+  
+  // فلترة الوكالات حسب الموكل الرئيسي
+  return allPoas.where((poa) => poa.principalPersonId == principalId).toList();
+});
+
+/// الوكالات المفلترة حسب الموكل ونوع الدعوى
+final filteredPoasProvider = FutureProvider.family<List<PoaFilterResult>, ({int? principalId, int caseType})>((ref, params) async {
+  final principalId = params.principalId;
+  final caseTypeIndex = params.caseType;
+  
+  if (principalId == null) return [];
+  
+  // جلب الوكالات الخاصة بالموكل
+  final poas = await ref.watch(poasByPrincipalProvider(principalId).future);
+  
+  // تحويل فهرس نوع الدعوى إلى CaseType
+  final caseType = _indexToCaseType(caseTypeIndex);
+  
+  // فلترة الوكالات حسب نوع الدعوى
+  final filterService = ref.watch(poaFilterServiceProvider);
+  return filterService.filterPoasForCaseType(poas, caseType);
+});
+
+/// تحويل فهرس نوع الدعوى إلى CaseType
+CaseType _indexToCaseType(int index) {
+  switch (index) {
+    case 0:
+      return CaseType.civil;
+    case 1:
+      return CaseType.criminal;
+    case 2:
+      return CaseType.commercial;
+    case 3:
+      return CaseType.personalStatus;
+    case 4:
+      return CaseType.labor;
+    case 5:
+      return CaseType.realEstate;
+    case 6:
+      return CaseType.administrative;
+    case 7:
+      return CaseType.constitutional;
+    case 8:
+    default:
+      return CaseType.other;
+  }
+}
