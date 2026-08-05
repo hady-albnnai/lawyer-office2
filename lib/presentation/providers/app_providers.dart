@@ -24,6 +24,7 @@ import '../../data/repositories/settings_repository.dart';
 import '../../data/repositories/work_order_repository.dart';
 import '../../data/repositories/archive_intake_repository.dart';
 import '../../data/repositories/office_file_repository.dart';
+import '../screens/cases/case_models.dart' show CaseType;
 
 // =============================================================================
 // 1. مزود قاعدة البيانات الموحدة (Database Provider)
@@ -293,10 +294,22 @@ final poaFilterServiceProvider = Provider<PoaFilterService>((ref) {
 final poasByPrincipalProvider = FutureProvider.family<List<PowersOfAttorneyData>, int?>((ref, principalId) async {
   if (principalId == null) return [];
   
-  final allPoas = await ref.watch(allPoasProvider.future);
+  final db = ref.watch(databaseProvider);
   
-  // فلترة الوكالات حسب الموكل الرئيسي
-  return allPoas.where((poa) => poa.principalPersonId == principalId).toList();
+  // الحصول على معرّفات الوكالات المرتبطة بهذا الشخص كموكل
+  final poaIds = await (db.select(db.poaParties)
+        ..where((t) => t.personId.equals(principalId) & t.partyRole.equals('principal')))
+      .map((t) => t.poaId)
+      .get();
+  
+  if (poaIds.isEmpty) return [];
+  
+  // الحصول على الوكالات
+  final poas = await (db.select(db.powersOfAttorney)
+        ..where((t) => t.id.isIn(poaIds)))
+      .get();
+  
+  return poas;
 });
 
 /// الوكالات المفلترة حسب الموكل ونوع الدعوى

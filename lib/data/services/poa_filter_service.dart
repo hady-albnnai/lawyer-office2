@@ -10,7 +10,7 @@ import '../../presentation/screens/cases/case_models.dart';
 
 /// نتيجة فلترة الوكالة
 class PoaFilterResult {
-  final PowerOfAttorney poa;
+  final PowersOfAttorneyData poa;
   final bool isValid;
   final String? reason;
   final bool canOverride;
@@ -27,7 +27,7 @@ class PoaFilterResult {
 class PoaFilterService {
   /// فلترة الوكالات حسب نوع الدعوى
   List<PoaFilterResult> filterPoasForCaseType(
-    List<PowerOfAttorney> poas,
+    List<PowersOfAttorneyData> poas,
     CaseType caseType,
   ) {
     return poas.map((poa) {
@@ -47,7 +47,7 @@ class PoaFilterService {
   }
 
   /// هل الوكالة صالحة لهذا النوع من الدعاوى؟
-  bool isPoaValidForCaseType(PowerOfAttorney poa, CaseType caseType) {
+  bool isPoaValidForCaseType(PowersOfAttorneyData poa, CaseType caseType) {
     // الوكالات العامة (poaType == 0) صالحة دائماً
     if (poa.poaType == 0) {
       return true;
@@ -63,7 +63,7 @@ class PoaFilterService {
   }
 
   /// التحقق من تغطية سند التوكيل الخاص
-  bool _checkSpecialPoaCoverage(PowerOfAttorney poa, CaseType caseType) {
+  bool _checkSpecialPoaCoverage(PowersOfAttorneyData poa, CaseType caseType) {
     final category = poa.category?.toLowerCase() ?? '';
     final subType = poa.subType?.toLowerCase() ?? '';
     final scopeText = poa.scopeText?.toLowerCase() ?? '';
@@ -126,7 +126,7 @@ class PoaFilterService {
   }
 
   /// الحصول على وصف نوع الوكالة
-  String getPoaTypeDescription(PowerOfAttorney poa) {
+  String getPoaTypeDescription(PowersOfAttorneyData poa) {
     if (poa.poaType == 0) {
       return 'عامة - صالحة لكل الدعاوى';
     } else if (poa.poaType == 1) {
@@ -136,12 +136,12 @@ class PoaFilterService {
   }
 
   /// التحقق إذا كانت الوكالة عامة
-  bool isGeneralPoa(PowerOfAttorney poa) {
+  bool isGeneralPoa(PowersOfAttorneyData poa) {
     return poa.poaType == 0;
   }
 
   /// التحقق إذا كانت الوكالة خاصة
-  bool isSpecialPoa(PowerOfAttorney poa) {
+  bool isSpecialPoa(PowersOfAttorneyData poa) {
     return poa.poaType == 1;
   }
 }
