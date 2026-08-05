@@ -298,7 +298,7 @@ final poasByPrincipalProvider = FutureProvider.family<List<PowersOfAttorneyData>
   
   // الحصول على معرّفات الوكالات المرتبطة بهذا الشخص كموكل
   final poaIds = await (db.select(db.poaParties)
-        ..where((t) => t.personId.equals(principalId) & t.partyRole.equals('principal')))
+        ..where((t) => t.personId.equals(principalId).and(t.partyRole.equals('principal'))))
       .map((t) => t.poaId)
       .get();
   
