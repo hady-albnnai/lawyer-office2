@@ -8,6 +8,7 @@ import '../../../data/database/database.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../widgets/archive_context_banner.dart';
+import '../../widgets/common/searchable_picker.dart';
 
 /// شاشة تسجيل معاملة وإجراء إداري جديد مع توليد الـ Checklist التلقائي (CreateProcedureScreen V6.2)
 class CreateProcedureScreen extends ConsumerStatefulWidget {
@@ -160,13 +161,56 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                 const Text('2. الموكل والعنوان والدائرة المختصة:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
                 const SizedBox(height: 12),
                 personsAsync.when(
-                  data: (persons) => DropdownButtonFormField<int>(
-                    value: _selectedClientId,
-                    decoration: const InputDecoration(labelText: 'الموكل صاحب المعاملة *', prefixIcon: Icon(Icons.person)),
-                    items: persons.map((p) => DropdownMenuItem(value: p.id, child: Text(p.fullName))).toList(),
-                    onChanged: (val) => setState(() => _selectedClientId = val),
-                    validator: (val) => val == null ? 'يجب اختيار الموكل' : null,
-                  ),
+                  data: (persons) {
+                    final selectedPerson = _selectedClientId == null
+                        ? null
+                        : persons.where((p) => p.id == _selectedClientId).firstOrNull;
+                    
+                    // التحقق إذا كان الشخص أيضاً خصم في دعاوى أخرى
+                    final isAlsoOpponentAsync = _selectedClientId != null
+                        ? ref.watch(personIsClientInOtherCasesProvider(_selectedClientId!))
+                        : null;
+                    final isAlsoOpponent = isAlsoOpponentAsync?.value ?? false;
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SearchablePicker<PersonEntity>(
+                          label: 'الموكل صاحب المعاملة *',
+                          hintText: 'ابحث بالاسم أو الهاتف',
+                          prefixIcon: const Icon(Icons.person_search),
+                          items: persons,
+                          labelOf: (p) => p.fullName,
+                          searchTermsOf: (p) => [p.phone1 ?? '', p.nationalId ?? ''],
+                          subtitleOf: (p) => p.phone1,
+                          value: selectedPerson,
+                          onSelected: (p) => setState(() => _selectedClientId = p.id),
+                        ),
+                        if (isAlsoOpponent)
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppConstants.statusWarning.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: AppConstants.statusWarning.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.warning_amber, size: 16, color: AppConstants.statusWarning),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '⚠️ هذا الشخص هو أيضاً خصم في دعاوى أخرى. تأكد من عدم وجود تعارض في المصالح.',
+                                    style: TextStyle(fontSize: 12, color: AppConstants.statusWarning),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                   loading: () => const CircularProgressIndicator(),
                   error: (_, __) => const Text('خطأ في تحميل أسماء الموكلين'),
                 ),
