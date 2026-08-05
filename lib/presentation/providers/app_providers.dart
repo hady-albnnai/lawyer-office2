@@ -210,9 +210,28 @@ final personRolesProvider = FutureProvider.family<List<String>, int>((ref, perso
   final db = ref.watch(databaseProvider);
   final roles = await (db.select(db.personRoles)
         ..where((t) => t.personId.equals(personId)))
-      .map((t) => t.role)
+      .map((t) => t.roleType)
       .get();
-  return roles;
+  
+  // تحويل الأرقام إلى strings
+  return roles.map((roleType) {
+    switch (roleType) {
+      case 0:
+        return 'client';
+      case 1:
+        return 'opponent';
+      case 2:
+        return 'partner';
+      case 3:
+        return 'director';
+      case 4:
+        return 'teamMember';
+      case 5:
+        return 'contractParty';
+      default:
+        return 'unknown';
+    }
+  }).toList();
 });
 
 /// التحقق إذا كان الشخص موكل في دعاوى أخرى
