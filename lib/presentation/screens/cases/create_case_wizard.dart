@@ -251,8 +251,17 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     super.dispose();
   }
 
+  /// إرجاع فهرس آخر خطوة في الويزارد
+  /// الأرشيف المنتهي: 7 خطوات (بدون موعد قادم)
+  /// الأرشيف الجاري أو الدعوى الجديدة: 8 خطوات (مع موعد قادم)
+  int _getLastStepIndex() {
+    return widget.archiveContext?.isClosed == true ? 6 : 7;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final lastStep = _getLastStepIndex();
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.archiveContext == null ? 'إنشاء دعوى جديدة' : (widget.archiveContext!.isRunning ? 'إدخال دعوى أرشيفية جارية' : 'أرشفة دعوى منتهية')),
@@ -291,12 +300,12 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            if (_currentStep < 6)
+            if (_currentStep < _getLastStepIndex())
               TextButton(
                 onPressed: _isSaving ? null : _nextStep,
                 child: const Text('التالي'),
               ),
-            if (_currentStep == 6)
+            if (_currentStep == _getLastStepIndex())
               ElevatedButton(
                 onPressed: _isSaving ? null : _submitCase,
                 child: _isSaving 
@@ -321,6 +330,9 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   // ===========================================================================
   
   Widget _buildProgressBar() {
+    final lastStep = _getLastStepIndex();
+    final totalSteps = lastStep + 1;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       color: AppColors.cardBackground,
@@ -329,13 +341,13 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         children: [
           // الخطوات
           Row(
-            children: List.generate(7, (index) => _buildStepIndicator(index)),
+            children: List.generate(totalSteps, (index) => _buildStepIndicator(index)),
           ),
           const SizedBox(height: 8),
           
           // أسماء الخطوات
           Row(
-            children: List.generate(7, (index) => _buildStepLabel(index)),
+            children: List.generate(totalSteps, (index) => _buildStepLabel(index)),
           ),
         ],
       ),
@@ -375,6 +387,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       case 4: label = 'الطلبات'; break;
       case 5: label = 'الخصم'; break;
       case 6: label = 'المرفقات'; break;
+      case 7: label = 'الموعد'; break;
       default: label = '';
     }
     
@@ -416,6 +429,8 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         return _buildOpponentStep();
       case 6:
         return _buildAttachmentsStep();
+      case 7:
+        return _buildNextSessionStep();
       default:
         return const SizedBox();
     }
@@ -1842,7 +1857,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       return;
     }
     
-    if (_currentStep < 6) {
+    if (_currentStep < _getLastStepIndex()) {
       setState(() => _currentStep++);
     }
   }
@@ -1894,6 +1909,25 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('يرجى اختيار الخصم'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+          return false;
+        }
+        break;
+      case 7: // الموعد القادم (فقط للأرشيف الجاري والدعاوى الجديدة)
+        if (widget.archiveContext?.isClosed == true) {
+          return true;
+        }
+        // الأرشيف الجاري: دعوى قديمة مستوردة قد لا يكون لها موعد محدد بعد،
+        // فلا يُحبس الحفظ. يُسجَّل نقص «موعد الجلسة» تلقائياً لاحقاً.
+        if (widget.archiveContext?.isRunning == true && _nextSessionDate == null) {
+          return true;
+        }
+        if (_nextSessionDate == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('يرجى تحديد موعد الجلسة القادمة'),
               backgroundColor: AppColors.error,
             ),
           );
