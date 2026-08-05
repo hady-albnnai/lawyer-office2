@@ -2503,15 +2503,56 @@ class _AddPoaDialogState extends ConsumerState<AddPoaDialog> {
                         ),
                         if (_barBranch != null) ...[
                           const SizedBox(height: 16),
+                          // بحث في المندوبين المدخلين سابقاً
+                          ref.watch(allPoasProvider).maybeWhen(
+                            data: (poas) {
+                              // جمع المندوبين الفريدين من الوكالات السابقة
+                              final delegates = <String, String>{};
+                              for (final poa in poas) {
+                                final name = poa.delegateName;
+                                final phone = poa.delegatePhone;
+                                if (name != null && name.trim().isNotEmpty) {
+                                  // حفظ أحدث رقم هاتف لكل مندوب
+                                  if (!delegates.containsKey(name) || 
+                                      (phone != null && phone.trim().isNotEmpty)) {
+                                    delegates[name] = phone ?? '';
+                                  }
+                                }
+                              }
+                              
+                              if (delegates.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+                              
+                              return SearchablePicker<MapEntry<String, String>>(
+                                label: 'اختر مندوب من السجل (اختياري)',
+                                hintText: 'ابحث بالاسم',
+                                prefixIcon: const Icon(Icons.person_search),
+                                items: delegates.entries.toList(),
+                                labelOf: (e) => e.key,
+                                searchTermsOf: (e) => [e.key, e.value],
+                                subtitleOf: (e) => e.value.isNotEmpty ? e.value : null,
+                                value: null,
+                                onSelected: (delegate) {
+                                  setState(() {
+                                    _delegateNameController.text = delegate.key;
+                                    _delegatePhoneController.text = delegate.value;
+                                  });
+                                },
+                              );
+                            },
+                            orElse: () => const SizedBox.shrink(),
+                          ),
+                          const SizedBox(height: 16),
                           TextField(
                             controller: _delegateNameController,
-                            decoration: _dec('اسم مندوب رئيس فرع النقابة'),
+                            decoration: _dec('اسم المندوب'),
                           ),
                           const SizedBox(height: 16),
                           TextField(
                             controller: _delegatePhoneController,
                             keyboardType: TextInputType.phone,
-                            decoration: _dec('هاتف المندوب'),
+                            decoration: _dec('هاتف المندوب (قابل للتعديل)'),
                           ),
                         ],
                       ],
