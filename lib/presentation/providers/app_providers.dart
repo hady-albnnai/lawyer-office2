@@ -205,6 +205,30 @@ final allPersonsProvider = StreamProvider.family<List<PersonEntity>, PersonType?
   return ref.watch(personRepositoryProvider).watchAllPersons(type: type);
 });
 
+/// أدوار شخص معين (client, opponent, witness, etc.)
+final personRolesProvider = FutureProvider.family<List<String>, int>((ref, personId) async {
+  final db = ref.watch(databaseProvider);
+  final roles = await (db.select(db.personRoles)
+        ..where((t) => t.personId.equals(personId)))
+      .map((t) => t.role)
+      .get();
+  return roles;
+});
+
+/// التحقق إذا كان الشخص موكل في دعاوى أخرى
+final personIsClientInOtherCasesProvider = FutureProvider.family<bool, int>((ref, personId) async {
+  final db = ref.watch(databaseProvider);
+  
+  // جلب عدد الدعاوى التي يكون فيها هذا الشخص موكلاً
+  final count = await (db.select(db.caseParties)
+        ..where((t) => t.personId.equals(personId) & 
+                       t.partyRole.equals('client') &
+                       t.isClient.equals(true)))
+      .get();
+  
+  return count.isNotEmpty;
+});
+
 /// كل الوكالات المسجلة (تُستخدم في ربط الدعوى بسند التوكيل).
 /// خدمة فحص تعارض المصالح (المرحلة العاشرة من خارطة التنفيذ).
 final conflictOfInterestServiceProvider = Provider<ConflictOfInterestService>((ref) {

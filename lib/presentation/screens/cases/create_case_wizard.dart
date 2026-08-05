@@ -1429,10 +1429,21 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         itemCount: filteredOpponents.length,
         itemBuilder: (context, index) {
           final opponent = filteredOpponents[index];
-          final isSelected = _selectedOpponentId == opponent['id'];
+          final opponentId = opponent['id'] as int;
+          final isSelected = _selectedOpponentId == opponentId;
+          
+          // التحقق إذا كان الشخص أيضاً موكل في دعاوى أخرى
+          final isAlsoClientAsync = ref.watch(personIsClientInOtherCasesProvider(opponentId));
+          final isAlsoClient = isAlsoClientAsync.value ?? false;
           
           return InkWell(
-            onTap: () => setState(() => _selectedOpponentId = opponent['id'] as int?),
+            onTap: () {
+              if (isAlsoClient) {
+                _showClientConflictWarning(opponentId, opponent['name'] as String);
+              } else {
+                setState(() => _selectedOpponentId = opponentId);
+              }
+            },
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -1461,7 +1472,26 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                                 ),
                               ),
                             ),
-                            // TODO: إضافة إشارة "موكل أيضاً" بعد إنشاء provider لجلب أدوار الشخص
+                            // إشارة تحذير إذا كان الشخص أيضاً موكل
+                            if (isAlsoClient)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.warning.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.warning_amber, size: 14, color: AppColors.warning),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      'موكل أيضاً',
+                                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning, fontSize: 10),
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
                       ],
