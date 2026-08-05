@@ -1514,14 +1514,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
 
   /// عرض تحذير تعارض الأدوار (شخص هو موكل وخصم في نفس الوقت)
   void _showClientConflictWarning(int personId, String personName) {
-    // جلب الدعاوى التي يكون فيها هذا الشخص موكلاً
-    final cases = ref.read(allCasesProvider).value ?? [];
-    final clientCases = cases.where((c) {
-      // التحقق إذا كان الشخص موكل في هذه الدعوى
-      // هذا يحتاج query في قاعدة البيانات - نستخدم حل مؤقت
-      return false; // placeholder
-    }).toList();
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
