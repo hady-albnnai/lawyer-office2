@@ -230,33 +230,27 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final permissions = ref.watch(permissionServiceProvider);
-    final query = GoRouterState.of(context).uri.queryParameters;
-    final requestedStatus = query['status'];
-    final requestedKind = query['kind'];
-    final validStatus = requestedStatus == 'closed' || requestedStatus == 'running' ? requestedStatus : null;
-    final validKind = _archiveFileKindOptions.containsKey(requestedKind) ? requestedKind : null;
-    if (validStatus != null || validKind != null) {
-      final seedSignature = '${validStatus ?? ''}|${validKind ?? ''}|${query['seed'] ?? ''}';
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final lastSeed = ref.read(_archiveWizardQuerySeedProvider);
-        if (lastSeed == seedSignature) return;
-        final current = ref.read(_archiveWizardProvider);
-        ref.read(_archiveWizardQuerySeedProvider.notifier).state = seedSignature;
-        ref.read(_archiveWizardProvider.notifier).state = current.copyWith(
-          archiveStatus: validStatus ?? current.archiveStatus,
-          fileKind: validKind,
-          caseType: null,
-          courtLevel: null,
-          companyGroup: null,
-          companyType: null,
-          procedureType: null,
-          contractType: null,
-          poaType: null,
-        );
-      });
-    }
     ref.watch(_archiveIntakeRefreshProvider);
+    final selection = ref.watch(_archiveWizardProvider);
+    
+    // إذا لم يتم اختيار الحالة بعد، اعرض شاشة الاختيار
+    if (selection.archiveStatus == null) {
+      return _buildStatusSelectionScreen(context);
+    }
+    
+    // إذا تم اختيار الحالة، اعرض شاشة اختيار طريقة الإدخال
+    if (selection.fileKind == null && !_showingInputMethod) {
+      return _buildInputMethodSelectionScreen(context, ref);
+    }
+    
+    // إذا تم اختيار طريقة الإدخال اليدوي، اعرض الويزارد
+    return _buildWizardScreen(context, ref);
+  }
+
+  bool _showingInputMethod = false;
+
+  /// شاشة اختيار الحالة (أرشيف / عمل جاري)
+  Widget _buildStatusSelectionScreen(BuildContext context) {
     return Theme(
       data: AppTheme.lightTheme,
       child: Directionality(
@@ -265,91 +259,244 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
           appBar: AppBar(
             title: const Text('مركز إدخال الأرشيف القديم'),
           ),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'اختر نوع الإدخال',
+                    style: AppTextStyles.headline4.copyWith(color: AppColors.primaryNavy),
+                  ),
+                  const SizedBox(height: 48),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildStatusCard(
+                        icon: Icons.inventory_2,
+                        title: 'أرشيف',
+                        subtitle: 'ملفات منتهية للحفظ والبحث',
+                        color: AppColors.primaryNavy,
+                        onTap: () {
+                          ref.read(_archiveWizardProvider.notifier).state = 
+                              const _ArchiveWizardSelection(archiveStatus: 'closed');
+                        },
+                      ),
+                      const SizedBox(width: 32),
+                      _buildStatusCard(
+                        icon: Icons.pending_actions,
+                        title: 'عمل جاري',
+                        subtitle: 'ملفات جارية تغذي مكتب العمل',
+                        color: AppColors.success,
+                        onTap: () {
+                          ref.read(_archiveWizardProvider.notifier).state = 
+                              const _ArchiveWizardSelection(archiveStatus: 'running');
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 280,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3), width: 2),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 64, color: color),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: AppTextStyles.headline5.copyWith(color: color, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// شاشة اختيار طريقة الإدخال (3 خيارات)
+  Widget _buildInputMethodSelectionScreen(BuildContext context, WidgetRef ref) {
+    final selection = ref.watch(_archiveWizardProvider);
+    final statusLabel = selection.isRunning ? 'عمل جاري' : 'أرشيف';
+    
+    return Theme(
+      data: AppTheme.lightTheme,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('إدخال $statusLabel'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                ref.read(_archiveWizardProvider.notifier).state = const _ArchiveWizardSelection();
+              },
+            ),
+          ),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'اختر طريقة الإدخال',
+                    style: AppTextStyles.headline4.copyWith(color: AppColors.primaryNavy),
+                  ),
+                  const SizedBox(height: 48),
+                  Column(
+                    children: [
+                      _buildInputMethodCard(
+                        icon: Icons.edit,
+                        title: 'إدخال يدوي',
+                        subtitle: 'إدخال الملفات يدوياً بدقة متناهية',
+                        color: AppColors.primaryNavy,
+                        onTap: () {
+                          setState(() => _showingInputMethod = true);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInputMethodCard(
+                        icon: Icons.auto_awesome,
+                        title: 'ذكاء صناعي مدمج',
+                        subtitle: 'تصنيف تلقائي باستخدام نموذج محلي (قريباً)',
+                        color: AppColors.info,
+                        enabled: false,
+                        onTap: () {},
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInputMethodCard(
+                        icon: Icons.cloud,
+                        title: 'ذكاء صناعي متصل',
+                        subtitle: 'تصنيف تلقائي باستخدام DeepSeek/Groq (قريباً)',
+                        color: AppColors.secondaryGold,
+                        enabled: false,
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputMethodCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+    bool enabled = true,
+  }) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: enabled ? color.withOpacity(0.08) : AppColors.textSecondary.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: enabled ? color.withOpacity(0.3) : AppColors.textSecondary.withOpacity(0.3),
+            width: 2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 48, color: enabled ? color : AppColors.textSecondary),
+            const SizedBox(width: 24),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.headline6.copyWith(
+                      color: enabled ? color : AppColors.textSecondary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: enabled ? AppColors.textSecondary : AppColors.textSecondary.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!enabled)
+              Chip(
+                label: const Text('قريباً'),
+                backgroundColor: AppColors.warning.withOpacity(0.2),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// شاشة الويزارد (الإدخال اليدوي)
+  Widget _buildWizardScreen(BuildContext context, WidgetRef ref) {
+    final selection = ref.watch(_archiveWizardProvider);
+    final statusLabel = selection.isRunning ? 'عمل جاري' : 'أرشيف';
+    
+    return Theme(
+      data: AppTheme.lightTheme,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('إدخال $statusLabel - إدخال يدوي'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                // الرجوع لشاشة اختيار طريقة الإدخال
+                ref.read(_archiveWizardProvider.notifier).state = 
+                    _ArchiveWizardSelection(archiveStatus: selection.archiveStatus);
+                setState(() => _showingInputMethod = false);
+              },
+            ),
+          ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _introCard(),
-                const SizedBox(height: 16),
-                _archiveOverviewPanel(context, ref),
-                const SizedBox(height: 16),
-                _archiveGuidedEntryPanel(context, ref),
-                const SizedBox(height: 24),
-                _sectionTitle('دفعات رفع الملفات الخام'),
-                const SizedBox(height: 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final wide = constraints.maxWidth > 900;
-                    final cards = [
-                      _actionCard(
-                        icon: Icons.document_scanner,
-                        title: 'أرشيف ورقي',
-                        subtitle: 'ملفات ممسوحة ضوئياً PDF أو صور، مع بيانات الأصل الورقي.',
-                        enabled: permissions.can(PermissionKeys.archiveIntakeCreate),
-                        onTap: () => _showCreateBatch(context, ref, 'paper'),
-                      ),
-                      _actionCard(
-                        icon: Icons.folder_copy,
-                        title: 'أرشيف إلكتروني',
-                        subtitle: 'استيراد مجلدات وملفات موجودة على الجهاز أو الفلاش.',
-                        enabled: permissions.can(PermissionKeys.archiveIntakeImportFiles),
-                        onTap: () => _showCreateBatch(context, ref, 'electronic'),
-                      ),
-                      _actionCard(
-                        icon: Icons.table_chart,
-                        title: 'Excel / CSV',
-                        subtitle: 'استيراد الأشخاص والدعاوى والوكالات والمستندات من قوالب منظمة.',
-                        enabled: permissions.can(PermissionKeys.archiveIntakeImportExcel),
-                        onTap: () => _showCreateBatch(context, ref, 'excel'),
-                      ),
-                      _actionCard(
-                        icon: Icons.all_inbox,
-                        title: 'أرشيف مختلط',
-                        subtitle: 'دفعة تجمع ورقي وإلكتروني وجداول قديمة في مسار مراجعة واحد.',
-                        enabled: permissions.can(PermissionKeys.archiveIntakeCreate),
-                        onTap: () => _showCreateBatch(context, ref, 'mixed'),
-                      ),
-                    ];
-                    return GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: wide ? 4 : 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: wide ? 1.25 : 1.15,
-                      children: cards,
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                _sectionTitle('قوالب الاستيراد'),
-                const SizedBox(height: 12),
-                _importTemplatesPanel(context, ref),
-                const SizedBox(height: 24),
-                _sectionTitle('مراجعة الأرشيف'),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _statusTile('دفعات الإدخال', 'متابعة دفعات الاستيراد وحالاتها.', Icons.inventory_2, AppColors.primaryNavy),
-                    _statusTile('صندوق غير مصنف', 'ملفات تحتاج ربطاً أو تصنيفاً.', Icons.inbox, AppColors.warning, onTap: () => _showUnclassifiedInbox(context, ref)),
-                    _statusTile('ملفات جارية تحتاج استكمال', 'دعاوى وإجراءات وملفات نشطة ناقصة بيانات تشغيلية.', Icons.pending_actions, AppColors.error, onTap: () => _showActiveNeedsCompletion(context, ref)),
-                    _statusTile('الأرشيف الورقي', 'بحث وكشوف مواقع الأصول الورقية والصناديق والرفوف.', Icons.inventory, AppColors.secondaryGold, onTap: () => _showPaperArchiveReport(context, ref)),
-                    _statusTile('التصنيفات المخصصة', 'كل ما أضافه المستخدم من أنواع ومحاكم ووثائق غير معرفة مسبقاً.', Icons.tune, AppColors.primaryNavy, onTap: () => _showCustomReferences(context, ref)),
-                    _statusTile('المكررات', 'ملفات كشفها النظام كنسخ مكررة.', Icons.copy_all, AppColors.info, onTap: () => _showDuplicates(context, ref)),
-                    _statusTile('تقارير الجودة', 'نتائج الاستيراد والأخطاء والعينات المطلوبة للمراجعة.', Icons.fact_check, AppColors.success, onTap: () => _showQualityReport(context, ref)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _sectionTitle('دفعات الإدخال الحالية'),
-                const SizedBox(height: 12),
-                _batchesList(ref),
-                const SizedBox(height: 24),
-                _notice(),
-              ],
-            ),
+            child: _archiveGuidedEntryPanel(context, ref),
           ),
         ),
       ),
@@ -784,7 +931,6 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
     final selection = ref.watch(_archiveWizardProvider);
     final notifier = ref.read(_archiveWizardProvider.notifier);
     final persistedFileKinds = ref.watch(_archiveReferenceValuesProvider((category: 'file_kind', parent: null))).maybeWhen(data: (values) => values, orElse: () => const <String>[]);
-    final statusDone = selection.archiveStatus != null;
     final kindDone = selection.fileKind != null;
     final canStart = _archiveSelectionReady(selection);
     return Card(
@@ -802,28 +948,25 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('معالج إدخال الأرشيف القديم', style: AppTextStyles.headline6.copyWith(color: AppColors.primaryNavy, fontWeight: FontWeight.bold)),
+                      Text('معالج إدخال الأرشيف', style: AppTextStyles.headline6.copyWith(color: AppColors.primaryNavy, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text('ابدأ بتحديد هل الملف منتهٍ أم جارٍ، ثم اختر نوع الملف وتصنيفه. الجارية فقط تغذي مكتب العمل بالمواعيد القادمة.', style: AppTextStyles.bodySmallSecondary),
+                      Text('اختر نوع الملف وتصنيفه. الجارية فقط تغذي مكتب العمل بالمواعيد القادمة.', style: AppTextStyles.bodySmallSecondary),
                     ],
                   ),
                 ),
-                TextButton.icon(icon: const Icon(Icons.refresh, size: 16), label: const Text('إعادة ضبط'), onPressed: () => notifier.state = const _ArchiveWizardSelection()),
+                TextButton.icon(icon: const Icon(Icons.refresh, size: 16), label: const Text('إعادة ضبط'), onPressed: () {
+                  notifier.state = _ArchiveWizardSelection(archiveStatus: selection.archiveStatus);
+                  setState(() => _showingInputMethod = false);
+                }),
               ],
             ),
             const Divider(height: 28),
-            _wizardStep('1', 'نوع الأرشيف', 'هذا الاختيار يحدد أثر الملف على مكتب العمل.', Wrap(spacing: 10, runSpacing: 10, children: [
-              _archiveChoice(selected: selection.archiveStatus == 'closed', icon: Icons.inventory_2, title: 'أرشيف منتهٍ', subtitle: 'للحفظ والبحث فقط، بلا مواعيد قادمة.', onTap: () => notifier.state = selection.copyWith(archiveStatus: 'closed')),
-              _archiveChoice(selected: selection.archiveStatus == 'running', icon: Icons.pending_actions, title: 'أرشيف جارٍ', subtitle: 'أي موعد قادم سينعكس على مكتب العمل والتقويم.', onTap: () => notifier.state = selection.copyWith(archiveStatus: 'running')),
+            // الخطوة 1: النوع الفرعي للملف (بدلاً من الخطوة 2 القديمة)
+            _wizardStep('1', 'النوع الفرعي للملف', 'اختر نوع الأرشيف المراد إدخاله، أو أضف نوعاً غير موجود.', Wrap(spacing: 8, runSpacing: 8, children: [
+              ..._archiveFileKindOptions.entries.map((e) => _choiceChip(selection.fileKind == e.key, e.value, () => notifier.state = selection.copyWith(fileKind: e.key, caseType: null, courtLevel: null, companyGroup: null, companyType: null, procedureType: null, contractType: null, poaType: null))),
+              ...{...selection.customFileKinds, ...persistedFileKinds}.map((v) => _choiceChip(selection.fileKind == v, v, () => notifier.state = selection.copyWith(fileKind: v))),
+              ActionChip(avatar: const Icon(Icons.add, size: 16), label: const Text('إضافة نوع جديد'), onPressed: () => _addCustomReferenceValue(context, ref, 'نوع ملف جديد', 'file_kind', null, (value) => notifier.state = selection.copyWith(customFileKinds: [...selection.customFileKinds, value], fileKind: value))),
             ])),
-            if (statusDone) ...[
-              const SizedBox(height: 16),
-              _wizardStep('2', 'النوع الفرعي للملف', 'اختر نوع الأرشيف المراد إدخاله، أو أضف نوعاً غير موجود.', Wrap(spacing: 8, runSpacing: 8, children: [
-                ..._archiveFileKindOptions.entries.map((e) => _choiceChip(selection.fileKind == e.key, e.value, () => notifier.state = selection.copyWith(fileKind: e.key, caseType: null, courtLevel: null, companyGroup: null, companyType: null, procedureType: null, contractType: null, poaType: null))),
-                ...{...selection.customFileKinds, ...persistedFileKinds}.map((v) => _choiceChip(selection.fileKind == v, v, () => notifier.state = selection.copyWith(fileKind: v))),
-                ActionChip(avatar: const Icon(Icons.add, size: 16), label: const Text('إضافة نوع جديد'), onPressed: () => _addCustomReferenceValue(context, ref, 'نوع ملف جديد', 'file_kind', null, (value) => notifier.state = selection.copyWith(customFileKinds: [...selection.customFileKinds, value], fileKind: value))),
-              ])),
-            ],
             if (kindDone) ...[
               const SizedBox(height: 16),
               _wizardDetailsForKind(context, ref, selection),
@@ -832,7 +975,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
               const SizedBox(height: 16),
               _documentsHint(context, ref, selection),
             ],
-            if (selection.archiveStatus != null || selection.fileKind != null) ...[
+            if (selection.fileKind != null) ...[
               const SizedBox(height: 16),
               _archiveCurrentPathCard(selection),
             ],
