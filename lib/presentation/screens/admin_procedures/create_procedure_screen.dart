@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart' as file_picker;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -197,7 +195,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppConstants.cardBackground,
+          color: AppConstants.surfaceWhite,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -217,7 +215,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                   icon: const Icon(Icons.arrow_back),
                   label: const Text('السابق'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.cardBorder,
+                    backgroundColor: AppConstants.backgroundLight,
                     foregroundColor: AppConstants.primaryNavy,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -288,7 +286,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
-        color: AppConstants.cardBackground,
+        color: AppConstants.surfaceWhite,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -320,7 +318,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                               ? AppConstants.statusSuccess 
                               : isCurrent 
                                   ? AppConstants.primaryNavy 
-                                  : AppConstants.cardBorder,
+                                  : AppConstants.backgroundLight,
                           boxShadow: isCurrent 
                               ? [
                                   BoxShadow(
@@ -365,7 +363,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                       decoration: BoxDecoration(
                         color: isCompleted 
                             ? AppConstants.statusSuccess 
-                            : AppConstants.cardBorder,
+                            : AppConstants.backgroundLight,
                         borderRadius: BorderRadius.circular(1),
                       ),
                     ),
@@ -429,7 +427,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
         gradient: LinearGradient(
           colors: [
             AppConstants.primaryNavy.withOpacity(0.1),
-            AppConstants.cardBackground,
+            AppConstants.surfaceWhite,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -516,14 +514,14 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                   decoration: InputDecoration(
                     labelText: 'التصنيف الرئيسي *',
                     filled: true,
-                    fillColor: AppConstants.cardBackground,
+                    fillColor: AppConstants.surfaceWhite,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppConstants.cardBorder),
+                      borderSide: BorderSide(color: AppConstants.backgroundLight),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppConstants.cardBorder),
+                      borderSide: BorderSide(color: AppConstants.backgroundLight),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -548,14 +546,14 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                   decoration: InputDecoration(
                     labelText: 'النوع الفرعي *',
                     filled: true,
-                    fillColor: AppConstants.cardBackground,
+                    fillColor: AppConstants.surfaceWhite,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppConstants.cardBorder),
+                      borderSide: BorderSide(color: AppConstants.backgroundLight),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppConstants.cardBorder),
+                      borderSide: BorderSide(color: AppConstants.backgroundLight),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -685,14 +683,14 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
             hintText: 'مثال: معاملة حصر إرث',
             prefixIcon: const Icon(Icons.title),
             filled: true,
-            fillColor: AppConstants.cardBackground,
+            fillColor: AppConstants.surfaceWhite,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.cardBorder),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.cardBorder),
+              borderSide: BorderSide(color: AppConstants.backgroundLight),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -711,14 +709,14 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                   hintText: 'مثال: محكمة الصلح',
                   prefixIcon: const Icon(Icons.account_balance),
                   filled: true,
-                  fillColor: AppConstants.cardBackground,
+                  fillColor: AppConstants.surfaceWhite,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.cardBorder),
+                    borderSide: BorderSide(color: AppConstants.backgroundLight),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.cardBorder),
+                    borderSide: BorderSide(color: AppConstants.backgroundLight),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -736,14 +734,14 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                   hintText: 'مثال: 12345',
                   prefixIcon: const Icon(Icons.numbers),
                   filled: true,
-                  fillColor: AppConstants.cardBackground,
+                  fillColor: AppConstants.surfaceWhite,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.cardBorder),
+                    borderSide: BorderSide(color: AppConstants.backgroundLight),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.cardBorder),
+                    borderSide: BorderSide(color: AppConstants.backgroundLight),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -781,7 +779,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: AppConstants.cardBorder, width: 0.5),
+              border: Border.all(color: AppConstants.backgroundLight, width: 0.5),
               borderRadius: BorderRadius.circular(8),
             ),
             child: ListView.builder(
@@ -792,7 +790,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                 return Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppConstants.cardBorder, width: 0.5),
+                    border: Border.all(color: AppConstants.backgroundLight, width: 0.5),
                   ),
                   child: Row(
                     children: [
@@ -802,7 +800,7 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
                         child: Text(
                           _attachmentControllers[index].text.isNotEmpty
                               ? _attachmentControllers[index].text
-                              : _attachmentPaths[index].split(Platform.pathSeparator).last,
+                              : _attachmentPaths[index].split('/').last.split('\\').last,
                           style: const TextStyle(fontSize: 14),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
