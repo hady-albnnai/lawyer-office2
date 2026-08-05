@@ -2663,12 +2663,15 @@ class _AddPoaDialogState extends ConsumerState<AddPoaDialog> {
                         ),
                         if (_barBranch != null) ...[
                           const SizedBox(height: 16),
-                          // بحث في المندوبين المدخلين سابقاً
+                          // بحث في المندوبين المدخلين سابقاً لنفس الفرع فقط
                           ref.watch(allPoasProvider).maybeWhen(
                             data: (poas) {
-                              // جمع المندوبين الفريدين من الوكالات السابقة
+                              // جمع المندوبين الفريدين من الوكالات السابقة لنفس الفرع
                               final delegates = <String, String>{};
                               for (final poa in poas) {
+                                // فلترة حسب فرع النقابة المختار
+                                if (poa.delegateBranch != _barBranch) continue;
+                                
                                 final name = poa.delegateName;
                                 final phone = poa.delegatePhone;
                                 if (name != null && name.trim().isNotEmpty) {
@@ -2681,11 +2684,21 @@ class _AddPoaDialogState extends ConsumerState<AddPoaDialog> {
                               }
                               
                               if (delegates.isEmpty) {
-                                return const SizedBox.shrink();
+                                return Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.warning.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'لا يوجد مندوبين مسجلين لفرع $_barBranch',
+                                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
+                                  ),
+                                );
                               }
                               
                               return SearchablePicker<MapEntry<String, String>>(
-                                label: 'اختر مندوب من السجل (اختياري)',
+                                label: 'اختر مندوب من فرع $_barBranch (اختياري)',
                                 hintText: 'ابحث بالاسم',
                                 prefixIcon: const Icon(Icons.person_search),
                                 items: delegates.entries.toList(),
