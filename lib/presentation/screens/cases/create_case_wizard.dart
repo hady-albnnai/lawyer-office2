@@ -1500,6 +1500,15 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       case CaseType.realEstate:
         docs.addAll(['سند ملكية', 'مخطط عقاري', 'بيان مساحة']);
         break;
+      case CaseType.administrative:
+        docs.addAll(['قرار إداري', 'مراسلات رسمية', 'طلب خطي']);
+        break;
+      case CaseType.constitutional:
+        docs.addAll(['طعن دستوري', 'نصوص قانونية', 'سوابق قضائية']);
+        break;
+      case CaseType.other:
+        docs.addAll(['مستندات إضافية']);
+        break;
     }
     
     return docs;
