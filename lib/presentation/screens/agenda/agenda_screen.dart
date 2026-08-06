@@ -65,6 +65,9 @@ final darkModeProvider = StateProvider<bool>((ref) => false);
 final viewModeProvider = StateProvider<AgendaViewMode>((ref) => AgendaViewMode.weekly);
 final showRichContextProvider = StateProvider<bool>((ref) => false);
 
+/// حماية من الضغط المزدوج على زر التوليد
+bool _automationRunning = false;
+
 enum AgendaViewMode { weekly, monthly }
 
 /// Provider حقيقي للأجندة من قاعدة البيانات (case_sessions + daily_tasks)
@@ -1328,45 +1331,49 @@ class AgendaScreen extends ConsumerWidget {
   /// سجلات فعلية في قاعدة البيانات، وتشغيلها الصامت يملأ الأجندة
   /// بمهام لم يطلبها أحد.
   Future<void> _runAutomation(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('توليد المهام المتكررة'),
-        content: const Text(
-          'سيفحص النظام الجلسات الدورية، والعقود التي تقترب من الانتهاء، '
-          'ومراحل الشركات المستحقة، ثم ينشئ مهام الأجندة المقابلة.\n\n'
-          'قد تُضاف مهام جديدة إلى جدولك. هل تريد المتابعة؟',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('توليد'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('جارٍ توليد المهام المتكررة...')),
-      );
-    }
+    // حماية من الضغط المزدوج
+    if (_automationRunning) return;
+    _automationRunning = true;
 
     try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('توليد المهام المتكررة'),
+          content: const Text(
+            'سيفحص النظام الجلسات الدورية، والعقود التي تقترب من الانتهاء، '
+            'ومراحل الشركات المستحقة، ثم ينشئ مهام الأجندة المقابلة.\n\n'
+            'قد تُضاف مهام جديدة إلى جدولك. هل تريد المتابعة؟',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('توليد'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('جارٍ توليد المهام المتكررة...')),
+        );
+      }
+
       final result = await AutomationService().autoRecurringAppointments(
         db: ref.read(databaseProvider),
         currentDate: DateTime.now(),
       );
-      // تحديث كل مزودات الأجندة (أسبوعي + شهري + يومي)
+      // تحديث كل مزودات الأجندة (أسبوعي + شهري بكل أشهر + يومي)
       ref.invalidate(unifiedAgendaFromDBProvider);
       ref.invalidate(unifiedAgendaProvider);
       ref.invalidate(tasksByDateProvider(DateTime.now()));
-      ref.invalidate(monthlyAgendaProvider(selectedDate));
+      ref.invalidate(monthlyAgendaProvider); // كل الأشهر
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1383,6 +1390,8 @@ class AgendaScreen extends ConsumerWidget {
           backgroundColor: AppColors.error,
         ),
       );
+    } finally {
+      _automationRunning = false;
     }
   }
 
