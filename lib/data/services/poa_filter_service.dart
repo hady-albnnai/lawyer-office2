@@ -84,17 +84,8 @@ class PoaFilterService {
             combined.contains('احوال شخصية') ||
             combined.contains('شرعي');
 
-      case CaseType.labor:
-        return combined.contains('عمالي') || combined.contains('عمل');
-
-      case CaseType.realEstate:
-        return combined.contains('عقاري') || combined.contains('عقار');
-
       case CaseType.administrative:
         return combined.contains('إداري') || combined.contains('اداري');
-
-      case CaseType.constitutional:
-        return combined.contains('دستوري');
 
       case CaseType.other:
         return true; // نوع آخر = يقبل أي وكالة
@@ -112,14 +103,8 @@ class PoaFilterService {
         return 'تجارية';
       case CaseType.personalStatus:
         return 'أحوال شخصية';
-      case CaseType.labor:
-        return 'عمالية';
-      case CaseType.realEstate:
-        return 'عقارية';
       case CaseType.administrative:
         return 'إدارية';
-      case CaseType.constitutional:
-        return 'دستورية';
       case CaseType.other:
         return 'أخرى';
     }

@@ -42,15 +42,14 @@ enum CaseStatus {
 }
 
 /// نوع الدعوى القانوني.
+/// ملاحظة: العقارية فرع من المدنية، والعمالية تتبع البداية المدنية،
+/// والدستورية لا توجد لها محكمة مستقلة في الهيكل القضائي السوري.
 enum CaseType {
   civil,
   commercial,
   criminal,
   administrative,
   personalStatus,
-  realEstate,
-  labor,
-  constitutional,
   other;
 
   String get displayName => const [
@@ -59,9 +58,6 @@ enum CaseType {
         'جزائية',
         'إدارية',
         'أحوال شخصية',
-        'عقارية',
-        'عمالية',
-        'دستورية',
         'أخرى',
       ][index];
 }

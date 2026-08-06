@@ -391,14 +391,7 @@ CaseType _indexToCaseType(int index) {
     case 3:
       return CaseType.personalStatus;
     case 4:
-      return CaseType.labor;
-    case 5:
-      return CaseType.realEstate;
-    case 6:
       return CaseType.administrative;
-    case 7:
-      return CaseType.constitutional;
-    case 8:
     default:
       return CaseType.other;
   }

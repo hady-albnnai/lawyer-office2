@@ -410,9 +410,9 @@ class CaseDetailNotifier extends StateNotifier<CaseDetailState> {
       case 'جزائي': return CaseType.criminal;
       case 'إداري': return CaseType.administrative;
       case 'شرعي': return CaseType.personalStatus;
-      case 'عقاري': return CaseType.realEstate;
-      case 'عمالي': return CaseType.labor;
-      case 'دستوري': return CaseType.constitutional;
+      case 'عقاري': return CaseType.civil; // العقارية فرع من المدنية
+      case 'عمالي': return CaseType.civil; // العمالية تتبع البداية المدنية
+      case 'دستوري': return CaseType.administrative; // الدستورية تتبع الإدارية
       default: return CaseType.other;
     }
   }
@@ -3099,8 +3099,8 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
     if (value.contains('إدار') || value.contains('ادار')) {
       return CaseType.administrative;
     }
-    if (value.contains('عقار')) return CaseType.realEstate;
-    if (value.contains('عمال')) return CaseType.labor;
+    if (value.contains('عقار')) return CaseType.civil; // العقارية فرع من المدنية
+    if (value.contains('عمال')) return CaseType.civil; // العمالية تتبع البداية المدنية
     return CaseType.civil;
   }
 

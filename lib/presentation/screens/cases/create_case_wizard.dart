@@ -135,14 +135,10 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       case CaseType.civil:
       case CaseType.commercial:
       case CaseType.criminal:
-      case CaseType.labor:
-      case CaseType.realEstate:
       case CaseType.administrative:
         return 'الدعاوى القضائية تتطلب وكالة قضائية (سند توكيل عام أو خاص) مصدقة للمحكمة المختصة.';
       case CaseType.personalStatus:
         return 'دعاوى الأحوال الشخصية تتطلب وكالة قضائية خاصة أو وكالة عدلية حسب نوع الدعوى.';
-      case CaseType.constitutional:
-        return 'الدعوى الدستورية تتطلب وكالة قضائية خاصة مصدقة لمحكمة النقض.';
       case CaseType.other:
       default:
         return 'اختر الوكالة المناسبة لنوع الملف. الوكالات القضائية للدعاوى، والعدلية للمعاملات.';
@@ -237,9 +233,9 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       if (caseType.contains('تجار')) _caseType = CaseType.commercial;
       if (caseType.contains('شرع') || caseType.contains('احوال') || caseType.contains('شخصية')) _caseType = CaseType.personalStatus;
       if (caseType.contains('إدار') || caseType.contains('ادار')) _caseType = CaseType.administrative;
-      if (caseType.contains('عقار')) _caseType = CaseType.realEstate;
-      if (caseType.contains('عمال')) _caseType = CaseType.labor;
-      if (caseType.contains('دستور')) _caseType = CaseType.constitutional;
+      if (caseType.contains('عقار')) _caseType = CaseType.civil; // العقارية فرع من المدنية
+      if (caseType.contains('عمال')) _caseType = CaseType.civil; // العمالية تتبع البداية المدنية
+      if (caseType.contains('دستور')) _caseType = CaseType.administrative; // الدستورية تتبع الإدارية
       if (caseType.contains('مدني') && !caseType.contains('إدار')) _caseType = CaseType.civil;
       // الدرجة اختارها المستخدم قبل فتح الويزارد، فتُحفظ ولا يُعاد سؤاله.
       _archiveCourtLevel = archive.courtLevel;
@@ -2046,17 +2042,8 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       case CaseType.commercial:
         docs.addAll(['سجل تجاري', 'عقد شركة', 'فواتير تجارية']);
         break;
-      case CaseType.labor:
-        docs.addAll(['عقد عمل', 'كشف رواتب', 'إنذار']);
-        break;
-      case CaseType.realEstate:
-        docs.addAll(['سند ملكية', 'مخطط عقاري', 'بيان مساحة']);
-        break;
       case CaseType.administrative:
         docs.addAll(['قرار إداري', 'مراسلات رسمية', 'طلب خطي']);
-        break;
-      case CaseType.constitutional:
-        docs.addAll(['طعن دستوري', 'نصوص قانونية', 'سوابق قضائية']);
         break;
       case CaseType.other:
         docs.addAll(['مستندات إضافية']);
