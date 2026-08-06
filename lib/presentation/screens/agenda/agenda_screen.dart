@@ -316,13 +316,15 @@ class AgendaScreen extends ConsumerWidget {
     final isDarkMode = ref.watch(darkModeProvider);
     final viewMode = ref.watch(viewModeProvider);
 
-    // تحميل إعدادات Dark Mode عند البناء الأول
+    // تحميل إعدادات Dark Mode + تفعيل الإشعارات تلقائياً عند البناء الأول
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadDarkModePreference().then((savedMode) {
         if (ref.read(darkModeProvider) != savedMode) {
           ref.read(darkModeProvider.notifier).state = savedMode;
         }
       });
+      // تفعيل الإشعارات الذكية تلقائياً
+      _autoEnableNotifications(ref);
     });
 
     return Scaffold(
@@ -1150,7 +1152,11 @@ class AgendaScreen extends ConsumerWidget {
                       date.day == selectedDate.day;
 
                   return InkWell(
-                    onTap: () => ref.read(selectedAgendaDateProvider.notifier).state = date,
+                    onTap: () {
+                      ref.read(selectedAgendaDateProvider.notifier).state = date;
+                      // التبديل للعرض الأسبوعي لعرض تفاصيل اليوم المختار
+                      ref.read(viewModeProvider.notifier).state = AgendaViewMode.weekly;
+                    },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       decoration: BoxDecoration(
@@ -1372,6 +1378,16 @@ class AgendaScreen extends ConsumerWidget {
           backgroundColor: AppColors.error,
         ),
       );
+    }
+  }
+
+  /// تفعيل الإشعارات تلقائياً عند فتح الأجندة (بدون إزعاج المستخدم)
+  void _autoEnableNotifications(WidgetRef ref) {
+    try {
+      final notificationService = NotificationService();
+      notificationService.initialize();
+    } catch (_) {
+      // تجاهل أخطاء التفعيل التلقائي — المستخدم يقدر يفعّلها يدوياً
     }
   }
 
