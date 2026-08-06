@@ -128,50 +128,26 @@ class SidebarItem extends StatelessWidget {
     if (item.isHidden) return const SizedBox.shrink();
 
     final isSelected = selectedRoute == item.route;
-    final accent = item.accentColor;
 
-    // ── خلفية العنصر ──
-    // عند الاختيار: خلفية ملوّنة خفيفة بلون القسم
-    // بدون اختيار: خلفية شفافة
-    Color backgroundColor;
-    if (isSelected && accent != null) {
-      backgroundColor = accent.withValues(alpha: 0.12);
-    } else if (isSelected) {
-      backgroundColor = AppColors.sidebarHover;
-    } else {
-      backgroundColor = Colors.transparent;
-    }
+    // ── الألوان موحدة: كحلي + ذهبي فقط ──
+    // عادي: أيقونة رمادية + نص رمادي
+    // مختار: أيقونة ذهبية + نص كحلي غامق + خلفية كحلي خفيف + خط ذهبي يمين
+    final Color backgroundColor = isSelected
+        ? AppColors.primaryNavy.withValues(alpha: 0.08)
+        : Colors.transparent;
 
-    // ── لون الأيقونة ──
-    // المختار بلون القسم، العادي رمادي هادئ
-    Color iconColor;
-    if (isSelected && accent != null) {
-      iconColor = accent;
-    } else if (isSelected) {
-      iconColor = AppColors.primaryNavy;
-    } else {
-      iconColor = AppColors.sidebarIcon;
-    }
+    final Color iconColor = isSelected
+        ? AppColors.secondaryGold
+        : AppColors.sidebarIcon;
 
-    // ── لون النص ──
-    // المختار بلون القسم (داكن على خلفية فاتحة = مقروء)
-    // العادي بلون النص الافتراضي
-    TextStyle textStyle;
-    if (isSelected && accent != null) {
-      textStyle = AppTextStyles.sidebarItem.copyWith(
-        color: accent,
-        fontWeight: FontWeight.bold,
-      );
-    } else if (isSelected) {
-      textStyle = AppTextStyles.sidebarItem.copyWith(
-        color: AppColors.primaryNavy,
-        fontWeight: FontWeight.bold,
-      );
-    } else {
-      textStyle = AppTextStyles.sidebarItem;
-    }
+    final TextStyle textStyle = isSelected
+        ? AppTextStyles.sidebarItem.copyWith(
+            color: AppColors.primaryNavy,
+            fontWeight: FontWeight.bold,
+          )
+        : AppTextStyles.sidebarItem;
 
-    final double itemHeight = 48.0;
+    final double itemHeight = 44.0;
     final effectiveBadgeCount = item.badgeCount > 0 ? item.badgeCount : 0;
 
     return Tooltip(
@@ -179,26 +155,22 @@ class SidebarItem extends StatelessWidget {
       child: InkWell(
         onTap: item.isDisabled ? null : () => onSelected(item),
         borderRadius: BorderRadius.circular(12),
-        hoverColor: AppColors.sidebarHover,
+        hoverColor: AppColors.primaryNavy.withValues(alpha: 0.05),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 180),
           height: itemHeight,
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(12),
-            // خط جانبي ملوّن عند الاختيار
-            border: isSelected && accent != null
-                ? Border(right: BorderSide(color: accent, width: 3))
+            border: isSelected
+                ? Border(right: BorderSide(color: AppColors.secondaryGold, width: 3))
                 : null,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(item.icon, key: ValueKey(isSelected), color: iconColor, size: 22),
-              ),
-              const SizedBox(width: 12),
+              Icon(item.icon, color: iconColor, size: 20),
+              const SizedBox(width: 10),
               if (isExpanded) ...[
                 Expanded(
                   child: Text(
@@ -209,13 +181,13 @@ class SidebarItem extends StatelessWidget {
                   ),
                 ),
                 if (effectiveBadgeCount > 0) ...[
-                  const SizedBox(width: 8),
-                  BadgeWidget(count: effectiveBadgeCount, type: item.badgeType, size: 20),
+                  const SizedBox(width: 6),
+                  BadgeWidget(count: effectiveBadgeCount, type: item.badgeType, size: 18),
                 ],
               ] else ...[
                 if (effectiveBadgeCount > 0) ...[
-                  const SizedBox(width: 4),
-                  BadgeWidget(count: effectiveBadgeCount, type: item.badgeType, size: 18),
+                  const SizedBox(width: 2),
+                  BadgeWidget(count: effectiveBadgeCount, type: item.badgeType, size: 16),
                 ],
               ],
             ],
@@ -284,18 +256,12 @@ class SidebarItemList extends StatelessWidget {
     }
 
     final hasSelectedChild = parent.children!.any((c) => selectedRoute == c.route) || selectedRoute == parent.route;
-    final accent = parent.accentColor;
 
-    // نفس منطق العناصر العادية: لون القسم عند التفعيل
-    final tileIconColor = hasSelectedChild && accent != null
-        ? accent
-        : (hasSelectedChild ? AppColors.primaryNavy : AppColors.sidebarIcon);
-
-    final tileTextStyle = hasSelectedChild && accent != null
-        ? AppTextStyles.sidebarItem.copyWith(color: accent, fontWeight: FontWeight.bold)
-        : (hasSelectedChild
-            ? AppTextStyles.sidebarItem.copyWith(color: AppColors.primaryNavy, fontWeight: FontWeight.bold)
-            : AppTextStyles.sidebarItem);
+    // ألوان موحدة: كحلي + ذهبي
+    final tileIconColor = hasSelectedChild ? AppColors.secondaryGold : AppColors.sidebarIcon;
+    final tileTextStyle = hasSelectedChild
+        ? AppTextStyles.sidebarItem.copyWith(color: AppColors.primaryNavy, fontWeight: FontWeight.bold)
+        : AppTextStyles.sidebarItem;
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -304,19 +270,14 @@ class SidebarItemList extends StatelessWidget {
         tilePadding: const EdgeInsets.symmetric(horizontal: 10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: hasSelectedChild && accent != null
-            ? accent.withValues(alpha: 0.06)
-            : Colors.transparent,
+        backgroundColor: AppColors.primaryNavy.withValues(alpha: 0.04),
         collapsedBackgroundColor: Colors.transparent,
-        leading: Icon(parent.icon, color: tileIconColor, size: 22),
+        leading: Icon(parent.icon, color: tileIconColor, size: 20),
         title: Text(parent.label, style: tileTextStyle),
         children: parent.children!.map((child) {
-          final tinted = child.accentColor == null && accent != null
-              ? child.copyWithAccent(accent)
-              : child;
           return Padding(
-            padding: const EdgeInsets.only(right: 16.0, bottom: 4.0),
-            child: tinted.toWidget(
+            padding: const EdgeInsets.only(right: 16.0, bottom: 2.0),
+            child: child.toWidget(
               context: context,
               isExpanded: isExpanded,
               selectedRoute: selectedRoute,

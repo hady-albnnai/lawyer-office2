@@ -188,13 +188,13 @@ class NavSidebar extends ConsumerWidget {
   Widget _buildGroupLabel(SidebarGroupModel group, bool isExpanded) {
     if (!isExpanded) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(right: 8, top: 8, bottom: 2),
+      padding: const EdgeInsets.only(right: 10, top: 10, bottom: 2),
       child: Text(
         group.label,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          color: group.accentColor?.withOpacity(0.6) ?? AppColors.textSecondary,
+          color: AppColors.secondaryGold,
           letterSpacing: 0.5,
         ),
       ),
@@ -511,169 +511,142 @@ class AppSidebar extends NavSidebar {
 }
 
 // =============================================================================
-// ألوان المجموعات
+// ألوان القائمة الجانبية — كحلي + ذهبي فقط (هوية التطبيق)
 // =============================================================================
 
 class SidebarPalette {
   const SidebarPalette._();
 
-  /// العمل اليومي — أزرق نشط
-  static const Color daily = Color(0xFF1565C0);
+  /// اللون الأساسي للأيقونات والنصوص = كحلي التطبيق
+  static const Color primary = AppColors.primaryNavy;
 
-  /// الملفات والأشخاص — كهرماني
-  static const Color files = Color(0xFFB8860B);
+  /// لون التمييز = ذهبي التطبيق
+  static const Color accent = AppColors.secondaryGold;
 
-  /// الأدوات والمرجع — نيلي
-  static const Color tools = Color(0xFF4527A0);
-
-  /// الإدارة — رمادي محايد
-  static const Color admin = Color(0xFF546E7A);
-
-  /// AI — تركوازي (مستقبلي)
-  static const Color ai = Color(0xFF00838F);
+  /// خلفية العنصر المختار
+  static const Color selected = Color(0xFF1A2332); // كحلي داكن
 }
 
 // =============================================================================
-// التعريف الجديد: 4 مجموعات / 10 عناصر
+// التعريف الجديد: 4 مجموعات / كلها قوائم منسدلة / ألوان موحدة
 // =============================================================================
 
 List<SidebarGroupModel> getDefaultSidebarGroups() {
   return [
     // ── المجموعة 1: العمل اليومي ──
-    SidebarGroupModel(
+    const SidebarGroupModel(
       label: 'العمل اليومي',
-      accentColor: SidebarPalette.daily,
       items: [
-        const SidebarItemModel(
-          id: 'today',
-          label: 'لوحة اليوم',
-          icon: CustomIcons.todayDashboard,
+        SidebarItemModel(
+          id: 'daily_workspace',
+          label: 'العمل اليومي',
+          icon: Icons.dashboard_outlined,
           route: '/today',
-          accentColor: SidebarPalette.daily,
-        ),
-        const SidebarItemModel(
-          id: 'agenda',
-          label: 'الأجندة',
-          icon: CustomIcons.agenda,
-          route: '/agenda',
-          accentColor: SidebarPalette.daily,
-        ),
-        const SidebarItemModel(
-          id: 'new_work',
-          label: 'عمل جديد',
-          icon: Icons.add_circle_outline,
-          route: '/new-work',
-          accentColor: SidebarPalette.daily,
-          isProminent: true,
-        ),
-        const SidebarItemModel(
-          id: 'work_orders',
-          label: 'أوامر العمل',
-          icon: CustomIcons.workOrders,
-          route: '/work-orders',
-          accentColor: SidebarPalette.daily,
+          children: [
+            SidebarItemModel(id: 'ws_today', label: 'لوحة اليوم', icon: Icons.today_outlined, route: '/today'),
+            SidebarItemModel(id: 'ws_agenda', label: 'الأجندة', icon: Icons.calendar_month_outlined, route: '/agenda'),
+            SidebarItemModel(id: 'ws_new', label: 'عمل جديد', icon: Icons.add_circle_outline, route: '/new-work', isProminent: true),
+            SidebarItemModel(id: 'ws_wo', label: 'أوامر العمل', icon: Icons.assignment_ind_outlined, route: '/work-orders'),
+          ],
         ),
       ],
     ),
 
     // ── المجموعة 2: الملفات والأشخاص ──
-    SidebarGroupModel(
+    const SidebarGroupModel(
       label: 'الملفات والأشخاص',
-      accentColor: SidebarPalette.files,
       items: [
-        const SidebarItemModel(
+        SidebarItemModel(
           id: 'office_files',
           label: 'ملفات المكتب',
           icon: Icons.folder_special_outlined,
           route: '/files',
-          accentColor: SidebarPalette.files,
           children: [
-            SidebarItemModel(
-              id: 'of_active',
-              label: 'الملفات الجارية',
-              icon: Icons.pending_actions,
-              route: '/files?status=active',
-              badge: 'active',
-            ),
-            SidebarItemModel(
-              id: 'of_completed',
-              label: 'الملفات المنتهية',
-              icon: Icons.inventory_2_outlined,
-              route: '/files?status=completed',
-              badge: 'closed',
-            ),
-            SidebarItemModel(
-              id: 'of_agencies',
-              label: 'ملفات الوكالات',
-              icon: Icons.verified_user_outlined,
-              route: '/files/agencies',
-            ),
+            SidebarItemModel(id: 'of_active', label: 'الملفات الجارية', icon: Icons.pending_actions, route: '/files?status=active'),
+            SidebarItemModel(id: 'of_completed', label: 'الملفات المنتهية', icon: Icons.inventory_2_outlined, route: '/files?status=completed'),
+            SidebarItemModel(id: 'of_agencies', label: 'ملفات الوكالات', icon: Icons.verified_user_outlined, route: '/files/agencies'),
           ],
         ),
-        const SidebarItemModel(
+        SidebarItemModel(
           id: 'persons',
           label: 'الأشخاص والجهات',
           icon: Icons.people_alt_outlined,
           route: '/persons',
-          accentColor: SidebarPalette.files,
+          children: [
+            SidebarItemModel(id: 'p_all', label: 'كل الأشخاص', icon: Icons.people_outline, route: '/persons'),
+            SidebarItemModel(id: 'p_clients', label: 'الموكلون', icon: Icons.person_outline, route: '/persons'),
+            SidebarItemModel(id: 'p_opponents', label: 'الخصوم', icon: Icons.person_off_outlined, route: '/persons'),
+            SidebarItemModel(id: 'p_lawyers', label: 'محامو الخصوم', icon: Icons.gavel_outlined, route: '/persons'),
+            SidebarItemModel(id: 'p_companies', label: 'الشركات والجهات', icon: Icons.business_outlined, route: '/persons'),
+          ],
         ),
       ],
     ),
 
     // ── المجموعة 3: الأدوات والمرجع ──
-    SidebarGroupModel(
+    const SidebarGroupModel(
       label: 'الأدوات والمرجع',
-      accentColor: SidebarPalette.tools,
       items: [
-        const SidebarItemModel(
+        SidebarItemModel(
           id: 'finance',
           label: 'المالية والصندوق',
-          icon: CustomIcons.finance,
+          icon: Icons.account_balance_wallet_outlined,
           route: '/finance',
-          accentColor: Color(0xFF2E7D32),
+          children: [
+            SidebarItemModel(id: 'f_agreements', label: 'اتفاقيات الأتعاب', icon: Icons.handshake_outlined, route: '/finance'),
+            SidebarItemModel(id: 'f_payments', label: 'الدفعات وسندات القبض', icon: Icons.payments_outlined, route: '/finance'),
+            SidebarItemModel(id: 'f_expenses', label: 'المصاريف', icon: Icons.receipt_long_outlined, route: '/finance'),
+            SidebarItemModel(id: 'f_cashbox', label: 'الصندوق', icon: Icons.savings_outlined, route: '/finance'),
+          ],
         ),
-        const SidebarItemModel(
+        SidebarItemModel(
           id: 'legal_templates',
           label: 'النماذج القانونية',
           icon: Icons.article_outlined,
           route: '/templates',
-          accentColor: Color(0xFF00838F),
+          children: [
+            SidebarItemModel(id: 't_contracts', label: 'قوالب العقود', icon: Icons.description_outlined, route: '/templates'),
+            SidebarItemModel(id: 't_courts', label: 'قوالب الدعاوى', icon: Icons.gavel_outlined, route: '/templates'),
+            SidebarItemModel(id: 't_admin', label: 'قوالب الإجراءات', icon: Icons.assignment_outlined, route: '/templates'),
+          ],
         ),
-        const SidebarItemModel(
+        SidebarItemModel(
           id: 'search_reports',
           label: 'البحث والتقارير',
-          icon: CustomIcons.searchReports,
+          icon: Icons.search_outlined,
           route: '/search-reports',
-          accentColor: SidebarPalette.tools,
+          children: [
+            SidebarItemModel(id: 'r_search', label: 'البحث الشامل', icon: Icons.manage_search, route: '/search-reports'),
+            SidebarItemModel(id: 'r_print', label: 'الطباعة والتصدير', icon: Icons.print_outlined, route: '/printing'),
+          ],
         ),
-        const SidebarItemModel(
+        SidebarItemModel(
           id: 'legal_library',
           label: 'المكتبة القانونية',
-          icon: CustomIcons.legalLibrary,
+          icon: Icons.local_library_outlined,
           route: '/legal-library',
-          accentColor: Color(0xFF6A1B9A),
+          children: [
+            SidebarItemModel(id: 'l_laws', label: 'القوانين السورية', icon: Icons.menu_book_outlined, route: '/legal-library'),
+            SidebarItemModel(id: 'l_precedents', label: 'الاجتهادات', icon: Icons.balance_outlined, route: '/legal-library'),
+            SidebarItemModel(id: 'l_favorites', label: 'المفضلة', icon: Icons.bookmark_outline, route: '/legal-library'),
+          ],
         ),
       ],
     ),
 
     // ── المجموعة 4: الإدارة ──
-    SidebarGroupModel(
+    const SidebarGroupModel(
       label: 'الإدارة',
-      accentColor: SidebarPalette.admin,
       items: [
-        const SidebarItemModel(
-          id: 'archive_intake',
-          label: 'إدخال الأرشيف',
-          icon: Icons.archive_outlined,
+        SidebarItemModel(
+          id: 'admin',
+          label: 'إدارة المكتب',
+          icon: Icons.admin_panel_settings_outlined,
           route: '/archive-intake',
-          accentColor: SidebarPalette.admin,
-        ),
-        const SidebarItemModel(
-          id: 'settings',
-          label: 'الإعدادات',
-          icon: CustomIcons.settings,
-          route: '/settings',
-          accentColor: SidebarPalette.admin,
+          children: [
+            SidebarItemModel(id: 'a_archive', label: 'إدخال الأرشيف', icon: Icons.archive_outlined, route: '/archive-intake'),
+            SidebarItemModel(id: 'a_settings', label: 'الإعدادات', icon: Icons.settings_outlined, route: '/settings'),
+          ],
         ),
       ],
     ),
