@@ -14,7 +14,9 @@ import '../documents/document_viewer.dart';
 import 'legal_library_models.dart';
 
 class LegalLibraryScreen extends ConsumerStatefulWidget {
-  const LegalLibraryScreen({super.key});
+  /// القسم الابتدائي (من السايدبار: ?section=laws, precedents, favorites)
+  final String? initialSection;
+  const LegalLibraryScreen({super.key, this.initialSection});
 
   @override
   ConsumerState<LegalLibraryScreen> createState() => _LegalLibraryScreenState();
@@ -36,13 +38,32 @@ class _LegalLibraryScreenState extends ConsumerState<LegalLibraryScreen>
   ];
 
   @override
+  /// مطابقة القسم من query parameter مع فهرس التبويب
+  int _initialTabIndex() {
+    switch (widget.initialSection) {
+      case 'laws': return _sections.indexOf(LegalLibrarySection.laws);
+      case 'precedents': return _sections.indexOf(LegalLibrarySection.precedents);
+      case 'journals': return _sections.indexOf(LegalLibrarySection.journals);
+      case 'principles': return _sections.indexOf(LegalLibrarySection.principles);
+      case 'favorites': return _sections.indexOf(LegalLibrarySection.favorites);
+      default: return 0;
+    }
+  }
+
   void initState() {
     super.initState();
-    _tabController = TabController(length: _sections.length, vsync: this);
+    final idx = _initialTabIndex();
+    _tabController = TabController(length: _sections.length, vsync: this, initialIndex: idx < 0 ? 0 : idx);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) return;
       ref.read(legalLibraryProvider.notifier).setSection(_sections[_tabController.index]);
     });
+    // تطبيق الفلتر الأولي
+    if (idx > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(legalLibraryProvider.notifier).setSection(_sections[idx]);
+      });
+    }
   }
 
   @override

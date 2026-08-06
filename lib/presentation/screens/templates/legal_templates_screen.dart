@@ -21,7 +21,9 @@ import '../../theme/glassmorphism_helpers.dart';
 /// مرحلية آمنة دون تعديل قاعدة البيانات. سيتم نقلها لاحقاً إلى جداول
 /// نماذج قانونية عامة عند تنفيذ مرحلة النماذج الكاملة.
 class LegalTemplatesScreen extends ConsumerStatefulWidget {
-  const LegalTemplatesScreen({super.key});
+  /// التصنيف الابتدائي (من السايدبار: ?category=عقد, لائحة دعوى, etc.)
+  final String? initialCategory;
+  const LegalTemplatesScreen({super.key, this.initialCategory});
 
   @override
   ConsumerState<LegalTemplatesScreen> createState() => _LegalTemplatesScreenState();
@@ -44,6 +46,16 @@ class _LegalTemplatesScreenState extends ConsumerState<LegalTemplatesScreen> {
     'نموذج شركة',
     'أخرى',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialCategory != null && widget.initialCategory!.isNotEmpty) {
+      // مطابقة النص مع التصنيفات المتاحة
+      final match = _categories.where((c) => c == widget.initialCategory).firstOrNull;
+      if (match != null) _selectedCategory = match;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

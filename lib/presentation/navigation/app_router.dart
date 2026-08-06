@@ -85,10 +85,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/finance', name: 'finance', builder: (_, state) => FinanceScreen(initialTab: state.uri.queryParameters['tab'])),
           GoRoute(path: '/documents', name: 'documents', builder: (_, __) => const DocumentsScreen()),
           GoRoute(path: '/documents/:documentId', name: 'document-viewer', builder: (_, state) => DocumentViewerScreen(documentId: state.pathParameters['documentId'] ?? '')),
-          GoRoute(path: '/legal-library', name: 'legal-library', builder: (_, __) => const LegalLibraryScreen()),
+          GoRoute(path: '/legal-library', name: 'legal-library', builder: (_, state) => LegalLibraryScreen(initialSection: state.uri.queryParameters['section'])),
           GoRoute(path: '/search-reports', name: 'search-reports', builder: (_, __) => const SearchReportsScreen()),
           GoRoute(path: '/settings', name: 'settings', builder: (_, __) => const SettingsScreen()),
-          GoRoute(path: '/templates', name: 'legal-templates', builder: (_, __) => const LegalTemplatesScreen()),
+          GoRoute(path: '/templates', name: 'legal-templates', builder: (_, state) => LegalTemplatesScreen(initialCategory: state.uri.queryParameters['category'])),
           
           GoRoute(path: '/cases', name: 'cases', builder: (_, __) => const CasesScreen()),
           // New discovered routes:

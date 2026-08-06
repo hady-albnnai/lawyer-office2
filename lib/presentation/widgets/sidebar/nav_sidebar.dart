@@ -606,9 +606,11 @@ List<SidebarGroupModel> getDefaultSidebarGroups() {
           icon: Icons.article_outlined,
           route: '/templates',
           children: [
-            SidebarItemModel(id: 't_contracts', label: 'قوالب العقود', icon: Icons.description_outlined, route: '/templates'),
-            SidebarItemModel(id: 't_courts', label: 'قوالب الدعاوى', icon: Icons.gavel_outlined, route: '/templates'),
-            SidebarItemModel(id: 't_admin', label: 'قوالب الإجراءات', icon: Icons.assignment_outlined, route: '/templates'),
+            SidebarItemModel(id: 't_all', label: 'كل النماذج', icon: Icons.folder_outlined, route: '/templates'),
+            SidebarItemModel(id: 't_contracts', label: 'قوالب العقود', icon: Icons.description_outlined, route: '/templates?category=عقد'),
+            SidebarItemModel(id: 't_courts', label: 'قوالب الدعاوى', icon: Icons.gavel_outlined, route: '/templates?category=لائحة دعوى'),
+            SidebarItemModel(id: 't_memos', label: 'المذكرات', icon: Icons.note_outlined, route: '/templates?category=مذكرة'),
+            SidebarItemModel(id: 't_admin', label: 'قوالب الإجراءات', icon: Icons.assignment_outlined, route: '/templates?category=طلب إداري'),
           ],
         ),
         SidebarItemModel(
@@ -627,9 +629,10 @@ List<SidebarGroupModel> getDefaultSidebarGroups() {
           icon: Icons.local_library_outlined,
           route: '/legal-library',
           children: [
-            SidebarItemModel(id: 'l_laws', label: 'القوانين السورية', icon: Icons.menu_book_outlined, route: '/legal-library'),
-            SidebarItemModel(id: 'l_precedents', label: 'الاجتهادات', icon: Icons.balance_outlined, route: '/legal-library'),
-            SidebarItemModel(id: 'l_favorites', label: 'المفضلة', icon: Icons.bookmark_outline, route: '/legal-library'),
+            SidebarItemModel(id: 'l_all', label: 'كل المكتبة', icon: Icons.local_library_outlined, route: '/legal-library'),
+            SidebarItemModel(id: 'l_laws', label: 'القوانين السورية', icon: Icons.menu_book_outlined, route: '/legal-library?section=laws'),
+            SidebarItemModel(id: 'l_precedents', label: 'الاجتهادات', icon: Icons.balance_outlined, route: '/legal-library?section=precedents'),
+            SidebarItemModel(id: 'l_favorites', label: 'المفضلة', icon: Icons.bookmark_outline, route: '/legal-library?section=favorites'),
           ],
         ),
       ],
