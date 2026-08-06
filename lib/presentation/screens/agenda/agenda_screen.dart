@@ -1382,10 +1382,10 @@ class AgendaScreen extends ConsumerWidget {
   }
 
   /// تفعيل الإشعارات تلقائياً عند فتح الأجندة (بدون إزعاج المستخدم)
-  void _autoEnableNotifications(WidgetRef ref) {
+  Future<void> _autoEnableNotifications(WidgetRef ref) async {
     try {
       final notificationService = NotificationService();
-      notificationService.initialize();
+      await notificationService.initialize();
     } catch (_) {
       // تجاهل أخطاء التفعيل التلقائي — المستخدم يقدر يفعّلها يدوياً
     }
