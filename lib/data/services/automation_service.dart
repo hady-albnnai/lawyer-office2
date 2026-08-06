@@ -168,8 +168,8 @@ class AutomationService {
     final existingRows = await db.customSelect(
       'SELECT DISTINCT source_id FROM daily_tasks WHERE source_type = ? AND task_type = ? AND status NOT IN (2, 4) AND source_id IN ($placeholders)',
       variables: [
-        const Variable.withString('cases'),
-        const Variable.withString('court_session'),
+        Variable.withString('cases'),
+        Variable.withString('court_session'),
         ...caseIds.map(Variable.withInt),
       ],
     ).get();
@@ -248,8 +248,8 @@ class AutomationService {
     final existingRows = await db.customSelect(
       'SELECT DISTINCT source_id FROM daily_tasks WHERE source_type = ? AND task_type = ? AND status NOT IN (2, 4) AND source_id IN ($placeholders)',
       variables: [
-        const Variable.withString('contracts'),
-        const Variable.withString('contract_reminder'),
+        Variable.withString('contracts'),
+        Variable.withString('contract_reminder'),
         ...contractIds.map(Variable.withInt),
       ],
     ).get();
@@ -331,8 +331,8 @@ class AutomationService {
     final existingRows = await db.customSelect(
       'SELECT DISTINCT source_id FROM daily_tasks WHERE source_type = ? AND task_type = ? AND status NOT IN (2, 4) AND source_id IN ($placeholders)',
       variables: [
-        const Variable.withString('companies'),
-        const Variable.withString('company_phase'),
+        Variable.withString('companies'),
+        Variable.withString('company_phase'),
         ...companyIds.map(Variable.withInt),
       ],
     ).get();
