@@ -150,9 +150,11 @@ class AutomationService {
       // فقط إذا حان الموعد خلال أسبوع
       if (nextDate.isAfter(nextWeek)) continue;
 
-      // فحص التكرار: هل يوجد بالفعل مهمة لهذه الدعوى من نوع court_session؟
+      // فحص التكرار: هل يوجد بالفعل مهمة نشطة (مجدولة/قيد التنفيذ/مؤجلة) لهذه الدعوى؟
+      // status: 0=مجدولة, 1=قيد التنفيذ, 2=مكتملة, 3=مؤجلة, 4=ملغاة
+      // نتجاوز فقط إذا يوجد مهمة نشطة (0,1,3) — المكتملة والملغاة لا تمنع الإنشاء
       final existing = await db.customSelect(
-        'SELECT id FROM daily_tasks WHERE source_type = ? AND source_id = ? AND task_type = ? AND status IN (0, 2)',
+        'SELECT id FROM daily_tasks WHERE source_type = ? AND source_id = ? AND task_type = ? AND status NOT IN (2, 4)',
         variables: [
           const Variable.withString('cases'),
           Variable.withInt(caseId),
@@ -209,7 +211,7 @@ class AutomationService {
 
       // فحص التكرار: تذكير نشط (غير مكتمل/ملغي) لنفس العقد
       final existing = await db.customSelect(
-        'SELECT id FROM daily_tasks WHERE source_type = ? AND source_id = ? AND task_type = ? AND status IN (0, 2)',
+        'SELECT id FROM daily_tasks WHERE source_type = ? AND source_id = ? AND task_type = ? AND status NOT IN (2, 4)',
         variables: [
           const Variable.withString('contracts'),
           Variable.withInt(contractId),
@@ -273,7 +275,7 @@ class AutomationService {
 
       // فحص التكرار: مهمة نشطة لنفس الشركة
       final existing = await db.customSelect(
-        'SELECT id FROM daily_tasks WHERE source_type = ? AND source_id = ? AND task_type = ? AND status IN (0, 2)',
+        'SELECT id FROM daily_tasks WHERE source_type = ? AND source_id = ? AND task_type = ? AND status NOT IN (2, 4)',
         variables: [
           const Variable.withString('companies'),
           Variable.withInt(companyId),

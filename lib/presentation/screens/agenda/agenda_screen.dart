@@ -1362,10 +1362,11 @@ class AgendaScreen extends ConsumerWidget {
         db: ref.read(databaseProvider),
         currentDate: DateTime.now(),
       );
-      // تحديث كل مزودات الأجندة
+      // تحديث كل مزودات الأجندة (أسبوعي + شهري + يومي)
       ref.invalidate(unifiedAgendaFromDBProvider);
       ref.invalidate(unifiedAgendaProvider);
       ref.invalidate(tasksByDateProvider(DateTime.now()));
+      ref.invalidate(monthlyAgendaProvider(selectedDate));
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
