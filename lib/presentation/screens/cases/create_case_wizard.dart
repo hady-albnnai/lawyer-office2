@@ -732,7 +732,13 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
     if (id != null && mounted) {
       ref.invalidate(allPersonsProvider(null));
       ref.invalidate(uiPersonsDirectoryProvider);
-      setState(() => _selectedClientId = id);
+      setState(() {
+        _selectedClientId = id;
+        // الانتقال تلقائياً للخطوة التالية (الوكالة)
+        if (_currentStep < _getLastStepIndex()) {
+          _currentStep++;
+        }
+      });
     }
   }
 
@@ -1845,10 +1851,22 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   }
   
   void _showAddOpponentDialog(BuildContext context) {
-    showDialog(
+    showDialog<int>(
       context: context,
       builder: (context) => const AddOpponentDialog(),
-    );
+    ).then((personId) {
+      if (personId != null && mounted) {
+        ref.invalidate(allPersonsProvider(null));
+        ref.invalidate(uiPersonsDirectoryProvider);
+        setState(() {
+          _selectedOpponentId = personId;
+          // الانتقال تلقائياً للخطوة التالية (المرفقات)
+          if (_currentStep < _getLastStepIndex()) {
+            _currentStep++;
+          }
+        });
+      }
+    });
   }
 
   // ===========================================================================
