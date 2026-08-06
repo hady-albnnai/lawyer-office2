@@ -1201,7 +1201,7 @@ class AgendaScreen extends ConsumerWidget {
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: AppColors.primaryNavy.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Text('${dayItems.length}', style: TextStyle(
                                     fontSize: 9,
