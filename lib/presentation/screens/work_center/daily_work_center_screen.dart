@@ -344,7 +344,7 @@ class _WorkList extends StatelessWidget {
         _Header(title: title, subtitle: subtitle, items: items),
         Expanded(
           child: items.isEmpty
-              ? _empty()
+              ? _empty(context)
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
@@ -364,7 +364,7 @@ class _WorkList extends StatelessWidget {
     );
   }
 
-  Widget _empty() {
+  Widget _empty(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
