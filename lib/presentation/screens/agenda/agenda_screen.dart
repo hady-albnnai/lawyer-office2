@@ -319,6 +319,12 @@ class AgendaScreen extends ConsumerWidget {
     final isDarkMode = ref.watch(darkModeProvider);
     final viewMode = ref.watch(viewModeProvider);
 
+    // وضع القراءة فقط: إذا كان التاريخ المختار في الماضي (ليس اليوم ولا الغد)
+    final today = DateTime.now();
+    final todayNorm = DateTime(today.year, today.month, today.day);
+    final selectedNorm = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final isReadOnly = selectedNorm.isBefore(todayNorm);
+
     // تحميل إعدادات Dark Mode + تفعيل الإشعارات تلقائياً عند البناء الأول
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadDarkModePreference().then((savedMode) {
@@ -447,16 +453,39 @@ class AgendaScreen extends ConsumerWidget {
             viewMode == AgendaViewMode.weekly 
                 ? _buildDateSelector(context, ref, selectedDate)
                 : _buildMonthSelector(context, ref, selectedDate),
+            // بانر القراءة فقط للأيام الماضية
+            if (isReadOnly)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                color: AppColors.info.withOpacity(0.08),
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_outline, size: 18, color: AppColors.info),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'وضع القراءة فقط — هذا يوم ماضي. التعديلات تتم من تاريخ آخر جلسة.',
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.info),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => ref.read(selectedAgendaDateProvider.notifier).state = todayNorm,
+                      child: Text('العودة لليوم', style: AppTextStyles.labelSmall.copyWith(color: AppColors.info)),
+                    ),
+                  ],
+                ),
+              ),
             _buildSearchAndFilterBar(context, ref),
             const Divider(height: 1, thickness: 1),
             Expanded(
               child: viewMode == AgendaViewMode.weekly
-                  ? _buildWeeklyView(context, ref, agendaAsync)
+                  ? _buildWeeklyView(context, ref, agendaAsync, isReadOnly: isReadOnly)
                   : _buildMonthlyView(context, ref, selectedDate),
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
+        floatingActionButton: isReadOnly ? null : FloatingActionButton.extended(
           onPressed: () => _showQuickAdd(context),
           icon: const Icon(Icons.add),
           label: const Text('إضافة موعد/مهمة'),
@@ -640,7 +669,7 @@ class AgendaScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAgendaItem(BuildContext context, WidgetRef ref, UnifiedAgendaItem item) {
+  Widget _buildAgendaItem(BuildContext context, WidgetRef ref, UnifiedAgendaItem item, {bool isReadOnly = false}) {
     final isCompleted = item.statusIndex == LifecycleStatus.completed.index;
     final isOverdue = item.date.isBefore(DateTime.now()) && !isCompleted;
     final isDarkMode = ref.watch(darkModeProvider);
@@ -834,8 +863,8 @@ class AgendaScreen extends ConsumerWidget {
                         ),
                       ),
                     const SizedBox(height: 8),
-                    // زر تسجيل النتيجة — يظهر فقط للمواعيد اليوم أو الماضية
-                    if (!isCompleted && !item.date.isAfter(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).add(const Duration(days: 1))))
+                    // زر تسجيل النتيجة — يظهر فقط للمواعيد اليوم أو الماضية (ليس في وضع القراءة فقط)
+                    if (!isReadOnly && !isCompleted && !item.date.isAfter(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).add(const Duration(days: 1))))
                       Container(
                         decoration: BoxDecoration(
                           color: AppColors.success.withOpacity(0.1),
@@ -1053,7 +1082,7 @@ class AgendaScreen extends ConsumerWidget {
     context.go('/new-work');
   }
 
-  Widget _buildWeeklyView(BuildContext context, WidgetRef ref, AsyncValue<List<UnifiedAgendaItem>> agendaAsync) {
+  Widget _buildWeeklyView(BuildContext context, WidgetRef ref, AsyncValue<List<UnifiedAgendaItem>> agendaAsync, {bool isReadOnly = false}) {
     return agendaAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('خطأ في جلب البيانات: $err')),
@@ -1075,7 +1104,7 @@ class AgendaScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(24),
           itemCount: items.length,
           separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) => _buildAgendaItem(context, ref, items[index]),
+          itemBuilder: (context, index) => _buildAgendaItem(context, ref, items[index], isReadOnly: isReadOnly),
         );
       },
     );
