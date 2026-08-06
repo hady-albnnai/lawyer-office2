@@ -633,6 +633,13 @@ List<SidebarGroupModel> getDefaultSidebarGroups() {
           accentColor: Color(0xFF2E7D32),
         ),
         const SidebarItemModel(
+          id: 'legal_templates',
+          label: 'النماذج القانونية',
+          icon: Icons.article_outlined,
+          route: '/templates',
+          accentColor: Color(0xFF00838F),
+        ),
+        const SidebarItemModel(
           id: 'search_reports',
           label: 'البحث والتقارير',
           icon: CustomIcons.searchReports,

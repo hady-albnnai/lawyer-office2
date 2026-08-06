@@ -64,7 +64,7 @@ class MainShellScreen extends ConsumerWidget {
       selectedRoute = '/settings';
     } else if (location.startsWith('/templates') ||
         location.startsWith('/contracts/templates')) {
-      selectedRoute = '/search-reports';
+      selectedRoute = '/templates';
     }
 
     final officeName = settingsAsync.maybeWhen(
@@ -453,6 +453,7 @@ List<SidebarGroupModel> _filterSidebarGroups(List<SidebarGroupModel> groups, Wid
     if (route.startsWith('/files')) return perms.canAny(const [PermissionKeys.casesView, PermissionKeys.proceduresView, PermissionKeys.contractsView, PermissionKeys.companiesView, PermissionKeys.poaView]);
     if (route.startsWith('/persons')) return perms.can(PermissionKeys.personsView);
     if (route.startsWith('/legal-library')) return perms.can(PermissionKeys.libraryView);
+    if (route.startsWith('/templates') || route.startsWith('/contracts/templates')) return perms.can(PermissionKeys.templatesView);
     if (route.startsWith('/search-reports') || route.startsWith('/printing')) return perms.can(PermissionKeys.searchView);
     if (route.startsWith('/settings')) return perms.can(PermissionKeys.settingsView);
     if (route.startsWith('/cases')) return perms.can(PermissionKeys.casesView);
