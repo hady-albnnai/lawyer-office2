@@ -482,11 +482,11 @@ class _Header extends StatelessWidget {
           ),
           _metric('الأعمال', items.length, Icons.task_alt, AppColors.primaryNavy),
           const SizedBox(width: 8),
-          _metric('جلسات', sessions, Icons.gavel, AppColors.info),
+          _metric('جلسات', sessions, Icons.gavel, AppColors.secondaryGold),
           const SizedBox(width: 8),
-          _metric('أوامر', workOrders, Icons.assignment_ind, AppColors.success),
+          _metric('أوامر', workOrders, Icons.assignment_ind, AppColors.primaryNavy),
           const SizedBox(width: 8),
-          _metric('نواقص', deficiencies, Icons.warning_amber, AppColors.error),
+          _metric('نواقص', deficiencies, Icons.warning_amber, AppColors.secondaryGold),
         ],
       ),
     );
@@ -854,25 +854,75 @@ Future<void> _showPrepareTaskDialog(BuildContext context, WidgetRef ref, db.Dail
   );
 }
 
-/// إغلاق نقص من مكتب العمل: إما استكماله فعلياً أو تجاهله بسبب مسجّل.
+/// معالجة نقص من مكتب العمل:
+/// - "استكمال" → يفتح ملف الكيان المرتبط (الدعوى/العقد/الشركة) لتعبئة النقص من مصدره
+/// - "تجاهل" → يتطلب سبباً مسجلاً
 Future<void> _showDeficiencyResultDialog(BuildContext context, WidgetRef ref, db.Deficiency deficiency) async {
   final reason = TextEditingController();
+  final entityRoute = _deficiencyRoute(deficiency.entityType, deficiency.entityId);
+  final entityLabel = switch (deficiency.entityType) {
+    0 => 'الدعوى',
+    1 => 'العقد',
+    2 => 'الشركة',
+    3 => 'الإجراء',
+    4 => 'الشخص',
+    5 => 'الوكالة',
+    _ => 'الملف',
+  };
+
   await showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('معالجة نقص'),
+      title: Row(
+        children: [
+          Icon(Icons.warning_amber, color: AppColors.secondaryGold, size: 24),
+          const SizedBox(width: 8),
+          const Text('معالجة نقص'),
+        ],
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(deficiency.description, style: AppTextStyles.bodyMedium),
-          const SizedBox(height: 4),
-          Text('الحقل: ${deficiency.fieldName}', style: AppTextStyles.bodySmallSecondary),
+          // وصف النقص
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primaryNavy.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(deficiency.description, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text('الحقل: ${deficiency.fieldName}', style: AppTextStyles.bodySmallSecondary),
+                Text('الملف: $entityLabel', style: AppTextStyles.bodySmallSecondary),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // خيار الاستكمال
+          if (entityRoute.isNotEmpty)
+            Text('الطريقة الصحيحة لمعالجة هذا النقص هي فتح $entityLabel وتعبئة البيانات الناقصة.', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
           const SizedBox(height: 12),
+          // خيار التجاهل
+          Text('أو يمكنك تجاهل هذا النقص مع تسجيل السبب:', style: AppTextStyles.bodySmallSecondary),
+          const SizedBox(height: 8),
           TextField(
             controller: reason,
-            decoration: const InputDecoration(
-              labelText: 'سبب التجاهل (مطلوب عند التجاهل فقط)',
+            decoration: InputDecoration(
+              labelText: 'سبب التجاهل',
+              hintText: 'مثال: تم استكماله خارج النظام',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.cardBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.primaryNavy, width: 2),
+              ),
             ),
           ),
         ],
@@ -891,33 +941,33 @@ Future<void> _showDeficiencyResultDialog(BuildContext context, WidgetRef ref, db
             final userRef = ref.read(authControllerProvider).user?.fullName ?? 'المكتب';
             await ref.read(taskRepositoryProvider).ignoreDeficiency(deficiency.id, text, userRef);
             await ref.read(auditServiceProvider).log(
-                  action: 'ignore',
-                  category: 'deficiencies',
-                  entityType: 'deficiency',
-                  entityId: '${deficiency.id}',
-                  entityTitle: deficiency.description,
-                  description: 'تجاهل نقص من مكتب العمل: $text',
-                  severity: 'warning',
+                  action: 'ignore', category: 'deficiencies', entityType: 'deficiency',
+                  entityId: '${deficiency.id}', entityTitle: deficiency.description,
+                  description: 'تجاهل نقص: $text', severity: 'warning',
                 );
             ref.invalidate(openDeficienciesProvider(null));
             if (ctx.mounted) Navigator.pop(ctx);
           },
           child: const Text('تجاهل'),
         ),
-        ElevatedButton(
-          onPressed: () async {
-            await ref.read(taskRepositoryProvider).resolveDeficiency(deficiency.id);
-            await ref.read(auditServiceProvider).log(
-                  action: 'resolve',
-                  category: 'deficiencies',
-                  entityType: 'deficiency',
-                  entityId: '${deficiency.id}',
-                  entityTitle: deficiency.description,
-                  description: 'استكمال نقص من مكتب العمل',
-                  severity: 'info',
-                );
-            ref.invalidate(openDeficienciesProvider(null));
-            if (ctx.mounted) Navigator.pop(ctx);
+        if (entityRoute.isNotEmpty)
+          ElevatedButton.icon(
+            icon: const Icon(Icons.open_in_new, size: 16),
+            label: Text('فتح $entityLabel'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryNavy,
+              foregroundColor: AppColors.secondaryGold,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go(entityRoute);
+            },
+          ),
+      ],
+    ),
+  );
+}
           },
           child: const Text('تم الاستكمال'),
         ),
