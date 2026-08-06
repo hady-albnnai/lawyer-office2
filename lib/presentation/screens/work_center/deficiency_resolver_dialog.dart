@@ -722,7 +722,7 @@ class _DeficiencyResolverDialogState
         entityType: 'deficiency',
         entityId: '${widget.deficiency.id}',
         entityTitle: _description,
-        description: 'حل نقص $_fieldName عبر المعالج الذكي ($resolutionType)',
+        description: 'حل نقص $_fieldName عبر المعالج الذكي ($_resolutionType)',
         after: {
           'fieldName': _fieldName,
           'resolutionType': _resolutionType,
