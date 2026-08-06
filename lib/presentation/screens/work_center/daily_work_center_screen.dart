@@ -968,13 +968,6 @@ Future<void> _showDeficiencyResultDialog(BuildContext context, WidgetRef ref, db
     ),
   );
 }
-          },
-          child: const Text('تم الاستكمال'),
-        ),
-      ],
-    ),
-  );
-}
 
 String _taskTypeLabel(String raw) {
   switch (raw) {

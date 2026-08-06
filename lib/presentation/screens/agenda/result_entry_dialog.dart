@@ -585,7 +585,7 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
   }
 
   Future<void> _pickAttachment() async {
-    final result = await fp.FilePicker.platform.pickFiles(
+    final result = await fp.FilePicker.pickFiles(
       type: fp.FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'docx', 'doc'],
     );
@@ -727,7 +727,7 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
               entityId: widget.entityId!,
               fieldName: 'session_blocked',
               description: 'جلسة متعذرة: $title — ${_notesController.text.trim()}',
-              severity: const Value('warning'),
+              severity: const Value(1), // 0=required, 1=warning
             ),
           );
         }
