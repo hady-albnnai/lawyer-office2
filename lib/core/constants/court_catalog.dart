@@ -152,7 +152,7 @@ class CourtCatalog {
       id: conciliationCivil,
       label: 'محكمة الصلح المدنية',
       degree: LitigationDegree.first,
-      caseTypes: [CaseType.civil, CaseType.realEstate],
+      caseTypes: [CaseType.civil],
       hasChambers: true,
       appealsTo: [appealCivil],
     ),
@@ -160,7 +160,7 @@ class CourtCatalog {
       id: firstInstanceCivil,
       label: 'محكمة البداية المدنية',
       degree: LitigationDegree.first,
-      caseTypes: [CaseType.civil, CaseType.realEstate, CaseType.labor],
+      caseTypes: [CaseType.civil],
       hasChambers: true,
       appealsTo: [appealCivil],
     ),
@@ -176,7 +176,7 @@ class CourtCatalog {
       id: appealCivil,
       label: 'محكمة الاستئناف المدنية',
       degree: LitigationDegree.second,
-      caseTypes: [CaseType.civil, CaseType.realEstate, CaseType.labor],
+      caseTypes: [CaseType.civil],
       hasChambers: true,
       appealsTo: [cassationCivil],
     ),
@@ -195,8 +195,6 @@ class CourtCatalog {
       caseTypes: [
         CaseType.civil,
         CaseType.commercial,
-        CaseType.realEstate,
-        CaseType.labor,
       ],
       damascusOnly: true,
     ),
@@ -317,14 +315,14 @@ class CourtCatalog {
       id: realEstateJudge,
       label: 'القاضي العقاري',
       degree: LitigationDegree.first,
-      caseTypes: [CaseType.realEstate],
+      caseTypes: [CaseType.civil], // العقارية فرع من المدنية
       appealsTo: [appealCivil],
     ),
     CourtKind(
       id: laborFirstInstance,
       label: 'محكمة البداية المدنية (الدعاوى العمالية)',
       degree: LitigationDegree.first,
-      caseTypes: [CaseType.labor],
+      caseTypes: [CaseType.civil], // العمالية تتبع البداية المدنية
       hasChambers: true,
       appealsTo: [appealCivil],
     ),
@@ -332,7 +330,7 @@ class CourtCatalog {
       id: dismissalCommittee,
       label: 'لجنة قضايا التسريح',
       degree: LitigationDegree.first,
-      caseTypes: [CaseType.labor],
+      caseTypes: [CaseType.civil], // العمالية تتبع المدنية
       appealsTo: [appealCivil],
     ),
     CourtKind(
@@ -342,8 +340,6 @@ class CourtCatalog {
       caseTypes: [
         CaseType.civil,
         CaseType.commercial,
-        CaseType.realEstate,
-        CaseType.labor,
         CaseType.personalStatus,
       ],
       hasChambers: true,
@@ -381,7 +377,7 @@ class CourtCatalog {
       id: constitutionalCourt,
       label: 'المحكمة الدستورية العليا',
       degree: LitigationDegree.cassation,
-      caseTypes: [CaseType.constitutional],
+      caseTypes: [CaseType.administrative],
       damascusOnly: true,
     ),
   ];
