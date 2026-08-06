@@ -1643,14 +1643,19 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   }
 
   Widget _buildOpponentList() {
-    // الخصوم أشخاص حقيقيون من الدليل المركزي. القائمة الثابتة السابقة كانت
-    // تحفظ معرّفات (1..4) قد تقابل أشخاصاً مختلفين تماماً في قاعدة البيانات.
+    // الخصوم أشخاص حقيقيون من الدليل المركزي.
+    // استبعاد: (1) موكّل الدعوى نفسه، (2) كل شخص له دور "موكل" في النظام.
     final personsAsync = ref.watch(allPersonsProvider(null));
     final opponents = personsAsync.maybeWhen(
-      // استبعاد موكّل الدعوى نفسه: لا يصحّ أن يكون المرء خصم نفسه،
-      // وظهوره في القائمة يفتح باب خطأ إدخال يصعب تداركه لاحقاً.
       data: (persons) => persons
-          .where((p) => p.id != _selectedClientId)
+          .where((p) {
+            // استبعاد موكّل الدعوى نفسه
+            if (p.id == _selectedClientId) return false;
+            // استبعاد كل شخص له دور "موكل" في personRoles
+            final roles = ref.watch(personRolesProvider(p.id)).valueOrNull ?? [];
+            if (roles.contains('client')) return false;
+            return true;
+          })
           .map((p) => {
                 'id': p.id,
                 'name': p.fullName,
