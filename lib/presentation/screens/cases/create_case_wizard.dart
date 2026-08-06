@@ -3246,7 +3246,7 @@ class _AddPoaDialogState extends ConsumerState<AddPoaDialog> {
               // إرفاق صورة الوكالة
               InkWell(
                 onTap: () async {
-                  final result = await file_picker.FilePicker.platform.pickFiles(
+                  final result = await file_picker.FilePicker.pickFiles(
                     type: file_picker.FileType.image,
                   );
                   if (result != null && result.files.single.path != null) {
