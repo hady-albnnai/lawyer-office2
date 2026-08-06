@@ -24,31 +24,50 @@ class DocumentsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final permissions = ref.watch(permissionServiceProvider);
+    final canUpload = permissions.can(PermissionKeys.documentsUpload);
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.cardBackground,
         appBar: AppBar(
-          title: const Text('مستعرض المستندات الذكي'),
+          title: const Text('مستكشف المستندات'),
           actions: [
             IconButton(
               icon: const Icon(Icons.search),
               onPressed: () => context.go('/search-reports'),
               tooltip: 'بحث متقدم',
             ),
-            if (permissions.can(PermissionKeys.documentsUpload))
-              IconButton(
-                icon: const Icon(Icons.upload_file),
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (context) => const UploadDocDialog(),
-                ),
-                tooltip: 'رفع مستند',
-              ),
             const SizedBox(width: 8),
           ],
         ),
-        body: const _SmartExplorerView(),
+        body: Column(
+          children: [
+            // زر رفع مستند بارز داخل المحتوى
+            if (canUpload)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (context) => const UploadDocDialog(),
+                    ),
+                    icon: const Icon(Icons.upload_file, size: 20),
+                    label: const Text('رفع مستند جديد', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryNavy,
+                      foregroundColor: AppColors.secondaryGold,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ),
+            const Expanded(child: _SmartExplorerView()),
+          ],
+        ),
       ),
     );
   }

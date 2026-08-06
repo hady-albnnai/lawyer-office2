@@ -159,9 +159,11 @@ class _PersonsListScreenState extends ConsumerState<PersonsListScreen> with Sing
   }
 
   void _openAddPersonDialog(BuildContext context) {
+    // تحديد الدور الحالي من التبويب المختار
+    final currentRole = _tabs[_tabController.index];
     showDialog<void>(
       context: context,
-      builder: (context) => const QuickAddPersonDialog(),
+      builder: (context) => QuickAddPersonDialog(defaultRole: currentRole),
     );
   }
 }
@@ -171,16 +173,66 @@ class _PersonsTab extends ConsumerWidget {
 
   const _PersonsTab({required this.role});
 
+  /// اسم الدور بالعربية لرسالة الحالة الفارغة
+  String get _roleLabel {
+    if (role == null) return 'شخص';
+    switch (role!) {
+      case PersonDirectoryRole.client: return 'موكل';
+      case PersonDirectoryRole.opponent: return 'خصم';
+      case PersonDirectoryRole.opponentLawyer: return 'محامي خصم';
+      case PersonDirectoryRole.notary: return 'كاتب عدل';
+      case PersonDirectoryRole.barDelegate: return 'مندوب نقابة';
+      case PersonDirectoryRole.teamMember: return 'عضو فريق';
+      case PersonDirectoryRole.legalEntity: return 'جهة اعتبارية';
+      default: return 'شخص';
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(personsDirectoryProvider);
+    final permissions = ref.watch(permissionServiceProvider);
+    final canCreate = permissions.can(PermissionKeys.personsCreate);
     final persons = state.filteredPersons.where((person) => role == null || person.hasRole(role!)).toList();
 
     if (persons.isEmpty) {
-      return _emptyState(
-        icon: Icons.person_search,
-        title: 'لا توجد سجلات مطابقة',
-        subtitle: 'غيّر البحث أو أضف سجلاً جديداً من الزر العلوي.',
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.person_search, size: 64, color: AppColors.textSecondary.withOpacity(0.4)),
+              const SizedBox(height: 16),
+              Text('لا يوجد $_roleLabel', style: AppTextStyles.headline6.copyWith(color: AppColors.primaryNavy)),
+              const SizedBox(height: 8),
+              Text(
+                role == null
+                    ? 'لا توجد سجلات مطابقة للبحث الحالي.'
+                    : 'لم تُضف أي $_roleLabel بعد. أضف واحداً الآن.',
+                style: AppTextStyles.bodyMediumSecondary,
+                textAlign: TextAlign.center,
+              ),
+              if (canCreate && role != null) ...[
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => QuickAddPersonDialog(defaultRole: role),
+                  ),
+                  icon: const Icon(Icons.person_add, size: 20),
+                  label: Text('إضافة $_roleLabel', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryNavy,
+                    foregroundColor: AppColors.secondaryGold,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       );
     }
 
@@ -188,21 +240,6 @@ class _PersonsTab extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       itemCount: persons.length,
       itemBuilder: (context, index) => PersonDirectoryCard(person: persons[index]),
-    );
-  }
-
-  Widget _emptyState({required IconData icon, required String title, required String subtitle}) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 72, color: AppColors.textSecondary),
-          const SizedBox(height: 16),
-          Text(title, style: AppTextStyles.headline5),
-          const SizedBox(height: 8),
-          Text(subtitle, style: AppTextStyles.bodySmallSecondary),
-        ],
-      ),
     );
   }
 }
@@ -309,7 +346,9 @@ class PersonDirectoryCard extends ConsumerWidget {
 }
 
 class QuickAddPersonDialog extends ConsumerStatefulWidget {
-  const QuickAddPersonDialog({super.key});
+  /// الدور الافتراضي (يُملأ تلقائياً حسب التبويب الحالي)
+  final PersonDirectoryRole? defaultRole;
+  const QuickAddPersonDialog({super.key, this.defaultRole});
 
   @override
   ConsumerState<QuickAddPersonDialog> createState() => _QuickAddPersonDialogState();
@@ -320,7 +359,13 @@ class _QuickAddPersonDialogState extends ConsumerState<QuickAddPersonDialog> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _cityController = TextEditingController(text: 'دمشق');
   PersonDirectoryKind _kind = PersonDirectoryKind.natural;
-  PersonDirectoryRole _role = PersonDirectoryRole.client;
+  late PersonDirectoryRole _role;
+
+  @override
+  void initState() {
+    super.initState();
+    _role = widget.defaultRole ?? PersonDirectoryRole.client;
+  }
 
   @override
   void dispose() {
