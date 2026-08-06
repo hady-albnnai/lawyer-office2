@@ -70,7 +70,25 @@ class ArchiveContextBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final info = contextInfo;
     if (info == null) return const SizedBox.shrink();
-    final color = info.isRunning ? AppColors.success : AppColors.primaryNavy;
+
+    // إذا kind فارغ = قادم من "عمل جديد" (ليس أرشيف)
+    final isNewWork = info.kind.isEmpty;
+    final color = info.isRunning
+        ? (isNewWork ? AppColors.primaryNavy : AppColors.success)
+        : AppColors.primaryNavy;
+
+    final statusLabel = isNewWork
+        ? 'ملف جديد جارٍ'
+        : info.statusLabel;
+
+    final message = isNewWork
+        ? 'هذا ملف جديد؛ أي موعد قادم تسجله هنا سينعكس على مكتب العمل والتقويم.'
+        : (info.isRunning ? runningMessage : closedMessage);
+
+    final icon = isNewWork
+        ? Icons.add_circle_outline
+        : (info.isRunning ? Icons.pending_actions : Icons.inventory_2);
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
@@ -83,17 +101,17 @@ class ArchiveContextBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(info.isRunning ? Icons.pending_actions : Icons.inventory_2, color: color),
+          Icon(icon, color: color),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(info.statusLabel, style: AppTextStyles.labelLarge.copyWith(color: color, fontWeight: FontWeight.bold)),
+                Text(statusLabel, style: AppTextStyles.labelLarge.copyWith(color: color, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 if (info.summary.isNotEmpty) Text(info.summary, style: AppTextStyles.bodyMedium),
                 const SizedBox(height: 4),
-                Text(info.isRunning ? runningMessage : closedMessage, style: AppTextStyles.bodySmallSecondary),
+                Text(message, style: AppTextStyles.bodySmallSecondary),
               ],
             ),
           ),
