@@ -593,10 +593,11 @@ List<SidebarGroupModel> getDefaultSidebarGroups() {
           icon: Icons.account_balance_wallet_outlined,
           route: '/finance',
           children: [
-            SidebarItemModel(id: 'f_agreements', label: 'اتفاقيات الأتعاب', icon: Icons.handshake_outlined, route: '/finance'),
-            SidebarItemModel(id: 'f_payments', label: 'الدفعات وسندات القبض', icon: Icons.payments_outlined, route: '/finance'),
-            SidebarItemModel(id: 'f_expenses', label: 'المصاريف', icon: Icons.receipt_long_outlined, route: '/finance'),
-            SidebarItemModel(id: 'f_cashbox', label: 'الصندوق', icon: Icons.savings_outlined, route: '/finance'),
+            SidebarItemModel(id: 'f_dashboard', label: 'لوحة مالية', icon: Icons.dashboard_outlined, route: '/finance'),
+            SidebarItemModel(id: 'f_agreements', label: 'اتفاقيات الأتعاب', icon: Icons.handshake_outlined, route: '/finance?tab=agreements'),
+            SidebarItemModel(id: 'f_payments', label: 'الدفعات وسندات القبض', icon: Icons.payments_outlined, route: '/finance?tab=payments'),
+            SidebarItemModel(id: 'f_expenses', label: 'المصاريف', icon: Icons.receipt_long_outlined, route: '/finance?tab=expenses'),
+            SidebarItemModel(id: 'f_cashbox', label: 'الصندوق', icon: Icons.savings_outlined, route: '/finance?tab=cashbox'),
           ],
         ),
         SidebarItemModel(

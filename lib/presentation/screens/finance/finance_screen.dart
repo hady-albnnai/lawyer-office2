@@ -25,7 +25,9 @@ import '../documents/document_viewer.dart';
 import 'finance_models.dart';
 
 class FinanceScreen extends ConsumerStatefulWidget {
-  const FinanceScreen({super.key});
+  /// التبويب الابتدائي (من السايدبار: ?tab=agreements, payments, expenses, cashbox)
+  final String? initialTab;
+  const FinanceScreen({super.key, this.initialTab});
 
   @override
   ConsumerState<FinanceScreen> createState() => _FinanceScreenState();
@@ -35,10 +37,24 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
+  /// مطابقة اسم التبويب من query parameter مع فهرس التبويب
+  int _tabIndex() {
+    switch (widget.initialTab) {
+      case 'agreements': return 1;
+      case 'payments': return 2;
+      case 'expenses': return 3;
+      case 'balances': return 4;
+      case 'clients': return 5;
+      case 'cashbox': return 6;
+      case 'reports': return 7;
+      default: return 0;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 8, vsync: this);
+    _tabController = TabController(length: 8, vsync: this, initialIndex: _tabIndex());
   }
 
   @override
