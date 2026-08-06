@@ -318,10 +318,10 @@ class AgendaScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: isDarkMode ? Colors.grey.shade900 : AppColors.cardBackground,
+      backgroundColor: isDarkMode ? const Color(0xFF0D1B2A) : AppColors.cardBackground,
       appBar: AppBar(
         title: const Text('الأجندة الموحدة'),
-        backgroundColor: isDarkMode ? Colors.grey.shade800 : null,
+        backgroundColor: isDarkMode ? AppColors.primaryNavy : null,
         actions: [
             // زر تبديل وضع العرض
             IconButton(
@@ -458,7 +458,7 @@ class AgendaScreen extends ConsumerWidget {
     final weekDates = List.generate(7, (index) => currentDate.subtract(Duration(days: 3)).add(Duration(days: index)));
 
     return Container(
-      color: isDarkMode ? Colors.grey.shade800 : Colors.white,
+      color: isDarkMode ? AppColors.primaryNavy : Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -474,14 +474,14 @@ class AgendaScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primaryNavy : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isSelected ? AppColors.primaryNavy : (isDarkMode ? Colors.grey.shade600 : AppColors.cardBorder)),
+                border: Border.all(color: isSelected ? AppColors.primaryNavy : (isDarkMode ? const Color(0xFF4A6274) : AppColors.cardBorder)),
               ),
               child: Column(
                 children: [
                   Text(
                     _getWeekdayName(date.weekday),
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: isSelected ? Colors.white : (isDarkMode ? Colors.grey.shade300 : AppColors.textSecondary),
+                      color: isSelected ? Colors.white : (isDarkMode ? const Color(0xFFAABBCC) : AppColors.textSecondary),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -512,14 +512,14 @@ class AgendaScreen extends ConsumerWidget {
     final isDarkMode = ref.watch(darkModeProvider);
     
     return Container(
-      color: isDarkMode ? Colors.grey.shade800 : Colors.white,
+      color: isDarkMode ? AppColors.primaryNavy : Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         children: [
           // شريط البحث
           Container(
             decoration: BoxDecoration(
-              color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade100,
+              color: isDarkMode ? const Color(0xFF2C3E50) : AppColors.cardBackground,
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
@@ -527,11 +527,11 @@ class AgendaScreen extends ConsumerWidget {
               style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
               decoration: InputDecoration(
                 hintText: 'بحث في المواعيد والمهام...',
-                hintStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500),
-                prefixIcon: Icon(Icons.search, color: isDarkMode ? Colors.grey.shade400 : AppColors.textSecondary),
+                hintStyle: TextStyle(color: isDarkMode ? const Color(0xFF8899AA) : AppColors.textSecondary),
+                prefixIcon: Icon(Icons.search, color: isDarkMode ? const Color(0xFF8899AA) : AppColors.textSecondary),
                 suffixIcon: searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear, color: isDarkMode ? Colors.grey.shade400 : AppColors.textSecondary),
+                        icon: Icon(Icons.clear, color: isDarkMode ? const Color(0xFF8899AA) : AppColors.textSecondary),
                         onPressed: () => ref.read(searchQueryProvider.notifier).state = '',
                       )
                     : null,
@@ -619,9 +619,9 @@ class AgendaScreen extends ConsumerWidget {
       onSelected: (_) => onTap(),
       selectedColor: AppColors.primaryNavy.withOpacity(0.2),
       checkmarkColor: AppColors.primaryNavy,
-      backgroundColor: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade100,
+      backgroundColor: isDarkMode ? const Color(0xFF2C3E50) : AppColors.cardBackground,
       labelStyle: TextStyle(
-        color: isSelected ? AppColors.primaryNavy : (isDarkMode ? Colors.grey.shade300 : AppColors.textSecondary),
+        color: isSelected ? AppColors.primaryNavy : (isDarkMode ? const Color(0xFFAABBCC) : AppColors.textSecondary),
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );
@@ -636,15 +636,15 @@ class AgendaScreen extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: isCompleted 
-            ? (isDarkMode ? Colors.green.shade900 : AppColors.success.withOpacity(0.05))
+            ? (isDarkMode ? AppColors.success.withOpacity(0.15) : AppColors.success.withOpacity(0.05))
             : (isOverdue 
-                ? (isDarkMode ? Colors.red.shade900 : Colors.red.shade50) 
-                : (isDarkMode ? Colors.grey.shade800 : Colors.white)),
+                ? (isDarkMode ? AppColors.error.withOpacity(0.15) : AppColors.error.withOpacity(0.08)) 
+                : (isDarkMode ? AppColors.primaryNavy : Colors.white)),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCompleted 
               ? AppColors.success.withOpacity(0.3) 
-              : (isOverdue ? Colors.red.shade300 : (isDarkMode ? Colors.grey.shade600 : AppColors.cardBorder)),
+              : (isOverdue ? AppColors.error.withOpacity(0.4) : (isDarkMode ? const Color(0xFF4A6274) : AppColors.cardBorder)),
           width: isOverdue ? 2 : 1,
         ),
         boxShadow: [
@@ -695,7 +695,7 @@ class AgendaScreen extends ConsumerWidget {
                         item.timeString,
                         style: AppTextStyles.labelSmall.copyWith(
                           color: isCompleted 
-                              ? (isDarkMode ? Colors.grey.shade400 : AppColors.textSecondary) 
+                              ? (isDarkMode ? const Color(0xFF8899AA) : AppColors.textSecondary) 
                               : (isDarkMode ? Colors.white : AppColors.primaryNavy),
                           fontWeight: FontWeight.bold,
                           decoration: isCompleted ? TextDecoration.lineThrough : null,
@@ -707,12 +707,12 @@ class AgendaScreen extends ConsumerWidget {
                         padding: const EdgeInsets.only(top: 4),
                         child: Row(
                           children: [
-                            Icon(Icons.warning, size: 12, color: Colors.red.shade700),
+                            Icon(Icons.warning, size: 12, color: AppColors.error),
                             const SizedBox(width: 4),
                             Text(
                               'متأخر',
                               style: AppTextStyles.bodySmall.copyWith(
-                                color: Colors.red.shade700,
+                                color: AppColors.error,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -750,7 +750,7 @@ class AgendaScreen extends ConsumerWidget {
                               style: AppTextStyles.labelLarge.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: isCompleted 
-                                    ? (isDarkMode ? Colors.grey.shade400 : AppColors.textSecondary) 
+                                    ? (isDarkMode ? const Color(0xFF8899AA) : AppColors.textSecondary) 
                                     : (isDarkMode ? Colors.white : AppColors.textPrimary),
                                 decoration: isCompleted ? TextDecoration.lineThrough : null,
                               ),
@@ -762,7 +762,7 @@ class AgendaScreen extends ConsumerWidget {
                             child: Icon(
                               showRichContext ? Icons.expand_less : Icons.expand_more,
                               size: 20,
-                              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                              color: isDarkMode ? const Color(0xFF8899AA) : const Color(0xFF4A6274),
                             ),
                           ),
                           // زر المشاركة
@@ -771,7 +771,7 @@ class AgendaScreen extends ConsumerWidget {
                             child: Icon(
                               Icons.people_outline,
                               size: 20,
-                              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                              color: isDarkMode ? const Color(0xFF8899AA) : const Color(0xFF4A6274),
                             ),
                           ),
                         ],
@@ -789,7 +789,7 @@ class AgendaScreen extends ConsumerWidget {
                             child: Text(
                               item.subtitle,
                               style: AppTextStyles.bodySmallSecondary.copyWith(
-                                color: isDarkMode ? Colors.grey.shade300 : null,
+                                color: isDarkMode ? const Color(0xFFAABBCC) : null,
                                 decoration: isCompleted ? TextDecoration.lineThrough : null,
                               ),
                               maxLines: 2,
@@ -866,7 +866,7 @@ class AgendaScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade50,
+        color: isDarkMode ? AppColors.primaryNavy : AppColors.cardBackground,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
       ),
       child: Column(
@@ -896,7 +896,7 @@ class AgendaScreen extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.description, size: 16, color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
+            Icon(Icons.description, size: 16, color: isDarkMode ? const Color(0xFF8899AA) : const Color(0xFF4A6274)),
             const SizedBox(width: 8),
             Text(
               'تفاصيل الملف',
@@ -911,7 +911,7 @@ class AgendaScreen extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade700 : Colors.white,
+            color: isDarkMode ? const Color(0xFF2C3E50) : Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -920,14 +920,14 @@ class AgendaScreen extends ConsumerWidget {
               Text(
                 'رقم الملف: ${item.entityId ?? "غير محدد"}',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+                  color: isDarkMode ? const Color(0xFFAABBCC) : const Color(0xFF2C3E50),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'نوع الكيان: ${item.entityType ?? "غير محدد"}',
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+                  color: isDarkMode ? const Color(0xFFAABBCC) : const Color(0xFF2C3E50),
                 ),
               ),
             ],
@@ -943,7 +943,7 @@ class AgendaScreen extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.attach_file, size: 16, color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
+            Icon(Icons.attach_file, size: 16, color: isDarkMode ? const Color(0xFF8899AA) : const Color(0xFF4A6274)),
             const SizedBox(width: 8),
             Text(
               'المستندات المرتبطة',
@@ -958,13 +958,13 @@ class AgendaScreen extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade700 : Colors.white,
+            color: isDarkMode ? const Color(0xFF2C3E50) : Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             'لا توجد مستندات مرتبطة حالياً',
             style: AppTextStyles.bodySmall.copyWith(
-              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500,
+              color: isDarkMode ? const Color(0xFF8899AA) : AppColors.textSecondary,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -979,7 +979,7 @@ class AgendaScreen extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.history, size: 16, color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
+            Icon(Icons.history, size: 16, color: isDarkMode ? const Color(0xFF8899AA) : const Color(0xFF4A6274)),
             const SizedBox(width: 8),
             Text(
               'المواعيد السابقة',
@@ -994,13 +994,13 @@ class AgendaScreen extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade700 : Colors.white,
+            color: isDarkMode ? const Color(0xFF2C3E50) : Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             'لا توجد مواعيد سابقة مسجلة',
             style: AppTextStyles.bodySmall.copyWith(
-              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500,
+              color: isDarkMode ? const Color(0xFF8899AA) : AppColors.textSecondary,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -1025,21 +1025,19 @@ class AgendaScreen extends ConsumerWidget {
   Color _getPriorityColor(AgendaItemType type) {
     switch (type) {
       case AgendaItemType.session:
-        return Colors.red.shade700;
+        return AppColors.error;
       case AgendaItemType.companyPhase:
-        return Colors.orange.shade700;
+        return AppColors.warning;
       case AgendaItemType.contractReminder:
-        return Colors.amber.shade700;
+        return AppColors.warning;
       case AgendaItemType.task:
-        return Colors.blue.shade700;
+        return AppColors.info;
     }
   }
 
   void _showQuickAdd(BuildContext context) {
-    // يمكن ربطه بمعالج إضافة مهمة أو جلسة سريع
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('استخدم زر "الإضافة السريع +" في الشريط العلوي لتسجيل المهام والجلسات.')),
-    );
+    // يوجه لشاشة عمل جديد — لا SnackBar وهمي
+    context.go('/new-work');
   }
 
   Widget _buildWeeklyView(BuildContext context, WidgetRef ref, AsyncValue<List<UnifiedAgendaItem>> agendaAsync) {
@@ -1103,7 +1101,7 @@ class AgendaScreen extends ConsumerWidget {
             if (dayIndex < 0 || dayIndex >= daysInMonth) {
               // خلية فارغة قبل بداية الشهر أو بعد نهايته
               return Container(
-                color: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade50,
+                color: isDarkMode ? const Color(0xFF0D1B2A) : AppColors.cardBackground,
               );
             }
 
@@ -1123,7 +1121,7 @@ class AgendaScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: isSelected 
                       ? AppColors.primaryNavy.withOpacity(0.2)
-                      : (isDarkMode ? Colors.grey.shade800 : Colors.white),
+                      : (isDarkMode ? AppColors.primaryNavy : Colors.white),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected 
@@ -1174,7 +1172,7 @@ class AgendaScreen extends ConsumerWidget {
                         child: Text(
                           '+${dayItems.length - 3}',
                           style: AppTextStyles.bodySmall.copyWith(
-                            color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                            color: isDarkMode ? const Color(0xFF8899AA) : const Color(0xFF4A6274),
                             fontSize: 8,
                           ),
                         ),
@@ -1197,7 +1195,7 @@ class AgendaScreen extends ConsumerWidget {
     ];
 
     return Container(
-      color: isDarkMode ? Colors.grey.shade800 : Colors.white,
+      color: isDarkMode ? AppColors.primaryNavy : Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1621,7 +1619,7 @@ class AgendaScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.history, size: 48, color: Colors.grey.shade400),
+                Icon(Icons.history, size: 48, color: const Color(0xFF8899AA)),
                 const SizedBox(height: 16),
                 Text(
                   'لا توجد تغييرات مسجلة',
