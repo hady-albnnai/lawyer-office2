@@ -23,6 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as path;
 
 import '../../../core/auth/permission_catalog.dart';
@@ -521,7 +522,21 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                     searchTermsOf: (p) => [p.phone1 ?? '', p.nationalId ?? ''],
                     subtitleOf: (p) => p.phone1,
                     value: party.personId == null ? null : persons.where((p) => p.id == party.personId).firstOrNull,
-                    onSelected: (p) => setState(() => party.personId = p.id),
+                    onSelected: (p) {
+                      // التحقق من عدم تكرار نفس الشخص في أطراف أخرى
+                      final isDuplicate = _parties.any((other) =>
+                          other != party && other.personId == p.id);
+                      if (isDuplicate) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${p.fullName} مُضاف بالفعل كطرف آخر'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                        return;
+                      }
+                      setState(() => party.personId = p.id);
+                    },
                   ),
                   loading: () => const LinearProgressIndicator(),
                   error: (_, __) => const Text('خطأ'),
@@ -1126,13 +1141,27 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   Future<void> _openInWord() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('سيُفتح الملف في Microsoft Word — عدّل واحفظ وسيُكتشف التعديل تلقائياً'),
-        backgroundColor: AppColors.info,
-        duration: Duration(seconds: 3),
-      ),
-    );
+    if (_selectedTemplate == null) {
+      _showError('يرجى اختيار نموذج أولاً');
+      return;
+    }
+
+    final templatePath = _selectedTemplate!.filePath;
+    final file = File(templatePath);
+
+    if (!await file.exists()) {
+      _showError('ملف النموذج غير موجود: $templatePath');
+      return;
+    }
+
+    try {
+      final result = await OpenFilex.open(templatePath);
+      if (result.type != ResultType.done) {
+        _showError('تعذّر فتح الملف: ${result.message}');
+      }
+    } catch (e) {
+      _showError('خطأ في فتح الملف: $e');
+    }
   }
 
   // =========================================================================
