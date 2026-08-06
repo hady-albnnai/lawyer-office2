@@ -312,7 +312,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                   subtitle: Text('هاتف التواصل: ${r.contactPhone ?? "---"} • الملاحظة: ${r.reminderNote ?? ""}'),
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: AppConstants.primaryNavy, borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: AppConstants.primaryNavy, borderRadius: BorderRadius.circular(16)),
                     child: Text('مرتبط بمهمة يومية رقم [ID: ${r.autoTaskId ?? "-"}]', style: const TextStyle(color: AppConstants.accentGold, fontSize: 12)),
                   ),
                 ),

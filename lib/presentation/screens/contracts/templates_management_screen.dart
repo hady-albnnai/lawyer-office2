@@ -159,7 +159,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(border: Border.all(color: AppConstants.accentGold), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(border: Border.all(color: AppConstants.accentGold), borderRadius: BorderRadius.circular(16)),
                 child: Row(
                   children: [
                     Expanded(child: Text(docxFile == null ? 'لم يتم اختيار ملف .docx' : docxFile!.path.split("/").last.split("\\").last)),
