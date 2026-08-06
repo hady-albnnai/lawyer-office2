@@ -957,7 +957,7 @@ Future<void> _showDeficiencyResultDialog(BuildContext context, WidgetRef ref, db
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryNavy,
               foregroundColor: AppColors.secondaryGold,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             onPressed: () {
               Navigator.pop(ctx);
