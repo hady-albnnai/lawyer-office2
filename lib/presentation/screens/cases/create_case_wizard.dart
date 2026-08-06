@@ -126,6 +126,29 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   /// طلب المستخدم تعديل النوع رغم قدومه من الأرشيف.
   bool _overrideArchiveType = false;
 
+  /// تصنيف الوكالة من سياق الأرشيف (قضائية/عدلية/خارجية/تفويض)
+  String? _archivePoaCategory;
+
+  /// توصية نوع الوكالة حسب نوع الدعوى المختار
+  String get _recommendedPoaHint {
+    switch (_caseType) {
+      case CaseType.civil:
+      case CaseType.commercial:
+      case CaseType.criminal:
+      case CaseType.labor:
+      case CaseType.realEstate:
+      case CaseType.administrative:
+        return 'الدعاوى القضائية تتطلب وكالة قضائية (سند توكيل عام أو خاص) مصدقة للمحكمة المختصة.';
+      case CaseType.personalStatus:
+        return 'دعاوى الأحوال الشخصية تتطلب وكالة قضائية خاصة أو وكالة عدلية حسب نوع الدعوى.';
+      case CaseType.constitutional:
+        return 'الدعوى الدستورية تتطلب وكالة قضائية خاصة مصدقة لمحكمة النقض.';
+      case CaseType.other:
+      default:
+        return 'اختر الوكالة المناسبة لنوع الملف. الوكالات القضائية للدعاوى، والعدلية للمعاملات.';
+    }
+  }
+
   /// هل النوع والدرجة محدَّدان مسبقاً من شاشة الأرشيف؟
   bool get _cameFromArchive =>
       widget.archiveContext != null &&
@@ -232,6 +255,14 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       if (archive.isClosed) {
         _nextSessionDate = null;
         _nextActionController.text = 'ملف أرشيف منتهٍ - لا يوجد موعد قادم';
+      }
+      // تصنيف الوكالة من سياق الأرشيف
+      if (archive.poaType != null && archive.poaType!.isNotEmpty) {
+        final poaType = archive.poaType!.toLowerCase();
+        if (poaType.contains('عدلي')) _archivePoaCategory = 'عدلية';
+        else if (poaType.contains('خارج')) _archivePoaCategory = 'خارجية';
+        else if (poaType.contains('تفويض') || poaType.contains('تكليف')) _archivePoaCategory = 'تفويض';
+        else _archivePoaCategory = 'قضائية';
       }
     }
   }
@@ -716,6 +747,56 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           description: 'يجب ربط الدعوى بوكالة صالحة',
         ),
         const SizedBox(height: 24),
+
+        // سياق الأرشيف: نوع الوكالة المتوقع
+        if (_archivePoaCategory != null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: AppColors.info.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.info.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.verified_user, size: 18, color: AppColors.info),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'من سياق الأرشيف: نوع الوكالة المتوقع **$_archivePoaCategory**',
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.info),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        // توصية نوع الوكالة حسب نوع الدعوى
+        if (_archivePoaCategory == null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryGold.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.secondaryGold.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 18, color: AppColors.secondaryGold),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _recommendedPoaHint,
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         
         // بحث عن وكالة
         TextField(
