@@ -194,7 +194,7 @@ class NavSidebar extends ConsumerWidget {
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          color: group.accentColor?.withOpacity(0.6) ?? AppColors.textMuted,
+          color: group.accentColor?.withOpacity(0.6) ?? AppColors.textSecondary,
           letterSpacing: 0.5,
         ),
       ),

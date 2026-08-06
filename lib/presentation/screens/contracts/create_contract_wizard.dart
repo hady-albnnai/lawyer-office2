@@ -700,7 +700,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             ),
             child: Column(
               children: [
-                const Icon(Icons.library_books_outlined, size: 48, color: AppColors.textMuted),
+                const Icon(Icons.library_books_outlined, size: 48, color: AppColors.textSecondary),
                 const SizedBox(height: 12),
                 Text(
                   'لا توجد قوالب متاحة لتصنيف "${_legalSubcategory ?? ""}"',
@@ -806,7 +806,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           const SizedBox(height: 12),
           const Text(
             'سيُحفظ النموذج المستورد في مكتبة القوالب للاستخدام المستقبلي',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -963,7 +963,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       child: Row(
         children: [
           SizedBox(width: 80, child: Text(label, style: const TextStyle(
-            fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textMuted,
+            fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textSecondary,
           ))),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
         ],
@@ -1051,7 +1051,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         const SizedBox(height: 8),
         const Text(
           '🔀 يمكنك ملء المتغيرات هنا ثم فتح Word لتعديل البنود — الاثنان يعملان معاً',
-          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
       ],
