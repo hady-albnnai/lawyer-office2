@@ -620,11 +620,13 @@ class _DeficiencyResolverDialogState
   // ===========================================================================
 
   Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 7)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: _pickedDate ?? today.add(const Duration(days: 7)),
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365)),
     );
     if (picked != null && mounted) {
       setState(() => _pickedDate = picked);

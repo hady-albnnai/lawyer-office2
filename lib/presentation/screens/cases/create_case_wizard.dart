@@ -1121,13 +1121,16 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   }
   
   void _showAddPoaDialog(BuildContext context) {
-    showDialog(
+    showDialog<int>(
       context: context,
       builder: (context) => AddPoaDialog(defaultClientId: _selectedClientId),
-    ).then((_) {
-      // تحديث قائمة الوكالات بعد الإضافة
+    ).then((poaId) {
+      // تحديث قائمة الوكالات + تحديد الوكالة المُنشأة
       if (mounted) {
         ref.invalidate(allPoasProvider);
+        if (poaId != null) {
+          setState(() => _selectedPoaId = poaId);
+        }
       }
     });
   }
@@ -2611,7 +2614,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
                 'الحالة: ${widget.archiveContext!.statusLabel}',
                 if (widget.archiveContext!.isClosed && _nextActionController.text.trim().isNotEmpty) 'ملاحظة أرشيفية: ${_nextActionController.text.trim()}',
               ].join('\n')),
-        nextSessionDate: const Value(null),
+        nextSessionDate: Value(_nextSessionDate),
         isUrgent: Value(_isUrgent),
       );
       
