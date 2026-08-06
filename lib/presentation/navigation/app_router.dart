@@ -10,6 +10,7 @@ import '../screens/cases/case_detail_screen.dart';
 import '../screens/cases/cases_screen.dart';
 import '../screens/cases/create_case_wizard.dart';
 import '../screens/work_center/daily_work_center_screen.dart';
+import '../screens/new_work/new_work_screen.dart';
 import '../screens/documents/documents_screen.dart';
 import '../screens/documents/document_viewer.dart';
 import '../screens/files/files_screen.dart';
@@ -75,7 +76,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/today', name: 'today', builder: (_, __) => const DailyWorkCenterScreen()),
           GoRoute(path: '/agenda', name: 'agenda', builder: (_, __) => const AgendaScreen()),
-          GoRoute(path: '/new-work', redirect: (_, __) => '/today'),
+          GoRoute(path: '/new-work', name: 'new-work', builder: (_, __) => const NewWorkScreen()),
           GoRoute(path: '/files', name: 'files', builder: (_, state) => FilesScreen(initialStatus: state.uri.queryParameters['status'])),
           GoRoute(path: '/files/agencies', name: 'files-agencies', builder: (_, state) => AgencyFilesScreen(initialStatus: state.uri.queryParameters['status'])),
           GoRoute(path: '/persons', name: 'persons', builder: (_, __) => const PersonsScreen()),

@@ -47,10 +47,10 @@ class SidebarItemModel {
   final String? badge; // 'active', 'closed', 'needs'
 
   /// لون مميّز للقسم الرئيسي.
-  ///
-  /// الأقسام السبعة متشابهة بصرياً، فيصعب على المستخدم تمييزها
-  /// بالنص وحده. اللون يجعل التنقّل معتمداً على الذاكرة البصرية.
   final Color? accentColor;
+
+  /// هل هذا عنصر بارز (مثل "عمل جديد") — يُرسم كزر مميز
+  final bool isProminent;
 
   const SidebarItemModel({
     required this.id,
@@ -65,6 +65,7 @@ class SidebarItemModel {
     this.children,
     this.badge,
     this.accentColor,
+    this.isProminent = false,
   });
   
   /// نسخة بلون قسم موروث.
@@ -81,6 +82,7 @@ class SidebarItemModel {
         children: children,
         badge: badge,
         accentColor: color,
+        isProminent: isProminent,
       );
 
   /// تحويل إلى widget

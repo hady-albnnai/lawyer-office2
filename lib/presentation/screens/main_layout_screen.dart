@@ -26,43 +26,45 @@ class MainShellScreen extends ConsumerWidget {
     final settingsAsync = ref.watch(officeSettingsProvider);
     final currentUri = GoRouterState.of(context).uri;
     final location = currentUri.path;
-    
-    // نحدد المسار للـ Sidebar بناءً على بداية الرابط مع احترام تبويبي ملفات المكتب الجاري/المنتهي.
+
+    // تحديد المسار المختار
     String selectedRoute = '/today';
-    if (location.startsWith('/templates') ||
-        location.startsWith('/contracts/templates')) {
-      selectedRoute = '/templates';
+    if (location.startsWith('/agenda')) {
+      selectedRoute = '/agenda';
+    } else if (location.startsWith('/new-work')) {
+      selectedRoute = '/new-work';
+    } else if (location.startsWith('/work-orders') ||
+        location.startsWith('/tasks')) {
+      selectedRoute = '/work-orders';
     } else if (location.startsWith('/files/agencies')) {
       selectedRoute = '/files/agencies';
     } else if (location == '/files' &&
         currentUri.queryParameters['status'] == 'completed') {
       selectedRoute = '/files?status=completed';
-    } else if (location == '/files') {
-      selectedRoute = '/files?status=active';
-    } else if (location.startsWith('/archive-intake')) {
-      selectedRoute = '/archive-intake';
-    } else if (location.startsWith('/cases') ||
+    } else if (location.startsWith('/files') ||
+        location.startsWith('/cases') ||
         location.startsWith('/companies') ||
         location.startsWith('/contracts') ||
         location.startsWith('/procedures') ||
         location.startsWith('/poa') ||
-        location.startsWith('/persons') ||
         location.startsWith('/archive')) {
       selectedRoute = '/files';
-    } else if (location.startsWith('/work-orders') ||
-        location.startsWith('/tasks')) {
-      selectedRoute = '/work-orders';
-    } else if (location.startsWith('/agenda')) {
-      selectedRoute = '/agenda';
+    } else if (location.startsWith('/persons')) {
+      selectedRoute = '/persons';
     } else if (location.startsWith('/finance')) {
       selectedRoute = '/finance';
+    } else if (location.startsWith('/search-reports') ||
+        location.startsWith('/printing')) {
+      selectedRoute = '/search-reports';
     } else if (location.startsWith('/legal-library')) {
       selectedRoute = '/legal-library';
-    } else if (location.startsWith('/printing') ||
-        location.startsWith('/search-reports')) {
-      selectedRoute = '/search-reports';
+    } else if (location.startsWith('/archive-intake')) {
+      selectedRoute = '/archive-intake';
     } else if (location.startsWith('/settings')) {
       selectedRoute = '/settings';
+    } else if (location.startsWith('/templates') ||
+        location.startsWith('/contracts/templates')) {
+      selectedRoute = '/search-reports';
     }
 
     final officeName = settingsAsync.maybeWhen(
@@ -80,7 +82,7 @@ class MainShellScreen extends ConsumerWidget {
         body: Row(
           children: [
             AppSidebar(
-              items: _filterSidebarItems(getDefaultSidebarItems(), ref),
+              groups: _filterSidebarGroups(getDefaultSidebarGroups(), ref),
               officeName: officeName,
               lawyerName: lawyerName,
               logo: SizedBox(
@@ -439,33 +441,31 @@ class MainLayoutScreen extends StatelessWidget {
   }
 }
 
-List<SidebarItemModel> _filterSidebarItems(List<SidebarItemModel> items, WidgetRef ref) {
+/// فلترة عناصر السايدبار حسب الصلاحيات (نسخة المجموعات)
+List<SidebarGroupModel> _filterSidebarGroups(List<SidebarGroupModel> groups, WidgetRef ref) {
   final perms = ref.watch(permissionServiceProvider);
   bool allowed(String route) {
-    if (route.startsWith('/today')) return true;
+    if (route.startsWith('/today') || route.startsWith('/new-work')) return true;
     if (route.startsWith('/agenda') || route.startsWith('/tasks')) return perms.can(PermissionKeys.casesView);
     if (route.startsWith('/work-orders')) return perms.can(PermissionKeys.workOrdersView);
     if (route.startsWith('/finance')) return perms.can(PermissionKeys.financeView);
     if (route.startsWith('/archive-intake')) return perms.can(PermissionKeys.archiveIntakeView);
     if (route.startsWith('/files')) return perms.canAny(const [PermissionKeys.casesView, PermissionKeys.proceduresView, PermissionKeys.contractsView, PermissionKeys.companiesView, PermissionKeys.poaView]);
-    if (route.startsWith('/documents')) return perms.can(PermissionKeys.documentsView);
+    if (route.startsWith('/persons')) return perms.can(PermissionKeys.personsView);
     if (route.startsWith('/legal-library')) return perms.can(PermissionKeys.libraryView);
-    if (route.startsWith('/search-reports')) return perms.can(PermissionKeys.searchView);
+    if (route.startsWith('/search-reports') || route.startsWith('/printing')) return perms.can(PermissionKeys.searchView);
     if (route.startsWith('/settings')) return perms.can(PermissionKeys.settingsView);
     if (route.startsWith('/cases')) return perms.can(PermissionKeys.casesView);
     if (route.startsWith('/companies')) return perms.can(PermissionKeys.companiesView);
-    if (route.startsWith('/templates')) return perms.can(PermissionKeys.templatesView);
-    if (route.startsWith('/contracts/templates')) return perms.can(PermissionKeys.templatesView);
     if (route.startsWith('/contracts')) return perms.can(PermissionKeys.contractsView);
     if (route.startsWith('/procedures')) return perms.can(PermissionKeys.proceduresView);
     if (route.startsWith('/poa')) return perms.can(PermissionKeys.poaView);
-    if (route.startsWith('/persons') || route.startsWith('/archive')) return perms.can(PermissionKeys.personsView);
-    if (route.startsWith('/printing')) return perms.can(PermissionKeys.reportsView);
+    if (route.startsWith('/archive')) return perms.can(PermissionKeys.personsView);
     return true;
   }
 
-  SidebarItemModel? filterOne(SidebarItemModel item) {
-    final children = item.children?.map(filterOne).whereType<SidebarItemModel>().toList();
+  SidebarItemModel? filterItem(SidebarItemModel item) {
+    final children = item.children?.map(filterItem).whereType<SidebarItemModel>().toList();
     if ((children != null && children.isNotEmpty) || allowed(item.route)) {
       return SidebarItemModel(
         id: item.id,
@@ -476,12 +476,23 @@ List<SidebarItemModel> _filterSidebarItems(List<SidebarItemModel> items, WidgetR
         badgeType: item.badgeType,
         isHidden: item.isHidden,
         isDisabled: item.isDisabled,
+        isProminent: item.isProminent,
         tooltip: item.tooltip,
         children: children,
+        accentColor: item.accentColor,
+        badge: item.badge,
       );
     }
     return null;
   }
 
-  return items.map(filterOne).whereType<SidebarItemModel>().toList();
+  return groups.map((group) {
+    final filteredItems = group.items.map(filterItem).whereType<SidebarItemModel>().toList();
+    if (filteredItems.isEmpty) return null;
+    return SidebarGroupModel(
+      label: group.label,
+      accentColor: group.accentColor,
+      items: filteredItems,
+    );
+  }).whereType<SidebarGroupModel>().toList();
 }

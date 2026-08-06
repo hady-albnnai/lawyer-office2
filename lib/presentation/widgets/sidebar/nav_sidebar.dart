@@ -1,9 +1,14 @@
-/// SideBar الرئيسي لتطبيق مكتب المحامي
-/// 
-/// هذا الملف ينفذ SideBar حسب مواصفات
-/// PRODUCT_REDESIGN_MASTER_PLAN.md - القسم 3.2
-/// 
-/// آخر تحديث: 2026-07-09
+/// SideBar الرئيسي لتطبيق مكتب المحامي — التصميم المعاد
+///
+/// الفلسفة: 4 مجموعات تعكس يوم المحامي السوري
+/// 1. العمل اليومي — ما يستخدمه كل صباح
+/// 2. الملفات والأشخاص — إدارة المحتوى
+/// 3. الأدوات والمرجع — بحث ومكتبة ومالية
+/// 4. الإدارة — أرشيف وإعدادات + AI مستقبلاً
+///
+/// جاهز للذكاء الاصطناعي: مكان محجوز للمساعد الذكي
+///
+/// آخر تحديث: 2026-08-06
 library;
 
 import 'package:flutter/material.dart';
@@ -15,16 +20,16 @@ import '../../theme/app_text_styles.dart';
 import '../../theme/custom_icons.dart';
 import 'sidebar_item.dart';
 
-/// حالة SideBar (موسع/مطوي)
+/// حالة SideBar (موسع/طوي)
 class SidebarState {
   final bool isExpanded;
   final String? selectedRoute;
-  
+
   const SidebarState({
     this.isExpanded = true,
     this.selectedRoute,
   });
-  
+
   SidebarState copyWith({
     bool? isExpanded,
     String? selectedRoute,
@@ -43,33 +48,18 @@ final sidebarStateProvider = StateProvider<SidebarState>((ref) {
 
 /// SideBar الرئيسي
 class NavSidebar extends ConsumerWidget {
-  /// قائمة عناصر SideBar
-  final List<SidebarItemModel> items;
-  
-  /// العنوان الذي يظهر في أعلى SideBar (اختياري)
+  final List<SidebarGroupModel> groups;
   final Widget? header;
-  
-  /// التذييل الذي يظهر في أسفل SideBar (اختياري)
   final Widget? footer;
-  
-  /// عرض SideBar عند التوسعة
   final double expandedWidth;
-  
-  /// عرض SideBar عند الطي
   final double collapsedWidth;
-  
-  /// لون خلفية SideBar
   final Color backgroundColor;
-  
-  /// لون الظل
   final Color shadowColor;
-  
-  /// دالة عند تغيير حالة التوسعة
   final void Function(bool isExpanded)? onExpandedChanged;
-  
+
   const NavSidebar({
     super.key,
-    required this.items,
+    required this.groups,
     this.header,
     this.footer,
     this.expandedWidth = 280,
@@ -78,13 +68,14 @@ class NavSidebar extends ConsumerWidget {
     this.shadowColor = AppColors.shadowMedium,
     this.onExpandedChanged,
   });
-  
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(sidebarStateProvider);
     final isExpanded = state.isExpanded;
-    final selectedRoute = state.selectedRoute ?? GoRouterState.of(context).uri.toString();
-    
+    final selectedRoute =
+        state.selectedRoute ?? GoRouterState.of(context).uri.toString();
+
     return Container(
       width: isExpanded ? expandedWidth : collapsedWidth,
       decoration: BoxDecoration(
@@ -100,7 +91,7 @@ class NavSidebar extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // Header (العنوان)
+          // Header
           if (header != null) ...[
             Container(
               height: isExpanded ? 104 : 72,
@@ -108,46 +99,63 @@ class NavSidebar extends ConsumerWidget {
               alignment: Alignment.center,
               child: header,
             ),
-            const Divider(
-              color: AppColors.cardBorder,
-              height: 1,
-              thickness: 0.5,
-            ),
+            const Divider(color: AppColors.cardBorder, height: 1, thickness: 0.5),
           ],
-          
-          // قائمة العناصر
+
+          // قائمة المجموعات
           Expanded(
             child: SingleChildScrollView(
-              child: SidebarItemList(
-                items: items,
-                isExpanded: isExpanded,
-                selectedRoute: selectedRoute,
-                onItemSelected: (item) {
-                  // تحديث المسار المختار
-                  ref.read(sidebarStateProvider.notifier).state = 
-                      state.copyWith(selectedRoute: item.route);
-                  
-                  // التنقل إلى المسار
-                  context.go(item.route);
-                },
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (int g = 0; g < groups.length; g++) ...[
+                    if (g > 0) const SizedBox(height: 4),
+                    _buildGroupLabel(groups[g], isExpanded),
+                    const SizedBox(height: 4),
+                    ...groups[g].items.map((item) {
+                      // العنصر المميز "عمل جديد"
+                      if (item.isProminent) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: _buildProminentButton(
+                              context, ref, item, isExpanded, selectedRoute),
+                        );
+                      }
+                      // عنصر عادي أو قابل للتوسيع
+                      if (item.children != null && item.children!.isNotEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: _buildExpandableItem(
+                              context, ref, item, isExpanded, selectedRoute),
+                        );
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: item.toWidget(
+                          context: context,
+                          isExpanded: isExpanded,
+                          selectedRoute: selectedRoute,
+                          onItemSelected: (i) => _navigate(ref, state, context, i),
+                        ),
+                      );
+                    }),
+                  ],
+                ],
               ),
             ),
           ),
-          
-          // Footer (التذييل)
+
+          // Footer
           if (footer != null) ...[
-            const Divider(
-              color: AppColors.cardBorder,
-              height: 1,
-              thickness: 0.5,
-            ),
+            const Divider(color: AppColors.cardBorder, height: 1, thickness: 0.5),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: footer,
             ),
           ],
-          
-          // زر طي/توسعة SideBar
+
+          // زر طي/توسعة
           Container(
             height: 48,
             margin: const EdgeInsets.all(8),
@@ -162,10 +170,10 @@ class NavSidebar extends ConsumerWidget {
                 color: AppColors.textPrimary,
                 size: 24,
               ),
-              tooltip: isExpanded ? 'طي SideBar' : 'توسيع SideBar',
+              tooltip: isExpanded ? 'طي القائمة' : 'توسيع القائمة',
               onPressed: () {
                 final newState = !isExpanded;
-                ref.read(sidebarStateProvider.notifier).state = 
+                ref.read(sidebarStateProvider.notifier).state =
                     state.copyWith(isExpanded: newState);
                 onExpandedChanged?.call(newState);
               },
@@ -175,11 +183,207 @@ class NavSidebar extends ConsumerWidget {
       ),
     );
   }
+
+  /// عنوان المجموعة (يظهر فقط عند التوسيع)
+  Widget _buildGroupLabel(SidebarGroupModel group, bool isExpanded) {
+    if (!isExpanded) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(right: 8, top: 8, bottom: 2),
+      child: Text(
+        group.label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: group.accentColor?.withOpacity(0.6) ?? AppColors.textMuted,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  /// زر "عمل جديد" المميز
+  Widget _buildProminentButton(BuildContext context, WidgetRef ref,
+      SidebarItemModel item, bool isExpanded, String? selectedRoute) {
+    final isSelected = selectedRoute == item.route;
+
+    if (!isExpanded) {
+      return Tooltip(
+        message: item.label,
+        child: InkWell(
+          onTap: () => _navigate(ref, ref.read(sidebarStateProvider), context, item),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primaryNavy,
+                  AppColors.primaryNavy.withOpacity(0.85),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryNavy.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(Icons.add_circle, color: AppColors.secondaryGold, size: 26),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return InkWell(
+      onTap: () => _navigate(ref, ref.read(sidebarStateProvider), context, item),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 50,
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primaryNavy,
+              AppColors.primaryNavy.withOpacity(0.85),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected
+              ? Border.all(color: AppColors.secondaryGold, width: 2)
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryNavy.withOpacity(0.25),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppColors.secondaryGold.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.add_circle_outline,
+                  color: AppColors.secondaryGold, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item.label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// عنصر قابل للتوسيع
+  Widget _buildExpandableItem(BuildContext context, WidgetRef ref,
+      SidebarItemModel parent, bool isExpanded, String? selectedRoute) {
+    if (!isExpanded) {
+      return parent.toWidget(
+        context: context,
+        isExpanded: isExpanded,
+        selectedRoute: selectedRoute,
+        onItemSelected: (item) {
+          if (parent.children!.isNotEmpty) {
+            _navigate(ref, ref.read(sidebarStateProvider), context,
+                parent.children!.first);
+          }
+        },
+      );
+    }
+
+    final hasSelectedChild = parent.children!
+            .any((c) => selectedRoute == c.route) ||
+        selectedRoute == parent.route;
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        initiallyExpanded: hasSelectedChild,
+        tilePadding: const EdgeInsets.symmetric(horizontal: 8),
+        childrenPadding: const EdgeInsets.only(right: 8),
+        leading: Icon(
+          parent.icon,
+          color: parent.accentColor ??
+              (hasSelectedChild ? AppColors.primaryNavy : AppColors.sidebarIcon),
+          size: 22,
+        ),
+        title: Text(
+          parent.label,
+          style: hasSelectedChild
+              ? AppTextStyles.sidebarItem.copyWith(
+                  color: parent.accentColor ?? AppColors.primaryNavy,
+                  fontWeight: FontWeight.bold,
+                )
+              : AppTextStyles.sidebarItem,
+        ),
+        children: parent.children!.map((child) {
+          final tinted =
+              child.accentColor == null && parent.accentColor != null
+                  ? child.copyWithAccent(parent.accentColor!)
+                  : child;
+          return Padding(
+            padding: const EdgeInsets.only(right: 16.0, bottom: 4.0),
+            child: tinted.toWidget(
+              context: context,
+              isExpanded: isExpanded,
+              selectedRoute: selectedRoute,
+              onItemSelected: (i) =>
+                  _navigate(ref, ref.read(sidebarStateProvider), context, i),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  void _navigate(
+      WidgetRef ref, SidebarState state, BuildContext context, SidebarItemModel item) {
+    ref.read(sidebarStateProvider.notifier).state =
+        state.copyWith(selectedRoute: item.route);
+    context.go(item.route);
+  }
 }
 
-/// SideBar مع عنوان وتذييل افتراضي
+// =============================================================================
+// نموذج مجموعة عناصر (Group)
+// =============================================================================
 
-/// نموذج عنصر Sidebar مع دعم الشارة (Badge)
+class SidebarGroupModel {
+  final String label;
+  final List<SidebarItemModel> items;
+  final Color? accentColor;
+
+  const SidebarGroupModel({
+    required this.label,
+    required this.items,
+    this.accentColor,
+  });
+}
+
+// =============================================================================
+// AppSidebar — السايدبار الرئيسي مع رأس وتذييل
+// =============================================================================
+
 extension SidebarItemModelExtension on SidebarItemModel {
   SidebarItemModel copyWith({int? badgeCount}) {
     return SidebarItemModel(
@@ -189,39 +393,34 @@ extension SidebarItemModelExtension on SidebarItemModel {
       route: route,
       children: children,
       badge: badge,
+      isProminent: isProminent,
+      accentColor: accentColor,
       badgeCount: badgeCount ?? this.badgeCount,
     );
   }
 }
 
 class AppSidebar extends NavSidebar {
-  /// اسم المكتب
   final String officeName;
-  
-  /// اسم المحامي
   final String lawyerName;
-  
-  /// الشعار (اختياري)
   final Widget? logo;
-  
-  /// نسخة التطبيق
   final String version;
-  
+
   const AppSidebar({
     super.key,
-    required super.items,
+    required List<SidebarGroupModel> groups,
     this.officeName = 'مكتب المحامي',
     this.lawyerName = 'هادي فيصل البني',
     this.logo,
-    this.version = '1.0.0',
+    this.version = '6.2.0',
     super.expandedWidth = 280,
     super.collapsedWidth = 70,
-  });
-  
+  }) : super(groups: groups);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return NavSidebar(
-      items: items,
+      groups: groups,
       header: _buildHeader(context, ref),
       footer: _buildFooter(context, ref),
       expandedWidth: expandedWidth,
@@ -229,26 +428,25 @@ class AppSidebar extends NavSidebar {
       onExpandedChanged: onExpandedChanged,
     );
   }
-  
+
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
     final isExpanded = ref.watch(sidebarStateProvider).isExpanded;
-    
-    final logoWidget = logo ?? Image.asset(
-      AppConstants.appIconAsset,
-      width: isExpanded ? 52 : 42,
-      height: isExpanded ? 52 : 42,
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => Icon(
-        Icons.verified_user,
-        color: AppColors.primaryNavy,
-        size: isExpanded ? 42 : 34,
-      ),
-    );
 
-    if (!isExpanded) {
-      return logoWidget;
-    }
-    
+    final logoWidget = logo ??
+        Image.asset(
+          AppConstants.appIconAsset,
+          width: isExpanded ? 52 : 42,
+          height: isExpanded ? 52 : 42,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.verified_user,
+            color: AppColors.primaryNavy,
+            size: isExpanded ? 42 : 34,
+          ),
+        );
+
+    if (!isExpanded) return logoWidget;
+
     return Row(
       textDirection: TextDirection.rtl,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -295,131 +493,182 @@ class AppSidebar extends NavSidebar {
       ],
     );
   }
-  
+
   Widget _buildFooter(BuildContext context, WidgetRef ref) {
     final isExpanded = ref.watch(sidebarStateProvider).isExpanded;
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.info_outline,
-          color: AppColors.textSecondary,
-          size: 16,
-        ),
+        Icon(Icons.info_outline, color: AppColors.textSecondary, size: 16),
         if (isExpanded) ...[
           const SizedBox(width: 8),
-          Text(
-            'الإصدار $version',
-            style: AppTextStyles.bodySmallSecondary,
-          ),
+          Text('الإصدار $version', style: AppTextStyles.bodySmallSecondary),
         ],
       ],
     );
   }
 }
 
+// =============================================================================
+// ألوان المجموعات
+// =============================================================================
 
-/// ألوان الأقسام الرئيسية في القائمة الجانبية.
-///
-/// اختيرت متباعدة في دائرة الألوان ليسهل تمييزها، ومتوافقة مع
-/// الطابع الرسمي للمكتب (درجات مشبعة لا فاقعة). الدلالة مقصودة:
-/// المالية أخضر، والتقارير بنفسجي، والإدارة رمادي محايد.
 class SidebarPalette {
   const SidebarPalette._();
 
-  /// مكتب العمل — أزرق نشط: نقطة البداية اليومية.
-  static const Color workspace = Color(0xFF1565C0);
+  /// العمل اليومي — أزرق نشط
+  static const Color daily = Color(0xFF1565C0);
 
-  /// ملفات المكتب — كهرماني: لون الملفات الورقية.
-  static const Color officeFiles = Color(0xFFB8860B);
+  /// الملفات والأشخاص — كهرماني
+  static const Color files = Color(0xFFB8860B);
 
-  /// المكتبة القانونية — نيلي عميق.
-  static const Color library = Color(0xFF4527A0);
+  /// الأدوات والمرجع — نيلي
+  static const Color tools = Color(0xFF4527A0);
 
-  /// النماذج القانونية — تركوازي.
-  static const Color templates = Color(0xFF00838F);
-
-  /// المالية والصندوق — أخضر: دلالة مالية متعارفة.
-  static const Color finance = Color(0xFF2E7D32);
-
-  /// التقارير والكشوف — بنفسجي مائل للوردي.
-  static const Color reports = Color(0xFF8E24AA);
-
-  /// إدارة المكتب — رمادي محايد: قسم إعدادات لا تشغيل.
+  /// الإدارة — رمادي محايد
   static const Color admin = Color(0xFF546E7A);
+
+  /// AI — تركوازي (مستقبلي)
+  static const Color ai = Color(0xFF00838F);
 }
 
-/// قائمة عناصر SideBar الافتراضية (11 تبويب)
+// =============================================================================
+// التعريف الجديد: 4 مجموعات / 10 عناصر
+// =============================================================================
 
-/// مساحات العمل الستة (The 6 Workspaces)
-List<SidebarItemModel> getDefaultSidebarItems() {
+List<SidebarGroupModel> getDefaultSidebarGroups() {
   return [
-    const SidebarItemModel(
-      id: 'workspace',
-      label: 'مكتب العمل',
-      icon: Icons.dashboard_outlined,
-      route: '/today',
-      accentColor: SidebarPalette.workspace,
-      children: [
-        SidebarItemModel(id: 'ws_today', label: 'اليوم', icon: CustomIcons.todayDashboard, route: '/today'),
-        SidebarItemModel(id: 'ws_agenda', label: 'التقويم', icon: CustomIcons.agenda, route: '/agenda'),
-        SidebarItemModel(id: 'ws_tasks', label: 'المهام', icon: Icons.task_alt, route: '/tasks'),
-        SidebarItemModel(id: 'ws_wo', label: 'أوامر العمل', icon: CustomIcons.workOrders, route: '/work-orders'),
+    // ── المجموعة 1: العمل اليومي ──
+    SidebarGroupModel(
+      label: 'العمل اليومي',
+      accentColor: SidebarPalette.daily,
+      items: [
+        const SidebarItemModel(
+          id: 'today',
+          label: 'لوحة اليوم',
+          icon: CustomIcons.todayDashboard,
+          route: '/today',
+          accentColor: SidebarPalette.daily,
+        ),
+        const SidebarItemModel(
+          id: 'agenda',
+          label: 'الأجندة',
+          icon: CustomIcons.agenda,
+          route: '/agenda',
+          accentColor: SidebarPalette.daily,
+        ),
+        const SidebarItemModel(
+          id: 'new_work',
+          label: 'عمل جديد',
+          icon: Icons.add_circle_outline,
+          route: '/new-work',
+          accentColor: SidebarPalette.daily,
+          isProminent: true,
+        ),
+        const SidebarItemModel(
+          id: 'work_orders',
+          label: 'أوامر العمل',
+          icon: CustomIcons.workOrders,
+          route: '/work-orders',
+          accentColor: SidebarPalette.daily,
+        ),
       ],
     ),
-    const SidebarItemModel(
-      id: 'office_files',
-      label: 'ملفات المكتب',
-      icon: Icons.folder_special_outlined,
-      route: '/files',
-      accentColor: SidebarPalette.officeFiles,
-      children: [
-        SidebarItemModel(id: 'of_active', label: 'الملفات الجارية', icon: Icons.pending_actions, route: '/files?status=active', badge: 'active'),
-        SidebarItemModel(id: 'of_completed', label: 'الملفات المنتهية', icon: Icons.inventory_2_outlined, route: '/files?status=completed', badge: 'closed'),
-        SidebarItemModel(id: 'of_agencies', label: 'ملفات الوكالات', icon: Icons.verified_user_outlined, route: '/files/agencies'),
-        SidebarItemModel(id: 'of_needs', label: 'تحتاج استكمال', icon: Icons.warning_amber_outlined, route: '/files?status=active', badge: 'needs'),
-        SidebarItemModel(id: 'of_archive_intake', label: 'إدخال الأرشيف القديم', icon: Icons.archive_outlined, route: '/archive-intake'),
+
+    // ── المجموعة 2: الملفات والأشخاص ──
+    SidebarGroupModel(
+      label: 'الملفات والأشخاص',
+      accentColor: SidebarPalette.files,
+      items: [
+        const SidebarItemModel(
+          id: 'office_files',
+          label: 'ملفات المكتب',
+          icon: Icons.folder_special_outlined,
+          route: '/files',
+          accentColor: SidebarPalette.files,
+          children: [
+            SidebarItemModel(
+              id: 'of_active',
+              label: 'الملفات الجارية',
+              icon: Icons.pending_actions,
+              route: '/files?status=active',
+              badge: 'active',
+            ),
+            SidebarItemModel(
+              id: 'of_completed',
+              label: 'الملفات المنتهية',
+              icon: Icons.inventory_2_outlined,
+              route: '/files?status=completed',
+              badge: 'closed',
+            ),
+            SidebarItemModel(
+              id: 'of_agencies',
+              label: 'ملفات الوكالات',
+              icon: Icons.verified_user_outlined,
+              route: '/files/agencies',
+            ),
+          ],
+        ),
+        const SidebarItemModel(
+          id: 'persons',
+          label: 'الأشخاص والجهات',
+          icon: Icons.people_alt_outlined,
+          route: '/persons',
+          accentColor: SidebarPalette.files,
+        ),
       ],
     ),
-    const SidebarItemModel(
-      id: 'legal_library',
-      label: 'المكتبة القانونية',
-      icon: CustomIcons.legalLibrary,
-      route: '/legal-library',
-      accentColor: SidebarPalette.library,
-    ),
-    const SidebarItemModel(
-      id: 'legal_templates',
-      label: 'النماذج القانونية',
-      icon: Icons.article_outlined,
-      route: '/templates',
-      accentColor: SidebarPalette.templates,
-    ),
-    const SidebarItemModel(
-      id: 'finance',
-      label: 'المالية والصندوق',
-      icon: CustomIcons.finance,
-      route: '/finance',
-      accentColor: SidebarPalette.finance,
-    ),
-    const SidebarItemModel(
-      id: 'reports',
-      label: 'التقارير والكشوف',
-      icon: CustomIcons.searchReports,
-      route: '/search-reports',
-      accentColor: SidebarPalette.reports,
-      children: [
-        SidebarItemModel(id: 'reports_search', label: 'البحث والتقارير', icon: CustomIcons.searchReports, route: '/search-reports'),
-        SidebarItemModel(id: 'reports_printing', label: 'الطباعة والتصدير', icon: Icons.print, route: '/printing'),
+
+    // ── المجموعة 3: الأدوات والمرجع ──
+    SidebarGroupModel(
+      label: 'الأدوات والمرجع',
+      accentColor: SidebarPalette.tools,
+      items: [
+        const SidebarItemModel(
+          id: 'finance',
+          label: 'المالية والصندوق',
+          icon: CustomIcons.finance,
+          route: '/finance',
+          accentColor: Color(0xFF2E7D32),
+        ),
+        const SidebarItemModel(
+          id: 'search_reports',
+          label: 'البحث والتقارير',
+          icon: CustomIcons.searchReports,
+          route: '/search-reports',
+          accentColor: SidebarPalette.tools,
+        ),
+        const SidebarItemModel(
+          id: 'legal_library',
+          label: 'المكتبة القانونية',
+          icon: CustomIcons.legalLibrary,
+          route: '/legal-library',
+          accentColor: Color(0xFF6A1B9A),
+        ),
       ],
     ),
-    const SidebarItemModel(
-      id: 'office_admin',
-      label: 'إدارة المكتب',
-      icon: CustomIcons.settings,
-      route: '/settings',
+
+    // ── المجموعة 4: الإدارة ──
+    SidebarGroupModel(
+      label: 'الإدارة',
       accentColor: SidebarPalette.admin,
+      items: [
+        const SidebarItemModel(
+          id: 'archive_intake',
+          label: 'إدخال الأرشيف',
+          icon: Icons.archive_outlined,
+          route: '/archive-intake',
+          accentColor: SidebarPalette.admin,
+        ),
+        const SidebarItemModel(
+          id: 'settings',
+          label: 'الإعدادات',
+          icon: CustomIcons.settings,
+          route: '/settings',
+          accentColor: SidebarPalette.admin,
+        ),
+      ],
     ),
   ];
 }
