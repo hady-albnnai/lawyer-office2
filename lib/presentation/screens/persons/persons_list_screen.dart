@@ -17,7 +17,9 @@ import 'person_models.dart';
 
 /// شاشة إدارة الأشخاص والجهات للمرحلة 6.
 class PersonsListScreen extends ConsumerStatefulWidget {
-  const PersonsListScreen({super.key});
+  /// دور ابتدائي للفلترة (يُمرر من السايدبار عبر query parameter)
+  final String? initialRole;
+  const PersonsListScreen({super.key, this.initialRole});
 
   @override
   ConsumerState<PersonsListScreen> createState() => _PersonsListScreenState();
@@ -37,15 +39,38 @@ class _PersonsListScreenState extends ConsumerState<PersonsListScreen> with Sing
     PersonDirectoryRole.legalEntity,
   ];
 
+  /// مطابقة نص الدور من الـ query parameter مع PersonDirectoryRole
+  int _initialTabIndex() {
+    final role = widget.initialRole;
+    if (role == null || role.isEmpty) return 0;
+    switch (role) {
+      case 'client': return 1;
+      case 'opponent': return 2;
+      case 'opponentLawyer': return 3;
+      case 'notary': return 4;
+      case 'barDelegate': return 5;
+      case 'teamMember': return 6;
+      case 'legalEntity': return 7;
+      default: return 0;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    final initialIndex = _initialTabIndex();
+    _tabController = TabController(length: _tabs.length, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         ref.read(personsDirectoryProvider.notifier).setRoleFilter(_tabs[_tabController.index]);
       }
     });
+    // تطبيق الفلتر الأولي
+    if (initialIndex > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(personsDirectoryProvider.notifier).setRoleFilter(_tabs[initialIndex]);
+      });
+    }
   }
 
   @override

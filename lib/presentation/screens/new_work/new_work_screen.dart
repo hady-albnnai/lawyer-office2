@@ -65,6 +65,20 @@ class NewWorkScreen extends ConsumerWidget {
         permission: PermissionKeys.poaCreate,
         onTap: () => context.go('/poa'),
       ),
+      _NewWorkAction(
+        title: 'شخص أو جهة',
+        subtitle: 'إضافة موكل، خصم، محامي خصم...',
+        icon: Icons.person_add,
+        permission: PermissionKeys.personsCreate,
+        onTap: () => context.go('/persons'),
+      ),
+      _NewWorkAction(
+        title: 'رفع مستند',
+        subtitle: 'إضافة مستند مستقل للأرشيف',
+        icon: Icons.upload_file,
+        permission: PermissionKeys.documentsUpload,
+        onTap: () => context.go('/documents'),
+      ),
     ].where((item) => permissions.can(item.permission)).toList();
 
     return Theme(
