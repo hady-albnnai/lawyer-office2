@@ -386,13 +386,6 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
           ),
         ),
       ),
-                    elevation: 4,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
