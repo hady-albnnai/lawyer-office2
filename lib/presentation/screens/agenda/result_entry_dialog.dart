@@ -130,6 +130,7 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
   bool _clientAttended = false;
   bool _opponentAttended = false;
   bool _opponentLawyerAttended = false;
+  bool _clientAgentAttended = false;
 
   // المرفقات
   File? _attachment;
@@ -385,12 +386,13 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
       children: [
         Text('الحضور', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
         const SizedBox(height: 8),
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
           children: [
             _attendanceChip('الموكل', _clientAttended, (v) => setState(() => _clientAttended = v)),
-            const SizedBox(width: 8),
+            _attendanceChip('وكلاء الموكل', _clientAgentAttended, (v) => setState(() => _clientAgentAttended = v)),
             _attendanceChip('الخصم', _opponentAttended, (v) => setState(() => _opponentAttended = v)),
-            const SizedBox(width: 8),
             _attendanceChip('محامي الخصم', _opponentLawyerAttended, (v) => setState(() => _opponentLawyerAttended = v)),
           ],
         ),
@@ -585,15 +587,32 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
   }
 
   Future<void> _pickAttachment() async {
-    final result = await fp.FilePicker.pickFiles(
-      type: fp.FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'docx', 'doc'],
+    // إظهار مؤشر تحميل أثناء فتح نافذة الاختيار
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
-    if (result != null && result.files.single.path != null) {
-      setState(() {
-        _attachment = File(result.files.single.path!);
-        _attachmentName = result.files.single.name;
-      });
+    
+    try {
+      final result = await fp.FilePicker.pickFiles(
+        type: fp.FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'docx', 'doc'],
+      );
+      if (mounted) Navigator.of(context, rootNavigator: true).pop(); // إغلاق مؤشر التحميل
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _attachment = File(result.files.single.path!);
+          _attachmentName = result.files.single.name;
+        });
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر فتح نافذة الاختيار: $e'), backgroundColor: AppColors.error),
+        );
+      }
     }
   }
 
@@ -617,7 +636,7 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
 
       // بناء ملاحظات شاملة (AI-ready: بيانات منظمة)
       final attendanceInfo = widget.entityType == 'case'
-          ? 'حضور: موكل=${_clientAttended ? "نعم" : "لا"} | خصم=${_opponentAttended ? "نعم" : "لا"} | محامي_خصم=${_opponentLawyerAttended ? "نعم" : "لا"}'
+          ? 'حضور: موكل=${_clientAttended ? "نعم" : "لا"} | وكلاء_الموكل=${_clientAgentAttended ? "نعم" : "لا"} | خصم=${_opponentAttended ? "نعم" : "لا"} | محامي_خصم=${_opponentLawyerAttended ? "نعم" : "لا"}'
           : '';
       final decisionInfo = _courtDecision != null ? 'قرار: ${_courtDecision!.label}' : '';
       final timeInfo = _nextTime != null
@@ -678,13 +697,13 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
             nextDate = DateTime(nextDate.year, nextDate.month, nextDate.day, _nextTime!.hour, _nextTime!.minute);
           }
 
-          await db.customStatement('UPDATE cases SET next_session_date = ? WHERE id = ?', [nextDate, widget.entityId]);
+          await db.customStatement('UPDATE cases SET next_session_date = ? WHERE id = ?', [nextDate.millisecondsSinceEpoch ~/ 1000, widget.entityId]);
 
           final todayStart = DateTime(now.year, now.month, now.day);
           final tomorrowStart = todayStart.add(const Duration(days: 1));
           await db.customStatement(
             'UPDATE case_sessions SET status = ?, decision = ?, notes = ? WHERE case_id = ? AND session_date >= ? AND session_date < ?',
-            [_selectedResult.lifecycleStatus, '${_courtDecision?.label ?? ''} ${_selectedResult.label}'.trim(), notes, widget.entityId, todayStart, tomorrowStart],
+            [_selectedResult.lifecycleStatus, '${_courtDecision?.label ?? ''} ${_selectedResult.label}'.trim(), notes, widget.entityId, todayStart.millisecondsSinceEpoch ~/ 1000, tomorrowStart.millisecondsSinceEpoch ~/ 1000],
           );
         }
 
