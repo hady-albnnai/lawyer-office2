@@ -69,9 +69,17 @@ enum AgendaViewMode { weekly, monthly }
 
 /// Provider حقيقي للأجندة من قاعدة البيانات (case_sessions + daily_tasks)
 DateTime _agendaDate(Object? value, DateTime fallback) {
-  if (value is DateTime) return value;
-  if (value is String) return DateTime.tryParse(value) ?? fallback;
-  return fallback;
+  if (value is DateTime) return DateTime(value.year, value.month, value.day);
+  if (value is int) {
+    // Unix epoch seconds → DateTime (تطبيع لليوم فقط بدون وقت)
+    final dt = DateTime.fromMillisecondsSinceEpoch(value * 1000);
+    return DateTime(dt.year, dt.month, dt.day);
+  }
+  if (value is String) {
+    final parsed = DateTime.tryParse(value);
+    if (parsed != null) return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+  return DateTime(fallback.year, fallback.month, fallback.day);
 }
 
 final unifiedAgendaFromDBProvider = FutureProvider.family<List<UnifiedAgendaItem>, DateTime>((ref, targetDate) async {
@@ -1070,118 +1078,158 @@ class AgendaScreen extends ConsumerWidget {
 
   Widget _buildMonthlyView(BuildContext context, WidgetRef ref, DateTime selectedDate) {
     final monthlyAsync = ref.watch(monthlyAgendaProvider(selectedDate));
-    final isDarkMode = ref.watch(darkModeProvider);
+
+    // أسماء الأيام (السبت أولاً — الأسبوع العربي)
+    const dayNames = ['سبت', 'أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع'];
 
     return monthlyAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('خطأ في جلب البيانات: $err')),
       data: (monthlyItems) {
-        // حساب أيام الشهر
         final firstDay = DateTime(selectedDate.year, selectedDate.month, 1);
         final lastDay = DateTime(selectedDate.year, selectedDate.month + 1, 0);
         final daysInMonth = lastDay.day;
-        final startingWeekday = firstDay.weekday; // 1 = Monday, 7 = Sunday
-
-        // حساب عدد الأسابيع
-        final totalCells = startingWeekday - 1 + daysInMonth;
+        // تحويل weekday (Mon=1..Sun=7) إلى فهرس الشبكة (Sat=0..Fri=6)
+        final startOffset = (firstDay.weekday + 1) % 7;
+        final totalCells = startOffset + daysInMonth;
         final rows = (totalCells / 7).ceil();
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            childAspectRatio: 1.0,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: rows * 7,
-          itemBuilder: (context, index) {
-            final dayIndex = index - (startingWeekday - 1);
-            
-            if (dayIndex < 0 || dayIndex >= daysInMonth) {
-              // خلية فارغة قبل بداية الشهر أو بعد نهايته
-              return Container(
-                color: isDarkMode ? const Color(0xFF0D1B2A) : AppColors.cardBackground,
-              );
-            }
+        final now = DateTime.now();
+        final todayNorm = DateTime(now.year, now.month, now.day);
 
-            final day = dayIndex + 1;
-            final date = DateTime(selectedDate.year, selectedDate.month, day);
-            final dayItems = monthlyItems[date] ?? [];
-            final isSelected = date.year == selectedDate.year && 
-                               date.month == selectedDate.month && 
-                               date.day == selectedDate.day;
-            final isToday = date.year == DateTime.now().year && 
-                           date.month == DateTime.now().month && 
-                           date.day == DateTime.now().day;
-
-            return InkWell(
-              onTap: () => ref.read(selectedAgendaDateProvider.notifier).state = date,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isSelected 
-                      ? AppColors.primaryNavy.withOpacity(0.2)
-                      : (isDarkMode ? AppColors.primaryNavy : Colors.white),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected 
-                        ? AppColors.primaryNavy
-                        : (isToday ? AppColors.primaryNavy : Colors.transparent),
-                    width: isSelected ? 2 : 1,
+        return Column(
+          children: [
+            // صف أسماء الأيام
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: dayNames.map((name) => Expanded(
+                  child: Center(
+                    child: Text(name, style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.secondaryGold,
+                      fontWeight: FontWeight.bold,
+                    )),
                   ),
-                ),
-                child: Column(
-                  children: [
-                    // رقم اليوم
-                    Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Text(
-                        '$day',
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: isSelected 
-                              ? AppColors.primaryNavy
-                              : (isToday ? AppColors.primaryNavy : (isDarkMode ? Colors.white : Colors.black)),
-                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                    // مؤشرات المواعيد
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(2),
-                        child: Wrap(
-                          spacing: 2,
-                          runSpacing: 2,
-                          children: dayItems.take(3).map((item) {
-                            return Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: item.color,
-                                shape: BoxShape.circle,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    // عداد المواعيد
-                    if (dayItems.length > 3)
-                      Padding(
-                        padding: const EdgeInsets.all(2),
-                        child: Text(
-                          '+${dayItems.length - 3}',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: isDarkMode ? const Color(0xFF8899AA) : const Color(0xFF4A6274),
-                            fontSize: 8,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                )).toList(),
               ),
-            );
-          },
+            ),
+            // شبكة الأيام
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  childAspectRatio: 0.6,
+                  crossAxisSpacing: 4,
+                  mainAxisSpacing: 4,
+                ),
+                itemCount: rows * 7,
+                itemBuilder: (context, index) {
+                  final dayNum = index - startOffset + 1;
+
+                  if (dayNum < 1 || dayNum > daysInMonth) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final date = DateTime(selectedDate.year, selectedDate.month, dayNum);
+                  final dayItems = monthlyItems[date] ?? [];
+                  final isToday = date == todayNorm;
+                  final isSelected = date.year == selectedDate.year &&
+                      date.month == selectedDate.month &&
+                      date.day == selectedDate.day;
+
+                  return InkWell(
+                    onTap: () => ref.read(selectedAgendaDateProvider.notifier).state = date,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primaryNavy.withOpacity(0.12)
+                            : (isToday ? AppColors.secondaryGold.withOpacity(0.08) : AppColors.cardBackground),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primaryNavy
+                              : (isToday ? AppColors.secondaryGold : AppColors.cardBorder),
+                          width: isSelected ? 2 : (isToday ? 1.5 : 0.5),
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // رقم اليوم + عداد
+                          Row(
+                            children: [
+                              Container(
+                                width: 22, height: 22,
+                                decoration: BoxDecoration(
+                                  color: isToday ? AppColors.secondaryGold : (isSelected ? AppColors.primaryNavy : Colors.transparent),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Center(
+                                  child: Text('$dayNum', style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: (isToday || isSelected) ? Colors.white : AppColors.textPrimary,
+                                  )),
+                                ),
+                              ),
+                              const Spacer(),
+                              if (dayItems.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryNavy.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text('${dayItems.length}', style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryNavy,
+                                  )),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          // عناصر اليوم (عناوين مختصرة ملونة)
+                          Expanded(
+                            child: ListView(
+                              padding: EdgeInsets.zero,
+                              physics: const NeverScrollableScrollPhysics(),
+                              children: dayItems.take(3).map((item) {
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 1),
+                                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: item.color.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border(
+                                      right: BorderSide(color: item.color, width: 2),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    item.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 8, color: item.color, fontWeight: FontWeight.w500),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          if (dayItems.length > 3)
+                            Text('+${dayItems.length - 3}', style: TextStyle(
+                              fontSize: 8, color: AppColors.textSecondary, fontWeight: FontWeight.bold,
+                            )),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );
