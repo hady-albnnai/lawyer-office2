@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 
 /// شاشة لوحة التحكم الإحصائية للأجندة
 class AgendaStatisticsScreen extends ConsumerWidget {
@@ -58,7 +59,7 @@ class AgendaStatisticsScreen extends ConsumerWidget {
     required String title,
     required List<_StatItem> stats,
   }) {
-    return Card(
+    return GlassmorphicCard(
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),

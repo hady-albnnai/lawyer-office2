@@ -22,6 +22,7 @@ import '../documents/document_models.dart' show documentsFutureProvider;
 import '../files/files_screen.dart' show FileItem, FileStatus, FileType, filesProvider;
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../theme/app_theme.dart';
 
 final _archiveIntakeRefreshProvider = StateProvider<int>((ref) => 0);
@@ -504,7 +505,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
   }
 
   Widget _introCard() {
-    return Card(
+    return GlassmorphicCard(
       color: AppColors.primaryNavy,
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -616,7 +617,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
   }
 
   Widget _actionCard({required IconData icon, required String title, required String subtitle, required bool enabled, VoidCallback? onTap}) {
-    return Card(
+    return GlassmorphicCard(
       elevation: enabled ? 2 : 0,
       child: InkWell(
         onTap: enabled ? onTap : null,
@@ -748,7 +749,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
                               ? const Center(child: Text('لا توجد تصنيفات مطابقة.'))
                               : ListView(
                                   children: filteredGroups.entries.map((entry) {
-                                    return Card(
+                                    return GlassmorphicCard(
                                       child: ExpansionTile(
                                         initiallyExpanded: true,
                                         title: Text(_archiveReferenceCategoryLabel(entry.key), style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
@@ -933,7 +934,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
     final persistedFileKinds = ref.watch(_archiveReferenceValuesProvider((category: 'file_kind', parent: null))).maybeWhen(data: (values) => values, orElse: () => const <String>[]);
     final kindDone = selection.fileKind != null;
     final canStart = _archiveSelectionReady(selection);
-    return Card(
+    return GlassmorphicCard(
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -1385,7 +1386,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
       (key: 'documents', title: 'المستندات', file: 'documents_template.csv', icon: Icons.description),
       (key: 'opening_balances', title: 'الأرصدة الافتتاحية', file: 'opening_balances_template.csv', icon: Icons.account_balance_wallet),
     ];
-    return Card(
+    return GlassmorphicCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1682,7 +1683,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
     final reviewedBy = ((row['reviewed_by'] as String?) ?? '').trim();
     final reviewedAt = ((row['reviewed_at'] as String?) ?? '').trim();
     final location = _paperLocationFromRow(row);
-    return Card(
+    return GlassmorphicCard(
       child: ListTile(
         leading: CircleAvatar(backgroundColor: (saved ? AppColors.success : AppColors.warning).withOpacity(0.12), child: Icon(saved ? Icons.inventory_2 : Icons.warning_amber, color: saved ? AppColors.success : AppColors.warning)),
         title: Text('${row['doc_name'] ?? 'مستند'}', maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -1960,7 +1961,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
                             itemCount: filtered.length,
                             itemBuilder: (_, index) {
                               final file = filtered[index];
-                              return Card(
+                              return GlassmorphicCard(
                                 child: ListTile(
                                   leading: CircleAvatar(backgroundColor: AppColors.error.withOpacity(0.12), child: Icon(_fileTypeIcon(file.type), color: AppColors.error)),
                                   title: Text('${file.fileNumber} — ${file.title}', maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -2214,7 +2215,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
         final shownFailed = batches.fold<int>(0, (sum, b) => sum + b.failedFiles);
         final shownApproved = batches.fold<int>(0, (sum, b) => sum + b.approvedFiles);
         if (allBatches.isEmpty) {
-          return Card(
+          return GlassmorphicCard(
             child: Padding(
               padding: const EdgeInsets.all(18),
               child: Text('لا توجد دفعات إدخال بعد. ابدأ بإنشاء دفعة من المسارات أعلاه.', style: AppTextStyles.bodyMediumSecondary),
@@ -2291,7 +2292,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
             else
               ...batches.map((b) {
             final canImport = ref.watch(permissionServiceProvider).can(PermissionKeys.archiveIntakeImportFiles);
-            return Card(
+            return GlassmorphicCard(
               child: ListTile(
                 leading: CircleAvatar(backgroundColor: AppColors.primaryNavy.withOpacity(0.12), child: Icon(_sourceIcon(b.sourceType), color: AppColors.primaryNavy)),
                 title: Text(b.name, style: AppTextStyles.labelLarge),
@@ -2831,7 +2832,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
                         itemCount: items.length,
                         itemBuilder: (_, index) {
                           final item = items[index];
-                          return Card(
+                          return GlassmorphicCard(
                             child: ListTile(
                               leading: Icon(Icons.copy_all, color: AppColors.info),
                               title: Text(item.originalFileName, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -3354,7 +3355,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
       itemCount: items.length,
       itemBuilder: (_, index) {
         final item = items[index];
-        return Card(
+        return GlassmorphicCard(
           child: ListTile(
             leading: Icon(_itemIcon(item.status), color: _itemColor(item.status)),
             title: Text(item.originalFileName, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -4007,7 +4008,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
   }
 
   Widget _notice() {
-    return Card(
+    return GlassmorphicCard(
       color: AppColors.warning.withOpacity(0.08),
       child: Padding(
         padding: const EdgeInsets.all(16),

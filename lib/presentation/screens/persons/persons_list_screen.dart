@@ -10,6 +10,7 @@ import '../../providers/auth_providers.dart';
 import '../../providers/ui_data_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../theme/app_theme.dart';
 import 'person_detail_screen.dart';
 import 'person_models.dart';
@@ -215,7 +216,7 @@ class PersonDirectoryCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final permissions = ref.watch(permissionServiceProvider);
     final canViewSensitive = permissions.can(PermissionKeys.personsSensitiveView);
-    return Card(
+    return GlassmorphicCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () => Navigator.of(context).push(

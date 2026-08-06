@@ -1,3 +1,4 @@
+import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
@@ -299,7 +300,7 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
                   final statusEnum = LifecycleStatus.values[p.status];
                   final isDone = statusEnum == LifecycleStatus.completed;
 
-                  return Card(
+                  return GlassmorphicCard(
                     color: isDone ? AppConstants.statusSuccess.withOpacity(0.05) : AppConstants.surfaceWhite,
                     child: ListTile(
                       leading: CircleAvatar(

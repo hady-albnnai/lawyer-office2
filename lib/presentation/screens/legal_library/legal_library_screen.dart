@@ -8,6 +8,7 @@ import '../../../core/auth/permission_catalog.dart';
 import '../../providers/auth_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../theme/app_theme.dart';
 import '../documents/document_viewer.dart';
 import 'legal_library_models.dart';
@@ -219,7 +220,7 @@ class _LegalLibraryScreenState extends ConsumerState<LegalLibraryScreen>
   Widget _itemCard(LegalLibraryState state, LegalLibraryItem item) {
     final links = state.linksForItem(item.id);
     final permissions = ref.watch(permissionServiceProvider);
-    return Card(
+    return GlassmorphicCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),

@@ -11,6 +11,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/ui_data_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../poa/poa_list_screen.dart' show AddAgencyDialog;
 
 enum AgencyFileStatus {
@@ -302,7 +303,7 @@ class AgencyFileCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final permissions = ref.watch(permissionServiceProvider);
-    return Card(
+    return GlassmorphicCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () => _openAgencyDetail(context),

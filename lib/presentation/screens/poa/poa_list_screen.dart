@@ -10,6 +10,7 @@ import '../../providers/auth_providers.dart';
 import '../../providers/ui_data_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archive_context_banner.dart';
 import '../../widgets/common/searchable_picker.dart';
@@ -154,7 +155,7 @@ class _AgencyCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final permissions = ref.watch(permissionServiceProvider);
-    return Card(
+    return GlassmorphicCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () => Navigator.of(context).push(

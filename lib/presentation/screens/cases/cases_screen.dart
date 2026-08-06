@@ -9,6 +9,7 @@ import '../../../core/auth/permission_catalog.dart';
 import '../../providers/auth_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../documents/document_models.dart';
 import '../documents/document_viewer.dart';
 import 'case_models.dart';
@@ -289,7 +290,7 @@ class CaseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final nextSession = caseItem.nextSession;
 
-    return Card(
+    return GlassmorphicCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () => context.go('/cases/${caseItem.id}'),

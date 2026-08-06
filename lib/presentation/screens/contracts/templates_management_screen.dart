@@ -1,3 +1,4 @@
+import '../../theme/glassmorphism_helpers.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,7 +83,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
                   itemCount: list.length,
                   itemBuilder: (context, index) {
                     final t = list[index];
-                    return Card(
+                    return GlassmorphicCard(
                       elevation: 3,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppConstants.primaryNavy.withOpacity(0.2))),
                       child: Padding(

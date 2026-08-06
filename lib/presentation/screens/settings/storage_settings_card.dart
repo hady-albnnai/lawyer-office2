@@ -10,6 +10,7 @@ import '../../../data/services/storage_location_service.dart';
 import '../../providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 
 /// إدارة مكان تخزين بيانات المكتب وتصفيرها.
 ///
@@ -54,7 +55,7 @@ class _StorageSettingsCardState extends ConsumerState<StorageSettingsCard> {
   Widget build(BuildContext context) {
     final root = StorageLocationService.activeRoot;
 
-    return Card(
+    return GlassmorphicCard(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(

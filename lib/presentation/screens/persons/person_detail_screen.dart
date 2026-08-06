@@ -6,6 +6,7 @@ import '../../providers/auth_providers.dart' show authControllerProvider;
 import '../../providers/ui_data_providers.dart' show uiPersonsDirectoryProvider;
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../theme/app_theme.dart';
 import '../documents/document_viewer.dart';
 import 'person_models.dart';
@@ -187,7 +188,7 @@ class _PersonDetailScreenState extends ConsumerState<PersonDetailScreen> with Si
       itemCount: agencies.length,
       itemBuilder: (context, index) {
         final agency = agencies[index];
-        return Card(
+        return GlassmorphicCard(
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: agency.hasDocument ? AppColors.success.withOpacity(0.12) : AppColors.warning.withOpacity(0.12),
@@ -231,7 +232,7 @@ class _PersonDetailScreenState extends ConsumerState<PersonDetailScreen> with Si
       itemCount: person.documentIds.length,
       itemBuilder: (context, index) {
         final documentId = person.documentIds[index];
-        return Card(
+        return GlassmorphicCard(
           child: ListTile(
             leading: Icon(Icons.description, color: AppColors.primaryNavy),
             title: Text('مستند $documentId', style: AppTextStyles.labelLarge),
@@ -282,7 +283,7 @@ class _PersonDetailScreenState extends ConsumerState<PersonDetailScreen> with Si
   }
 
   Widget _infoCard({required String title, required IconData icon, required List<Widget> children}) {
-    return Card(
+    return GlassmorphicCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -345,7 +346,7 @@ class _PersonDetailScreenState extends ConsumerState<PersonDetailScreen> with Si
   }
 
   Widget _timelineTile(DirectoryTimelineEvent event) {
-    return Card(
+    return GlassmorphicCard(
       child: ListTile(
         leading: CircleAvatar(backgroundColor: AppColors.primaryNavy, child: const Icon(Icons.history, color: AppColors.textOnLight)),
         title: Text(event.title, style: AppTextStyles.labelLarge),

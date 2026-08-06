@@ -13,6 +13,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 
 /// مكتبة النماذج القانونية العامة.
 ///
@@ -151,7 +152,7 @@ class _LegalTemplatesScreenState extends ConsumerState<LegalTemplatesScreen> {
   }
 
   Widget _templateCard(ContractTemplate template, dynamic permissions) {
-    return Card(
+    return GlassmorphicCard(
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),

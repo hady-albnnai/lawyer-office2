@@ -20,6 +20,7 @@ import '../../providers/ui_data_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../theme/app_theme.dart';
 import 'settings_models.dart';
 import 'storage_settings_card.dart';
@@ -669,7 +670,7 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
               padding: const EdgeInsets.all(12),
               children: _labels.entries.map((entry) {
                 final selected = _selected == entry.key;
-                return Card(
+                return GlassmorphicCard(
                   color: selected ? AppColors.primaryNavy.withOpacity(0.08) : null,
                   child: ListTile(
                     selected: selected,
@@ -740,7 +741,7 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
       itemCount: list.length,
       itemBuilder: (context, index) {
         final c = list[index];
-        return Card(
+        return GlassmorphicCard(
           child: ListTile(
             leading: CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Icon(Icons.account_balance, color: AppColors.secondaryGold)),
             title: Text(c.displayName, style: AppTextStyles.labelLarge),
@@ -773,7 +774,7 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
-            return Card(
+            return GlassmorphicCard(
               child: ListTile(
                 leading: CircleAvatar(backgroundColor: (item.isActive ? AppColors.primaryNavy : AppColors.textSecondary).withOpacity(0.12), child: Icon(Icons.person_pin, color: item.isActive ? AppColors.primaryNavy : AppColors.textSecondary)),
                 title: Text(item.fullName, style: AppTextStyles.labelLarge),
@@ -816,7 +817,7 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
       itemCount: list.length,
       itemBuilder: (context, index) {
         final item = list[index];
-        return Card(
+        return GlassmorphicCard(
           child: ListTile(
             leading: CircleAvatar(backgroundColor: (item.isActive ? AppColors.primaryNavy : AppColors.textSecondary).withOpacity(0.12), child: Icon(Icons.label, color: item.isActive ? AppColors.primaryNavy : AppColors.textSecondary)),
             title: Text(item.name, style: AppTextStyles.labelLarge),
@@ -1520,7 +1521,7 @@ class _AuditTabState extends ConsumerState<_AuditTab> {
                         itemCount: events.length,
                         itemBuilder: (_, i) {
                           final dynamic e = events[i];
-                          return Card(child: ListTile(
+                          return GlassmorphicCard(child: ListTile(
                             leading: Icon(e.severity == 'critical' ? Icons.error : e.severity == 'warning' ? Icons.warning : Icons.info_outline, color: e.severity == 'critical' ? AppColors.error : e.severity == 'warning' ? AppColors.warning : AppColors.info),
                             title: Text('${e.fullName} • ${e.action} • ${e.category}'),
                             subtitle: Text('${e.description}\n${e.entityTitle} • ${e.createdAt.toString().substring(0, 16)}'),
@@ -1537,7 +1538,7 @@ class _AuditTabState extends ConsumerState<_AuditTab> {
                   itemCount: sessions.length,
                   itemBuilder: (_, i) {
                     final dynamic s = sessions[i];
-                    return Card(child: ListTile(
+                    return GlassmorphicCard(child: ListTile(
                       leading: Icon(s.status == 'failed' ? Icons.lock : Icons.login, color: s.status == 'failed' ? AppColors.error : AppColors.success),
                       title: Text('${s.fullName.isEmpty ? s.username : s.fullName} • ${s.status}'),
                       subtitle: Text('${s.roleName}\nدخول: ${s.loginAt.toString().substring(0, 16)}${s.logoutAt == null ? '' : ' • خروج: ${s.logoutAt.toString().substring(0, 16)}'}${s.failedReason == null ? '' : ' • ${s.failedReason}'}'),

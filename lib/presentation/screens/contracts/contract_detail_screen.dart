@@ -1,3 +1,4 @@
+import '../../theme/glassmorphism_helpers.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -251,7 +252,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                   itemCount: versions.length,
                   itemBuilder: (context, index) {
                     final v = versions[index];
-                    return Card(
+                    return GlassmorphicCard(
                       child: ListTile(
                         leading: CircleAvatar(backgroundColor: AppConstants.primaryNavy, child: Text('v${v.versionNumber}', style: const TextStyle(color: AppConstants.accentGold, fontWeight: FontWeight.bold))),
                         title: Text('تعديل بواسطة: ${v.editedBy ?? "المكتب"} • التاريخ: ${v.editDate.toString().substring(0, 16)}'),

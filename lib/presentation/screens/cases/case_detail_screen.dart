@@ -24,6 +24,7 @@ import '../../providers/ui_data_providers.dart' show uiDocumentsProvider, financ
 import '../../theme/app_colors.dart';
 import '../../widgets/common/court_selector.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../theme/app_theme.dart';
 import '../documents/document_models.dart';
 import '../documents/document_viewer.dart';
@@ -1946,7 +1947,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
   }
 
   Widget _metricCard(String title, String value, IconData icon, Color color) {
-    return Card(
+    return GlassmorphicCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1984,7 +1985,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
     required List<Widget> children,
     Widget? trailing,
   }) {
-    return Card(
+    return GlassmorphicCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -2164,7 +2165,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
 
   Widget _phaseTile(CasePhase phase, int index, bool isActive) {
     final color = isActive ? AppColors.success : AppColors.primaryNavy;
-    return Card(
+    return GlassmorphicCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -2278,7 +2279,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
   }
 
   Widget _documentTile(DocumentItem document) {
-    return Card(
+    return GlassmorphicCard(
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
@@ -2369,7 +2370,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
 
   Widget _deficiencyTile(CaseDeficiency deficiency) {
     final color = deficiency.isResolved ? AppColors.success : _severityColor(deficiency.severity);
-    return Card(
+    return GlassmorphicCard(
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(

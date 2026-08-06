@@ -1,3 +1,4 @@
+import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/permission_catalog.dart';
@@ -108,7 +109,7 @@ class _CompaniesListScreenState extends ConsumerState<CompaniesListScreen> {
                     final isUnderEst = c.legalStatus == 'under_establishment';
                     final isDissolved = c.legalStatus == 'dissolved';
 
-                    return Card(
+                    return GlassmorphicCard(
                       elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

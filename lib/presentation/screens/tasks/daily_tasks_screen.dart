@@ -1,3 +1,4 @@
+import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
@@ -179,7 +180,7 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
     if (priorityEnum == TaskPriority.high) badgeColor = AppConstants.statusWarning;
     if (isOverdue) badgeColor = AppConstants.statusDanger;
 
-    return Card(
+    return GlassmorphicCard(
       elevation: isDone ? 1 : 3,
       color: isDone ? Colors.grey.withOpacity(0.08) : (isOverdue ? AppConstants.statusDanger.withOpacity(0.05) : AppConstants.surfaceWhite),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: badgeColor, width: isOverdue || priorityEnum == TaskPriority.urgent ? 1.5 : 0.8)),

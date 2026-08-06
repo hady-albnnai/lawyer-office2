@@ -1,3 +1,4 @@
+import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/permission_catalog.dart';
@@ -144,7 +145,7 @@ class _ContractsListScreenState extends ConsumerState<ContractsListScreen> with 
             final c = filtered[index];
             final isActive = c.status == 'active';
 
-            return Card(
+            return GlassmorphicCard(
               elevation: 2,
               child: ListTile(
                 leading: CircleAvatar(

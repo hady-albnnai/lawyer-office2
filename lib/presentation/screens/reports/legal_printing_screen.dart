@@ -1,3 +1,4 @@
+import '../../theme/glassmorphism_helpers.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,7 +73,7 @@ class _LegalPrintingScreenState extends ConsumerState<LegalPrintingScreen> {
 
   Widget _reportOption(String key, String title, IconData icon, String subtitle) {
     final isSel = _selectedReportType == key;
-    return Card(
+    return GlassmorphicCard(
       color: isSel ? AppConstants.primaryNavy.withOpacity(0.08) : Colors.transparent,
       elevation: isSel ? 2 : 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: isSel ? AppConstants.primaryNavy : Colors.transparent, width: 1.5)),

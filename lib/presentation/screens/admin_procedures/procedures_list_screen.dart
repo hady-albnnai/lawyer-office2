@@ -1,3 +1,4 @@
+import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/permission_catalog.dart';
@@ -128,7 +129,7 @@ class _ProceduresListScreenState extends ConsumerState<ProceduresListScreen> wit
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             final p = filtered[index];
-            return Card(
+            return GlassmorphicCard(
               elevation: 2,
               child: ListTile(
                 leading: CircleAvatar(

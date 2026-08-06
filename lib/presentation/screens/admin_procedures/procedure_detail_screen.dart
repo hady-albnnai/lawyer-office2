@@ -1,3 +1,4 @@
+import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
@@ -209,7 +210,7 @@ class _ProcedureDetailScreenState extends ConsumerState<ProcedureDetailScreen> w
                 itemBuilder: (context, index) {
                   final step = list[index];
                   final isDone = step.status == LifecycleStatus.completed.index;
-                  return Card(
+                  return GlassmorphicCard(
                     color: isDone ? AppConstants.statusSuccess.withOpacity(0.05) : AppConstants.surfaceWhite,
                     child: ListTile(
                       leading: Checkbox(

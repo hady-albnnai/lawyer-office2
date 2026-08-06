@@ -19,6 +19,7 @@ import '../../providers/auth_providers.dart';
 import '../../providers/office_settings_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../theme/app_theme.dart';
 import '../documents/document_viewer.dart';
 import 'search_report_models.dart';
@@ -185,7 +186,7 @@ class _SearchReportsScreenState extends ConsumerState<SearchReportsScreen>
                 const SizedBox(height: 8),
                 ...ReportKind.values.map((kind) {
                   final isSel = selected == kind;
-                  return Card(
+                  return GlassmorphicCard(
                     color: isSel ? AppColors.primaryNavy.withOpacity(0.06) : null,
                     child: ListTile(
                       leading: Icon(kind.icon, color: isSel ? AppColors.primaryNavy : AppColors.textSecondary),
@@ -287,7 +288,7 @@ class _SearchReportsScreenState extends ConsumerState<SearchReportsScreen>
 
   Widget _hitCard(SearchHit hit) {
     final color = scopeColor(hit.scope);
-    return Card(
+    return GlassmorphicCard(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         leading: CircleAvatar(

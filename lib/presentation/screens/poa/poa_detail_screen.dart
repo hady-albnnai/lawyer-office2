@@ -6,6 +6,7 @@ import '../../providers/app_providers.dart' show allCasesProvider, poaRepository
 import '../../providers/ui_data_providers.dart' show uiPersonsDirectoryProvider;
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../theme/app_theme.dart';
 import '../documents/document_viewer.dart';
 import '../persons/person_models.dart';
@@ -229,7 +230,7 @@ class _PoaDetailScreenState extends ConsumerState<PoaDetailScreen> with SingleTi
   }
 
   Widget _infoCard({required String title, required IconData icon, required List<Widget> children}) {
-    return Card(
+    return GlassmorphicCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

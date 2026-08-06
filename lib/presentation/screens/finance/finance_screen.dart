@@ -19,6 +19,7 @@ import '../../providers/auth_providers.dart';
 import '../../providers/office_settings_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../theme/app_theme.dart';
 import '../documents/document_viewer.dart';
 import 'finance_models.dart';
@@ -335,7 +336,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
         final agreement = agreements[index];
         final paid = state.paidForAgreement(agreement.id);
         final remaining = agreement.totalAmount - paid;
-        return Card(
+        return GlassmorphicCard(
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: remaining <= 0
@@ -378,7 +379,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
       itemCount: clients.length,
       itemBuilder: (context, index) {
         final client = clients[index];
-        return Card(
+        return GlassmorphicCard(
           margin: const EdgeInsets.only(bottom: 12),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -576,7 +577,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
     final permissions = ref.watch(permissionServiceProvider);
     final paid = state.paidForAgreement(agreement.id);
     final remaining = agreement.totalAmount - paid;
-    return Card(
+    return GlassmorphicCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -636,7 +637,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
 
   Widget _paymentCard(FinanceState state, FinancePayment payment) {
     final agreement = state.agreementById(payment.agreementId);
-    return Card(
+    return GlassmorphicCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
@@ -672,7 +673,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
   }
 
   Widget _expenseCard(FinanceExpense expense) {
-    return Card(
+    return GlassmorphicCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
@@ -741,7 +742,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
     required IconData icon,
     required List<Widget> children,
   }) {
-    return Card(
+    return GlassmorphicCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

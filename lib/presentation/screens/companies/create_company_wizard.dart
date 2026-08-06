@@ -1,3 +1,4 @@
+import '../../theme/glassmorphism_helpers.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -848,7 +849,7 @@ labelText: 'نوع الحصة'),
                   .firstOrNull
                   ?.fullName ??
               'شريك #${p.personId.value}';
-          return Card(
+          return GlassmorphicCard(
             child: ListTile(
               leading:
                   const Icon(Icons.person, color: AppConstants.primaryNavy),
@@ -1042,7 +1043,7 @@ labelText: 'نوع الحصة'),
                   .firstOrNull
                   ?.fullName ??
               'مدير #${d.personId.value}';
-          return Card(
+          return GlassmorphicCard(
             child: ListTile(
               leading: const Icon(Icons.gavel, color: AppConstants.accentGold),
               title: Text(name),
