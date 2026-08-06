@@ -1067,11 +1067,21 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     setState(() => _variablesDetected = true);
 
     try {
-      // قراءة نص القالب (بسيط - في الإنتاج سيُستخدم docx parser)
-      final templateText = 'محاكاة: {{البائع}} يبيع {{المشتري}} العقار رقم {{رقم_العقار}} بثمن {{الثمن}} بتاريخ {{التاريخ}} في {{مكان_الإبرام}}';
-      
       final varService = TemplateVariableService(ref.read(databaseProvider));
-      _detectedVariables = varService.detectVariables(templateText);
+      
+      // محاولة قراءة المتغيرات من ملف .docx الحقيقي
+      final templatePath = _selectedTemplate!.filePath;
+      final templateFile = File(templatePath);
+      
+      if (await templateFile.exists()) {
+        _detectedVariables = await varService.detectVariablesFromDocx(templateFile);
+      }
+      
+      // إذا فشل القراءة أو لم يجد متغيرات — استخدام نص تجريبي للعرض
+      if (_detectedVariables.isEmpty) {
+        final fallbackText = '{{البائع}} يبيع {{المشتري}} العقار رقم {{رقم_العقار}} بثمن {{الثمن}} بتاريخ {{التاريخ}} في {{مكان_الإبرام}}';
+        _detectedVariables = varService.detectVariables(fallbackText);
+      }
 
       // ملء تلقائي من بيانات الأطراف
       for (final variable in _detectedVariables) {

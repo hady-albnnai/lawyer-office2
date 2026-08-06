@@ -1,7 +1,7 @@
 /// خدمة اكتشاف وملء متغيرات قوالب العقود
 ///
 /// هذه الخدمة هي الأساس الذي سيبني عليه الذكاء الاصطناعي لاحقاً:
-/// - تكتشف المتغيرات {{مثل_هذا}} في ملفات Word
+/// - تكتشف المتغيرات {{مثل_هذا}} في ملفات Word (.docx)
 /// - تصنفها حسب نوعها (شخص، مبلغ، تاريخ، نص)
 /// - تملأها تلقائياً من بيانات الأطراف
 /// - تسجل كل تفاعل ليتعلم منه AI
@@ -10,7 +10,10 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
+import 'package:archive/archive.dart';
 import 'package:drift/drift.dart';
+import 'package:xml/xml.dart' as xml;
 import '../database/database.dart';
 
 /// متغير مكتشف في قالب عقد
@@ -70,6 +73,89 @@ class TemplateVariableService {
     }
 
     return variables;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 1b. قراءة ملف Word (.docx) واستخراج المتغيرات
+  // ---------------------------------------------------------------------------
+
+  /// قراءة ملف .docx واستخراج كل المتغيرات {{...}} منه
+  /// يُرجع قائمة المتغيرات المكتشفة أو قائمة فارغة إذا فشل القراءة
+  Future<List<TemplateVariable>> detectVariablesFromDocx(File docxFile) async {
+    try {
+      final text = await _extractTextFromDocx(docxFile);
+      if (text.isEmpty) return [];
+      return detectVariables(text);
+    } catch (e) {
+      // في حالة الفشل — إرجاع قائمة فارغة (لا نرمي exception)
+      return [];
+    }
+  }
+
+  /// استخراج النص من ملف .docx
+  /// .docx هو ملف ZIP يحتوي على word/document.xml
+  Future<String> _extractTextFromDocx(File docxFile) async {
+    final bytes = await docxFile.readAsBytes();
+    final archive = ZipDecoder().decodeBytes(bytes);
+
+    // البحث عن word/document.xml
+    final documentXml = archive.files.where((f) => f.name == 'word/document.xml').firstOrNull;
+    if (documentXml == null) return '';
+
+    final xmlContent = utf8.decode(documentXml.content as List<int>);
+    final document = xml.XmlDocument.parse(xmlContent);
+
+    // استخراج كل النصوص من عناصر <w:t>
+    final textBuffer = StringBuffer();
+    for (final element in document.findAllElements('w:t')) {
+      textBuffer.write(element.innerText);
+      textBuffer.write(' '); // مسافة بين العناصر
+    }
+
+    return textBuffer.toString();
+  }
+
+  /// استبدال المتغيرات في ملف .docx وإرجاع ملف جديد
+  /// يُنشئ نسخة من القالب مع استبدال {{المتغيرات}} بقيمها
+  Future<File?> replaceVariablesInDocx(
+    File sourceDocx,
+    Map<String, String> variableValues,
+    String outputPath,
+  ) async {
+    try {
+      final bytes = await sourceDocx.readAsBytes();
+      final archive = ZipDecoder().decodeBytes(bytes);
+      final newArchive = Archive();
+
+      for (final file in archive.files) {
+        if (file.name == 'word/document.xml') {
+          var xmlContent = utf8.decode(file.content as List<int>);
+          
+          // استبدال كل متغير
+          for (final entry in variableValues.entries) {
+            xmlContent = xmlContent.replaceAll('{{${entry.key}}}', entry.value);
+          }
+
+          final newFile = ArchiveFile(
+            file.name,
+            utf8.encode(xmlContent).length,
+            utf8.encode(xmlContent),
+          );
+          newArchive.addFile(newFile);
+        } else {
+          newArchive.addFile(file);
+        }
+      }
+
+      final zipBytes = ZipEncoder().encode(newArchive);
+      if (zipBytes == null) return null;
+
+      final outputFile = File(outputPath);
+      await outputFile.writeAsBytes(zipBytes);
+      return outputFile;
+    } catch (e) {
+      return null;
+    }
   }
 
   /// استنتاج نوع المتغير من اسمه
