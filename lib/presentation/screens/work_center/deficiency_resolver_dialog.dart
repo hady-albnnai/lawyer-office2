@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/permission_catalog.dart';
 import '../../../core/enums/app_enums.dart';
 import '../../../data/database/database.dart' as db;
 import '../../../data/services/deficiency_service.dart';
@@ -658,6 +659,13 @@ class _DeficiencyResolverDialogState
   // ===========================================================================
 
   Future<void> _handleResolve() async {
+    // التحقق من الصلاحيات
+    final permissions = ref.read(permissionServiceProvider);
+    if (!permissions.can(PermissionKeys.tasksResultEnter)) {
+      _showError('لا تملك صلاحية معالجة النواقص');
+      return;
+    }
+
     // التحقق من المدخلات
     switch (_resolutionType) {
       case 'date':
@@ -696,11 +704,32 @@ class _DeficiencyResolverDialogState
           break;
       }
 
-      // إغلاق النقص
+      // إغلاق النقص (مع حماية من RangeError)
+      final entityType = _entityType >= 0 && _entityType < EntityType.values.length
+          ? EntityType.values[_entityType]
+          : EntityType.caseEntity;
       await DeficiencyService(database).resolveDeficiency(
-        EntityType.values[_entityType],
+        entityType,
         _entityId,
         _fieldName,
+      );
+
+      // تدقيق (Audit Log)
+      final userRef = ref.read(authControllerProvider).user?.fullName ?? 'المكتب';
+      await ref.read(auditServiceProvider).log(
+        action: 'resolve',
+        category: 'deficiencies',
+        entityType: 'deficiency',
+        entityId: '${widget.deficiency.id}',
+        entityTitle: _description,
+        description: 'حل نقص $_fieldName عبر المعالج الذكي ($resolutionType)',
+        after: {
+          'fieldName': _fieldName,
+          'resolutionType': _resolutionType,
+          'entityType': entityType.name,
+          'entityId': _entityId,
+        },
+        severity: 'info',
       );
 
       // تحديث الواجهة
@@ -807,6 +836,23 @@ class _DeficiencyResolverDialogState
       final database = ref.read(databaseProvider);
       await DeficiencyService(database)
           .ignoreDeficiency(widget.deficiency.id, reason, userRef);
+
+      // تدقيق (Audit Log)
+      await ref.read(auditServiceProvider).log(
+        action: 'ignore',
+        category: 'deficiencies',
+        entityType: 'deficiency',
+        entityId: '${widget.deficiency.id}',
+        entityTitle: _description,
+        description: 'تجاهل نقص $_fieldName: $reason',
+        after: {
+          'fieldName': _fieldName,
+          'reason': reason,
+          'entityType': _entityType,
+          'entityId': _entityId,
+        },
+        severity: 'warning',
+      );
 
       ref.invalidate(openDeficienciesProvider(null));
 

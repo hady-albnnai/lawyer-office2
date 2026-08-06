@@ -188,7 +188,7 @@ class AgendaStatisticsScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: info.$3.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text('$percentage%', style: AppTextStyles.labelSmall.copyWith(color: info.$3), textAlign: TextAlign.center),
                   ),

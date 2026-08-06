@@ -15,9 +15,11 @@ import 'package:file_picker/file_picker.dart' as fp;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/permission_catalog.dart';
 import '../../../core/enums/app_enums.dart';
 import '../../../data/database/database.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/auth_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 
@@ -791,14 +793,15 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
           );
         }
 
-        // 6. Audit Log
+        // 6. Audit Log (AI-ready: بيانات منظمة للتدريب)
+        final userRef = ref.read(authControllerProvider).user?.fullName ?? 'المحامي';
         await db.into(db.activityLog).insert(
           ActivityLogCompanion.insert(
             affectedTable: 'daily_tasks',
             recordId: taskId,
             action: 'unified_result_entry',
-            userRef: const Value('المحامي'),
-            details: Value('{result: ${_selectedResult.label}, expense: $expenseValue, nextDate: ${_nextDateController.text}$timeInfo, decision: ${_courtDecision?.label ?? "N/A"}, attendance: {client: $_clientAttended, opponent: $_opponentAttended, opponentLawyer: $_opponentLawyerAttended}}'),
+            userRef: Value(userRef),
+            details: Value('{result: ${_selectedResult.label}, expense: $expenseValue, nextDate: ${_nextDateController.text}$timeInfo, decision: ${_courtDecision?.label ?? "N/A"}, attendance: {client: $_clientAttended, clientAgent: $_clientAgentAttended, opponent: $_opponentAttended, opponentLawyer: $_opponentLawyerAttended}, entityType: ${widget.entityType}, entityId: ${widget.entityId}}'),
           ),
         );
       });
