@@ -318,6 +318,11 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
       _selectedResult == WorkResultType.postponed;
 
   Widget _buildNextDateSection() {
+    // بناء نص الوقت بشكل صريح لضمان إعادة البناء
+    final timeDisplay = _nextTime == null
+        ? '--:--'
+        : '${_nextTime!.hour.toString().padLeft(2, '0')}:${_nextTime!.minute.toString().padLeft(2, '0')}';
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -343,33 +348,64 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
             children: [
               Expanded(
                 flex: 2,
-                child: InkWell(
+                child: GestureDetector(
                   onTap: _pickDate,
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      labelText: 'التاريخ *',
-                      prefixIcon: const Icon(Icons.calendar_today, size: 18),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBackground,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.cardBorder),
                     ),
-                    child: Text(_nextDateController.text.isEmpty
-                        ? 'اختر التاريخ'
-                        : _nextDateController.text),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 18, color: AppColors.primaryNavy),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _nextDateController.text.isEmpty ? 'اختر التاريخ' : _nextDateController.text,
+                            style: TextStyle(
+                              color: _nextDateController.text.isEmpty ? AppColors.textSecondary : AppColors.textPrimary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: InkWell(
+                child: GestureDetector(
                   onTap: _pickTime,
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      labelText: 'الوقت',
-                      prefixIcon: const Icon(Icons.access_time, size: 18),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Container(
+                    key: ValueKey('time_$_nextTime'), // إجبار إعادة البناء عند تغيير الوقت
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: _nextTime != null
+                          ? AppColors.primaryNavy.withOpacity(0.06)
+                          : AppColors.cardBackground,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _nextTime != null ? AppColors.primaryNavy : AppColors.cardBorder,
+                      ),
                     ),
-                    child: Text(_nextTime == null
-                        ? '--:--'
-                        : '${_nextTime!.hour.toString().padLeft(2, '0')}:${_nextTime!.minute.toString().padLeft(2, '0')}'),
+                    child: Row(
+                      children: [
+                        Icon(Icons.access_time, size: 18,
+                            color: _nextTime != null ? AppColors.primaryNavy : AppColors.textSecondary),
+                        const SizedBox(width: 8),
+                        Text(
+                          timeDisplay,
+                          style: TextStyle(
+                            color: _nextTime != null ? AppColors.primaryNavy : AppColors.textSecondary,
+                            fontSize: 14,
+                            fontWeight: _nextTime != null ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -570,9 +606,11 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       locale: const Locale('ar', 'SY'),
     );
-    if (picked != null) {
-      _nextDateController.text =
-          '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+    if (picked != null && mounted) {
+      setState(() {
+        _nextDateController.text =
+            '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      });
     }
   }
 
@@ -581,8 +619,10 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
       context: context,
       initialTime: _nextTime ?? const TimeOfDay(hour: 9, minute: 0),
     );
-    if (picked != null) {
-      setState(() => _nextTime = picked);
+    if (picked != null && mounted) {
+      setState(() {
+        _nextTime = picked;
+      });
     }
   }
 
