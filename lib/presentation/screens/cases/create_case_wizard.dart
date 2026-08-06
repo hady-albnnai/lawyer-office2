@@ -239,6 +239,8 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       if (caseType.contains('إدار') || caseType.contains('ادار')) _caseType = CaseType.administrative;
       if (caseType.contains('عقار')) _caseType = CaseType.realEstate;
       if (caseType.contains('عمال')) _caseType = CaseType.labor;
+      if (caseType.contains('دستور')) _caseType = CaseType.constitutional;
+      if (caseType.contains('مدني') && !caseType.contains('إدار')) _caseType = CaseType.civil;
       // الدرجة اختارها المستخدم قبل فتح الويزارد، فتُحفظ ولا يُعاد سؤاله.
       _archiveCourtLevel = archive.courtLevel;
       // المحافظة تُطابَق بمعرّف المحكمة الحقيقي بعد تحميل القائمة.
@@ -1121,8 +1123,13 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   void _showAddPoaDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => const AddPoaDialog(),
-    );
+      builder: (context) => AddPoaDialog(defaultClientId: _selectedClientId),
+    ).then((_) {
+      // تحديث قائمة الوكالات بعد الإضافة
+      if (mounted) {
+        ref.invalidate(allPoasProvider);
+      }
+    });
   }
   
   void _showPostponePoaDialog(BuildContext context) {
@@ -2887,7 +2894,8 @@ class _AddClientDialogState extends ConsumerState<AddClientDialog> {
 }
 
 class AddPoaDialog extends ConsumerStatefulWidget {
-  const AddPoaDialog({super.key});
+  final int? defaultClientId;
+  const AddPoaDialog({super.key, this.defaultClientId});
 
   @override
   ConsumerState<AddPoaDialog> createState() => _AddPoaDialogState();
@@ -2910,6 +2918,16 @@ class _AddPoaDialogState extends ConsumerState<AddPoaDialog> {
   DateTime? _poaDate;
   final List<String> _customSubTypes = [];
   bool _saving = false;
+
+  // مرفق صورة الوكالة
+  File? _poaImage;
+  String? _poaImageName;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedClientId = widget.defaultClientId;
+  }
 
   @override
   void dispose() {
@@ -3220,6 +3238,59 @@ class _AddPoaDialogState extends ConsumerState<AddPoaDialog> {
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // إرفاق صورة الوكالة
+              InkWell(
+                onTap: () async {
+                  final result = await file_picker.FilePicker.platform.pickFiles(
+                    type: file_picker.FileType.image,
+                  );
+                  if (result != null && result.files.single.path != null) {
+                    setState(() {
+                      _poaImage = File(result.files.single.path!);
+                      _poaImageName = result.files.single.name;
+                    });
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _poaImage != null
+                        ? AppColors.success.withOpacity(0.06)
+                        : AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _poaImage != null
+                          ? AppColors.success.withOpacity(0.3)
+                          : AppColors.cardBorder,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _poaImage != null ? Icons.image : Icons.add_photo_alternate_outlined,
+                        color: _poaImage != null ? AppColors.success : AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _poaImageName ?? 'إرفاق صورة الوكالة (اختياري)',
+                          style: TextStyle(
+                            color: _poaImage != null ? AppColors.textPrimary : AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (_poaImage != null)
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () => setState(() { _poaImage = null; _poaImageName = null; }),
+                        ),
                     ],
                   ),
                 ),

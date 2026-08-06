@@ -548,17 +548,13 @@ class CourtCatalog {
   /// اشتقاقها من الفهرس يمنع تباعد المصدرين.
   static Map<String, List<String>> archiveClassificationMap() {
     final map = <String, List<String>>{};
-    // التبويبات الرئيسية: العقارية فرع من المدنية، والعمالية تتبع
-    // للقضاء الإداري/البداية المدنية — لا تُعرض كتبويبات مستقلة.
-    for (final caseType in [
-      CaseType.civil,
-      CaseType.personalStatus,
-      CaseType.criminal,
-      CaseType.commercial,
-      CaseType.administrative,
-    ]) {
-      map[caseType.displayName] =
-          forCaseType(caseType).map((k) => k.label).toList();
+    // كل أنواع الدعاوى متاحة في إدخال الأرشيف
+    for (final caseType in CaseType.values) {
+      if (caseType == CaseType.other) continue; // "أخرى" بدون محاكم محددة
+      final courts = forCaseType(caseType);
+      map[caseType.displayName] = courts.isNotEmpty
+          ? courts.map((k) => k.label).toList()
+          : ['غير محدد'];
     }
     return map;
   }

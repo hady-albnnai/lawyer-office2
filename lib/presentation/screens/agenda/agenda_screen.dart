@@ -1078,14 +1078,25 @@ class AgendaScreen extends ConsumerWidget {
 
   Widget _buildMonthlyView(BuildContext context, WidgetRef ref, DateTime selectedDate) {
     final monthlyAsync = ref.watch(monthlyAgendaProvider(selectedDate));
+    final filterType = ref.watch(filterTypeProvider);
 
     // أسماء الأيام (السبت أولاً — الأسبوع العربي)
-    const dayNames = ['سبت', 'أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع'];
+    const dayNames = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
 
     return monthlyAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('خطأ في جلب البيانات: $err')),
-      data: (monthlyItems) {
+      data: (rawMonthlyItems) {
+        // تطبيق الفلتر على بيانات الشهر
+        final monthlyItems = <DateTime, List<UnifiedAgendaItem>>{};
+        for (final entry in rawMonthlyItems.entries) {
+          final filtered = filterType != null
+              ? entry.value.where((item) => item.type == filterType).toList()
+              : entry.value;
+          if (filtered.isNotEmpty) {
+            monthlyItems[entry.key] = filtered;
+          }
+        }
         final firstDay = DateTime(selectedDate.year, selectedDate.month, 1);
         final lastDay = DateTime(selectedDate.year, selectedDate.month + 1, 0);
         final daysInMonth = lastDay.day;
