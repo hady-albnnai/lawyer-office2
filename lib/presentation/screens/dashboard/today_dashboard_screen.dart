@@ -11,6 +11,7 @@ import '../../providers/ui_data_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../agenda/result_entry_dialog.dart';
 import '../work_orders/work_order_models.dart';
 import '../cases/case_models.dart';
@@ -274,13 +275,8 @@ class TodayDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildTimelineCard({required String time, required String title, required String subtitle, required IconData icon, required Color color}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
-      ),
+    return GlassmorphicCard(
+      borderRadius: 16,
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
@@ -314,14 +310,11 @@ class TodayDashboardScreen extends ConsumerWidget {
     final alertColor = color ?? (isCritical ? AppColors.error : AppColors.secondaryGold);
     final alertIcon = icon ?? (isCritical ? Icons.warning_amber_rounded : Icons.info_outline);
 
-    return Container(
+    return GlassmorphicCard(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: alertColor.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: alertColor.withOpacity(0.3)),
-      ),
+      borderRadius: 16,
       padding: const EdgeInsets.all(12),
+      backgroundColor: alertColor.withOpacity(0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
