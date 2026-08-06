@@ -285,7 +285,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
         if (list.isEmpty) return const Center(child: Text('لا يوجد أطراف مضافون'));
         return ListView(
           padding: const EdgeInsets.all(24),
-          children: list.map((p) => Card(
+          children: list.map((p) => GlassmorphicCard(
                 child: ListTile(
                   leading: const CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Icon(Icons.person, color: AppColors.secondaryGold)),
                   title: Text('طرف رقم ID: ${p.personId} • الدور: ${p.partyRole}'),
@@ -305,7 +305,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
         if (list.isEmpty) return const Center(child: Text('لا توجد تذكيرات زمنية مضبوطة لهذا العقد'));
         return ListView(
           padding: const EdgeInsets.all(24),
-          children: list.map((r) => Card(
+          children: list.map((r) => GlassmorphicCard(
                 color: AppColors.warning.withOpacity(0.08),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.warning)),
                 child: ListTile(
@@ -341,7 +341,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
         if (list.isEmpty) return const Center(child: Text('لا توجد أحداث في الخط الزمني'));
         return ListView(
           padding: const EdgeInsets.all(24),
-          children: list.map((e) => Card(
+          children: list.map((e) => GlassmorphicCard(
                 child: ListTile(
                   leading: const Icon(Icons.history, color: AppColors.primaryNavy),
                   title: Text(e.description, style: const TextStyle(fontWeight: FontWeight.bold)),
