@@ -269,53 +269,165 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
   }
 
   Widget _agreementsTab(FinanceState state) {
+    final permissions = ref.watch(permissionServiceProvider);
+    final canCreate = permissions.can(PermissionKeys.financeAgreementsCreate);
     final agreements = [...state.filteredAgreements]
       ..sort((a, b) => b.agreementDate.compareTo(a.agreementDate));
     if (agreements.isEmpty) {
-      return _emptyState(
-        Icons.assignment,
-        'لا توجد اتفاقيات أتعاب',
-        'أضف اتفاق أتعاب جديد من الشريط العلوي.',
+      return _emptyStateWithAction(
+        icon: Icons.assignment,
+        title: 'لا توجد اتفاقيات أتعاب',
+        subtitle: 'أضف اتفاق أتعاب جديد لربطه بملفات المكتب.',
+        actionLabel: 'إضافة اتفاق أتعاب',
+        actionIcon: Icons.note_add,
+        onPressed: canCreate
+            ? () => showDialog<void>(context: context, builder: (_) => const AddAgreementDialog())
+            : null,
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: agreements.length,
-      itemBuilder: (context, index) => _agreementCard(state, agreements[index]),
+    return Column(
+      children: [
+        if (canCreate) _inlineAddButton('إضافة اتفاق أتعاب', Icons.note_add,
+            () => showDialog<void>(context: context, builder: (_) => const AddAgreementDialog())),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: agreements.length,
+            itemBuilder: (context, index) => _agreementCard(state, agreements[index]),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _paymentsTab(FinanceState state) {
+    final permissions = ref.watch(permissionServiceProvider);
+    final canCreate = permissions.can(PermissionKeys.financePaymentsCreate);
     final payments = [...state.filteredPayments]
       ..sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
     if (payments.isEmpty) {
-      return _emptyState(
-        Icons.payments,
-        'لا توجد سندات قبض',
-        'سجل دفعة جديدة من الشريط العلوي.',
+      return _emptyStateWithAction(
+        icon: Icons.payments,
+        title: 'لا توجد سندات قبض',
+        subtitle: 'سجّل دفعة أو سند قبض جديد.',
+        actionLabel: 'إضافة دفعة / سند قبض',
+        actionIcon: Icons.payments,
+        onPressed: canCreate
+            ? () => showDialog<void>(context: context, builder: (_) => const AddPaymentDialog())
+            : null,
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: payments.length,
-      itemBuilder: (context, index) => _paymentCard(state, payments[index]),
+    return Column(
+      children: [
+        if (canCreate) _inlineAddButton('إضافة دفعة / سند قبض', Icons.payments,
+            () => showDialog<void>(context: context, builder: (_) => const AddPaymentDialog())),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: payments.length,
+            itemBuilder: (context, index) => _paymentCard(state, payments[index]),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _expensesTab(FinanceState state) {
+    final permissions = ref.watch(permissionServiceProvider);
+    final canCreate = permissions.can(PermissionKeys.financeExpensesCreate);
     final expenses = [...state.filteredExpenses]
       ..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
     if (expenses.isEmpty) {
-      return _emptyState(
-        Icons.receipt_long,
-        'لا توجد مصاريف',
-        'أضف مصروفاً جديداً من الشريط العلوي.',
+      return _emptyStateWithAction(
+        icon: Icons.receipt_long,
+        title: 'لا توجد مصاريف',
+        subtitle: 'أضف مصروفاً جديداً (رسوم قضائية، تنقل، قرطاسية...).',
+        actionLabel: 'إضافة مصروف',
+        actionIcon: Icons.receipt_long,
+        onPressed: canCreate
+            ? () => showDialog<void>(context: context, builder: (_) => const AddExpenseDialog())
+            : null,
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: expenses.length,
-      itemBuilder: (context, index) => _expenseCard(expenses[index]),
+    return Column(
+      children: [
+        if (canCreate) _inlineAddButton('إضافة مصروف', Icons.receipt_long,
+            () => showDialog<void>(context: context, builder: (_) => const AddExpenseDialog())),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: expenses.length,
+            itemBuilder: (context, index) => _expenseCard(expenses[index]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// زر إضافة بارز داخل كل تبويب (ليس مخبياً في AppBar)
+  Widget _inlineAddButton(String label, IconData icon, VoidCallback onPressed) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: ElevatedButton.icon(
+          onPressed: onPressed,
+          icon: Icon(icon, size: 20),
+          label: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryNavy,
+            foregroundColor: AppColors.secondaryGold,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 0,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// حالة فارغة مع زر إضافة (بدلاً من "أضف من الشريط العلوي")
+  Widget _emptyStateWithAction({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String actionLabel,
+    required IconData actionIcon,
+    VoidCallback? onPressed,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 64, color: AppColors.textSecondary.withOpacity(0.4)),
+            const SizedBox(height: 16),
+            Text(title, style: AppTextStyles.headline6.copyWith(color: AppColors.primaryNavy)),
+            const SizedBox(height: 8),
+            Text(subtitle, style: AppTextStyles.bodyMediumSecondary, textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: onPressed,
+                icon: Icon(actionIcon, size: 20),
+                label: Text(actionLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryNavy,
+                  foregroundColor: AppColors.secondaryGold,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                ),
+              ),
+            ),
+            if (onPressed == null) ...[
+              const SizedBox(height: 12),
+              Text('ليس لديك صلاحية الإضافة', style: AppTextStyles.bodySmallSecondary),
+            ],
+          ],
+        ),
+      ),
     );
   }
 

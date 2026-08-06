@@ -24,7 +24,6 @@ class NewWorkScreen extends ConsumerWidget {
         title: 'دعوى قضائية',
         subtitle: 'معالج إنشاء دعوى كاملة',
         icon: Icons.gavel,
-        color: AppColors.primaryNavy,
         permission: PermissionKeys.casesCreateNew,
         onTap: () => context.push('/cases/create'),
       ),
@@ -32,7 +31,6 @@ class NewWorkScreen extends ConsumerWidget {
         title: 'عقد',
         subtitle: 'تنظيم عقد وحفظه',
         icon: Icons.description,
-        color: AppColors.info,
         permission: PermissionKeys.contractsCreate,
         onTap: () => context.push('/contracts/create'),
       ),
@@ -40,7 +38,6 @@ class NewWorkScreen extends ConsumerWidget {
         title: 'شركة',
         subtitle: 'تأسيس شركة ومراحلها',
         icon: Icons.business,
-        color: AppColors.secondaryGold,
         permission: PermissionKeys.companiesCreate,
         onTap: () => context.push('/companies/create'),
       ),
@@ -48,7 +45,6 @@ class NewWorkScreen extends ConsumerWidget {
         title: 'إجراء إداري',
         subtitle: 'معاملة إدارية + Checklist',
         icon: Icons.assignment,
-        color: AppColors.warning,
         permission: PermissionKeys.proceduresCreate,
         onTap: () => context.push('/procedures/create'),
       ),
@@ -56,7 +52,6 @@ class NewWorkScreen extends ConsumerWidget {
         title: 'أمر عمل للمعقب',
         subtitle: 'إنشاء أمر offline (PDF/واتساب)',
         icon: Icons.assignment_ind,
-        color: AppColors.success,
         permission: PermissionKeys.workOrdersCreate,
         onTap: () => showDialog(
           context: context,
@@ -67,7 +62,6 @@ class NewWorkScreen extends ConsumerWidget {
         title: 'ملف وكالة',
         subtitle: 'إدارة الوكالات ضمن ملفات المكتب',
         icon: Icons.verified_user,
-        color: AppColors.info,
         permission: PermissionKeys.poaCreate,
         onTap: () => context.go('/poa'),
       ),
@@ -94,34 +88,50 @@ class NewWorkScreen extends ConsumerWidget {
                 Expanded(
                   child: GridView.builder(
                     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 280,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 1.35,
+                      maxCrossAxisExtent: 240,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 1.1,
                     ),
                     itemCount: items.length,
                     itemBuilder: (context, index) {
                       final item = items[index];
-                      return GlassmorphicCard(
-                        elevation: 2,
-                        child: InkWell(
-                          onTap: item.onTap,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: item.color.withOpacity(0.12),
-                                  child: Icon(item.icon, color: item.color),
+                      return InkWell(
+                        onTap: item.onTap,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.cardBackground,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.cardBorder, width: 0.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primaryNavy.withOpacity(0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryNavy.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                const Spacer(),
-                                Text(item.title, style: AppTextStyles.headline6.copyWith(color: AppColors.primaryNavy)),
-                                const SizedBox(height: 4),
-                                Text(item.subtitle, style: AppTextStyles.bodySmallSecondary),
-                              ],
-                            ),
+                                child: Icon(item.icon, color: AppColors.secondaryGold, size: 24),
+                              ),
+                              const Spacer(),
+                              Text(item.title, style: AppTextStyles.headline6.copyWith(
+                                color: AppColors.primaryNavy, fontSize: 16,
+                              )),
+                              const SizedBox(height: 4),
+                              Text(item.subtitle, style: AppTextStyles.bodySmallSecondary, maxLines: 2),
+                            ],
                           ),
                         ),
                       );
@@ -141,14 +151,12 @@ class _NewWorkAction {
   final String title;
   final String subtitle;
   final IconData icon;
-  final Color color;
   final String permission;
   final VoidCallback onTap;
   _NewWorkAction({
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.color,
     required this.permission,
     required this.onTap,
   });
