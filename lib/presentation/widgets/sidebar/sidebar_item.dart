@@ -126,51 +126,84 @@ class SidebarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (item.isHidden) return const SizedBox.shrink();
-    
+
     final isSelected = selectedRoute == item.route;
-    
     final accent = item.accentColor;
 
-    Color backgroundColor = AppColors.sidebarBackground;
-    if (isSelected) {
-      backgroundColor = accent != null
-          ? accent.withValues(alpha: 0.18)
-          : AppColors.sidebarSelected;
+    // ── خلفية العنصر ──
+    // عند الاختيار: خلفية ملوّنة خفيفة بلون القسم
+    // بدون اختيار: خلفية شفافة
+    Color backgroundColor;
+    if (isSelected && accent != null) {
+      backgroundColor = accent.withValues(alpha: 0.12);
+    } else if (isSelected) {
+      backgroundColor = AppColors.sidebarHover;
+    } else {
+      backgroundColor = Colors.transparent;
     }
 
-    // الأيقونة تحمل لون القسم دائماً لا عند الاختيار فقط، وإلا ضاع
-    // التمييز البصري الذي هو الغرض من التلوين.
-    Color iconColor = accent ??
-        (isSelected ? AppColors.sidebarIconSelected : AppColors.sidebarIcon);
+    // ── لون الأيقونة ──
+    // المختار بلون القسم، العادي رمادي هادئ
+    Color iconColor;
+    if (isSelected && accent != null) {
+      iconColor = accent;
+    } else if (isSelected) {
+      iconColor = AppColors.primaryNavy;
+    } else {
+      iconColor = AppColors.sidebarIcon;
+    }
+
+    // ── لون النص ──
+    // المختار بلون القسم (داكن على خلفية فاتحة = مقروء)
+    // العادي بلون النص الافتراضي
+    TextStyle textStyle;
+    if (isSelected && accent != null) {
+      textStyle = AppTextStyles.sidebarItem.copyWith(
+        color: accent,
+        fontWeight: FontWeight.bold,
+      );
+    } else if (isSelected) {
+      textStyle = AppTextStyles.sidebarItem.copyWith(
+        color: AppColors.primaryNavy,
+        fontWeight: FontWeight.bold,
+      );
+    } else {
+      textStyle = AppTextStyles.sidebarItem;
+    }
+
     final double itemHeight = 48.0;
-    
-    // Use live badgeCount if provided, otherwise fall back to the model value
     final effectiveBadgeCount = item.badgeCount > 0 ? item.badgeCount : 0;
-    
+
     return Tooltip(
       message: item.tooltip ?? item.label,
       child: InkWell(
         onTap: item.isDisabled ? null : () => onSelected(item),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
+        borderRadius: BorderRadius.circular(12),
+        hoverColor: AppColors.sidebarHover,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           height: itemHeight,
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(16),
-            border: (accent != null && isSelected)
+            borderRadius: BorderRadius.circular(12),
+            // خط جانبي ملوّن عند الاختيار
+            border: isSelected && accent != null
                 ? Border(right: BorderSide(color: accent, width: 3))
                 : null,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             children: [
-              Icon(item.icon, color: iconColor, size: 22),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(item.icon, key: ValueKey(isSelected), color: iconColor, size: 22),
+              ),
               const SizedBox(width: 12),
               if (isExpanded) ...[
                 Expanded(
                   child: Text(
                     item.label,
-                    style: isSelected ? AppTextStyles.sidebarItemSelected : AppTextStyles.sidebarItem,
+                    style: textStyle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -251,33 +284,35 @@ class SidebarItemList extends StatelessWidget {
     }
 
     final hasSelectedChild = parent.children!.any((c) => selectedRoute == c.route) || selectedRoute == parent.route;
-    
+    final accent = parent.accentColor;
+
+    // نفس منطق العناصر العادية: لون القسم عند التفعيل
+    final tileIconColor = hasSelectedChild && accent != null
+        ? accent
+        : (hasSelectedChild ? AppColors.primaryNavy : AppColors.sidebarIcon);
+
+    final tileTextStyle = hasSelectedChild && accent != null
+        ? AppTextStyles.sidebarItem.copyWith(color: accent, fontWeight: FontWeight.bold)
+        : (hasSelectedChild
+            ? AppTextStyles.sidebarItem.copyWith(color: AppColors.primaryNavy, fontWeight: FontWeight.bold)
+            : AppTextStyles.sidebarItem);
+
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         initiallyExpanded: hasSelectedChild,
-        tilePadding: const EdgeInsets.symmetric(horizontal: 8),
-        leading: Icon(
-          parent.icon,
-          color: parent.accentColor ??
-              (hasSelectedChild
-                  ? AppColors.primaryNavy
-                  : AppColors.sidebarIcon),
-          size: 22,
-        ),
-        title: Text(
-          parent.label,
-          style: hasSelectedChild
-              ? AppTextStyles.sidebarItem.copyWith(
-                  color: parent.accentColor ?? AppColors.primaryNavy,
-                  fontWeight: FontWeight.bold,
-                )
-              : AppTextStyles.sidebarItem,
-        ),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: hasSelectedChild && accent != null
+            ? accent.withValues(alpha: 0.06)
+            : Colors.transparent,
+        collapsedBackgroundColor: Colors.transparent,
+        leading: Icon(parent.icon, color: tileIconColor, size: 22),
+        title: Text(parent.label, style: tileTextStyle),
         children: parent.children!.map((child) {
-          // الأبناء يرثون لون القسم ليبقى الانتماء واضحاً بعد التوسيع.
-          final tinted = child.accentColor == null && parent.accentColor != null
-              ? child.copyWithAccent(parent.accentColor!)
+          final tinted = child.accentColor == null && accent != null
+              ? child.copyWithAccent(accent)
               : child;
           return Padding(
             padding: const EdgeInsets.only(right: 16.0, bottom: 4.0),
