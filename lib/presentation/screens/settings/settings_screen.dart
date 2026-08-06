@@ -295,7 +295,7 @@ class _SecurityTabState extends ConsumerState<_SecurityTab> {
         constraints: const BoxConstraints(maxWidth: 760),
         child: Column(
           children: [
-            Card(
+            GlassmorphicCard(
               color: AppColors.primaryNavy,
               child: ListTile(
                 leading: const Icon(Icons.verified_user, color: AppColors.secondaryGold, size: 40),
@@ -315,7 +315,7 @@ class _SecurityTabState extends ConsumerState<_SecurityTab> {
               ),
             ),
             const SizedBox(height: 16),
-            Card(
+            GlassmorphicCard(
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -393,7 +393,7 @@ class _BackupTab extends ConsumerWidget {
           children: [
             const StorageSettingsCard(),
             const SizedBox(height: 16),
-            Card(
+            GlassmorphicCard(
               color: const Color(0xFF117A65),
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -439,7 +439,7 @@ class _BackupTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Card(
+            GlassmorphicCard(
               color: AppColors.error.withOpacity(0.04),
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -478,7 +478,7 @@ class _BackupTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Card(
+            GlassmorphicCard(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -1102,7 +1102,7 @@ class _UsersRolesTab extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              Card(
+              GlassmorphicCard(
                 child: Column(
                   children: [
                     ListTile(title: Text('المستخدمون', style: AppTextStyles.headline6)),
@@ -1138,12 +1138,12 @@ class _UsersRolesTab extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Card(
+              GlassmorphicCard(
                 child: Column(
                   children: [
                     ListTile(title: Text('الأدوار', style: AppTextStyles.headline6)),
                     ...roles.map((dynamic r) => ListTile(
-                          leading: Icon(r.isSystemRole ? Icons.admin_panel_settings : Icons.badge, color: AppConstants.accentGold),
+                          leading: Icon(r.isSystemRole ? Icons.admin_panel_settings : Icons.badge, color: AppColors.secondaryGold),
                           title: Text(r.name),
                           subtitle: Text('مستوى: ${r.hierarchyLevel} • مستخدمون: ${r.userCount} • صلاحيات: ${r.permissionCount}${r.description.isNotEmpty ? ' • ${r.description}' : ''}'),
                           trailing: permissions.can(PermissionKeys.settingsUsersManage)

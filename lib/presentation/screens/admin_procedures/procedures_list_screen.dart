@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,7 +40,7 @@ class _ProceduresListScreenState extends ConsumerState<ProceduresListScreen> wit
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          color: AppConstants.surfaceWhite,
+          color: AppColors.cardBackground,
           child: Row(
             children: [
               Expanded(
@@ -54,7 +55,7 @@ class _ProceduresListScreenState extends ConsumerState<ProceduresListScreen> wit
               const SizedBox(width: 16),
               if (permissions.can(PermissionKeys.proceduresCreate))
                 ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentGold, foregroundColor: AppConstants.primaryNavy),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryGold, foregroundColor: AppColors.primaryNavy),
                   icon: const Icon(Icons.add_task),
                   label: const Text('تسجيل معاملة إدارية جديدة'),
                   onPressed: () {
@@ -67,12 +68,12 @@ class _ProceduresListScreenState extends ConsumerState<ProceduresListScreen> wit
           ),
         ),
         Container(
-          color: AppConstants.primaryNavy,
+          color: AppColors.primaryNavy,
           child: TabBar(
             controller: _tabController,
             isScrollable: true,
-            indicatorColor: AppConstants.accentGold,
-            labelColor: AppConstants.accentGold,
+            indicatorColor: AppColors.secondaryGold,
+            labelColor: AppColors.secondaryGold,
             unselectedLabelColor: Colors.white70,
             labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             tabs: const [
@@ -116,9 +117,9 @@ class _ProceduresListScreenState extends ConsumerState<ProceduresListScreen> wit
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.assignment_outlined, size: 64, color: AppConstants.textMuted),
+                Icon(Icons.assignment_outlined, size: 64, color: AppColors.textSecondary),
                 SizedBox(height: 16),
-                Text('لا توجد معاملات مطابقة للبحث الحالي', style: TextStyle(fontSize: 18, color: AppConstants.textMuted)),
+                Text('لا توجد معاملات مطابقة للبحث الحالي', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
               ],
             ),
           );
@@ -133,15 +134,15 @@ class _ProceduresListScreenState extends ConsumerState<ProceduresListScreen> wit
               elevation: 2,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: AppConstants.primaryNavy,
+                  backgroundColor: AppColors.primaryNavy,
                   child: Icon(
                     p.procedureType.contains('عقاري') ? Icons.location_city : (p.procedureType.contains('تجاري') ? Icons.business : Icons.family_restroom),
-                    color: AppConstants.accentGold,
+                    color: AppColors.secondaryGold,
                   ),
                 ),
                 title: Text(
                   'معاملة [${p.title}] • رقم الملف: ${p.internalNumber}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: AppConstants.primaryNavy),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: AppColors.primaryNavy),
                 ),
                 subtitle: Text(
                   'التصنيف: ${p.procedureType} (${p.subType ?? ""}) • الدائرة: ${p.department ?? "---"} • رقم الطلب: ${p.transactionNumber ?? "بانتظار التسجيل"}',

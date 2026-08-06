@@ -1,3 +1,5 @@
+import '../../theme/glassmorphism_helpers.dart';
+import '../../theme/app_colors.dart';
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -81,18 +83,18 @@ class _CreateContractScreenState extends ConsumerState<CreateContractScreen> {
         title: Text(title),
         content: TextField(controller: controller, autofocus: true, decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'القيمة الجديدة')),
         actions: [
@@ -121,7 +123,7 @@ labelText: 'القيمة الجديدة')),
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ArchiveContextBanner(contextInfo: widget.archiveContext),
-                const Text('1. تصنيف العقد والعنوان:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                const Text('1. تصنيف العقد والعنوان:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -130,18 +132,18 @@ labelText: 'القيمة الجديدة')),
                         value: _contractType,
                         decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'نوع العقد *'),
                         items: _types.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
@@ -155,18 +157,18 @@ labelText: 'نوع العقد *'),
                         controller: _titleController,
                         decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'عنوان العقد المميز * (مثال: عقد بيع شقة بدمشق - المزة)'),
                         validator: (val) => val == null || val.trim().isEmpty ? 'عنوان العقد إلزامي' : null,
@@ -191,7 +193,7 @@ labelText: 'عنوان العقد المميز * (مثال: عقد بيع شقة
                 ),
                 const SizedBox(height: 24),
 
-                const Text('2. الأطراف المتعاقدة:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                const Text('2. الأطراف المتعاقدة:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
                 const SizedBox(height: 12),
                 personsAsync.when(
                   data: (persons) => Row(
@@ -248,7 +250,7 @@ labelText: 'عنوان العقد المميز * (مثال: عقد بيع شقة
                 ),
                 const SizedBox(height: 24),
 
-                const Text('2.5. التواريخ:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                const Text('2.5. التواريخ:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -294,7 +296,7 @@ labelText: 'عنوان العقد المميز * (مثال: عقد بيع شقة
                 ),
                 const SizedBox(height: 24),
 
-                const Text('3. القيم المالية والإبرام:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                const Text('3. القيم المالية والإبرام:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -304,18 +306,18 @@ labelText: 'عنوان العقد المميز * (مثال: عقد بيع شقة
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'القيمة المالية الإجمالية *'),
                         validator: (value) {
@@ -333,18 +335,18 @@ labelText: 'القيمة المالية الإجمالية *'),
                         value: _currency,
                         decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'العملة'),
                         items: ['ل.س', 'دولار', 'يورو'].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
@@ -357,18 +359,18 @@ labelText: 'العملة'),
                         controller: _locationController,
                         decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'مكان إبرام العقد'),
                       ),
@@ -377,16 +379,16 @@ labelText: 'مكان إبرام العقد'),
                 ),
                 const SizedBox(height: 24),
 
-                Text(widget.archiveContext?.isClosed == true ? '4. أثر الأرشيف المنتهي:' : '4. التذكيرات والمتابعة الزمنية (الأتمتة مع جدول الأعمال اليومية):', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                Text(widget.archiveContext?.isClosed == true ? '4. أثر الأرشيف المنتهي:' : '4. التذكيرات والمتابعة الزمنية (الأتمتة مع جدول الأعمال اليومية):', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
                 const SizedBox(height: 12),
                 if (widget.archiveContext?.isClosed == true)
-                  Card(
-                    color: AppConstants.primaryNavy.withOpacity(0.04),
+                  GlassmorphicCard(
+                    color: AppColors.primaryNavy.withOpacity(0.04),
                     child: const Padding(
                       padding: EdgeInsets.all(16),
                       child: Row(
                         children: [
-                          Icon(Icons.inventory_2, color: AppConstants.primaryNavy),
+                          Icon(Icons.inventory_2, color: AppColors.primaryNavy),
                           SizedBox(width: 12),
                           Expanded(child: Text('هذا العقد محفوظ للأرشيف والبحث فقط، لذلك لن يتم إنشاء تذكير انتهاء أو تجديد في مكتب العمل.')),
                         ],
@@ -394,8 +396,8 @@ labelText: 'مكان إبرام العقد'),
                     ),
                   )
                 else
-                  Card(
-                    color: AppConstants.primaryNavy.withOpacity(0.04),
+                  GlassmorphicCard(
+                    color: AppColors.primaryNavy.withOpacity(0.04),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -425,18 +427,18 @@ labelText: 'مكان إبرام العقد'),
                               controller: _reminderPhoneController,
                               decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'رقم هاتف التواصل عند التذكير', prefixIcon: Icon(Icons.phone_in_talk)),
                             ),
@@ -445,18 +447,18 @@ labelText: 'رقم هاتف التواصل عند التذكير', prefixIcon: I
                               controller: _reminderNoteController,
                               decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'ملاحظة التذكير (ستظهر في مهام اليوم عندما يحين الموعد)'),
                             ),
@@ -467,14 +469,14 @@ labelText: 'ملاحظة التذكير (ستظهر في مهام اليوم ع�
                   ),
                 const SizedBox(height: 24),
 
-                const Text('5. إرفاق ملف العقد (نموذج Word أو PDF):', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                const Text('5. إرفاق ملف العقد (نموذج Word أو PDF):', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(border: Border.all(color: AppConstants.accentGold), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(border: Border.all(color: AppColors.secondaryGold), borderRadius: BorderRadius.circular(12)),
                   child: Row(
                     children: [
-                      const Icon(Icons.description, color: AppConstants.accentGold, size: 32),
+                      const Icon(Icons.description, color: AppColors.secondaryGold, size: 32),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(_wordFile == null
@@ -482,7 +484,7 @@ labelText: 'ملاحظة التذكير (ستظهر في مهام اليوم ع�
                             : 'تم اختيار الملف: ${path.basename(_wordFile!.path)}'),
                       ),
                       ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentGold),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryGold),
                         onPressed: _pickFile,
                         child: const Text('اختيار ملف Word'),
                       ),
@@ -552,19 +554,19 @@ labelText: 'ملاحظة التذكير (ستظهر في مهام اليوم ع�
         severity: 'warning',
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('لا تملك صلاحية إنشاء عقد'), backgroundColor: AppConstants.statusDanger));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('لا تملك صلاحية إنشاء عقد'), backgroundColor: AppColors.error));
       }
       return;
     }
     // إظهار خطأ حقلي الطرفين لأنهما ليسا FormField ولا يلتقطهما validate.
     setState(() => _partiesTouched = true);
     if (!_formKey.currentState!.validate() || _party1PersonId == null || _party2PersonId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى اختيار الأطراف المتعاقدة وتعبئة الحقول المطلوبة!'), backgroundColor: AppConstants.statusDanger));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى اختيار الأطراف المتعاقدة وتعبئة الحقول المطلوبة!'), backgroundColor: AppColors.error));
       return;
     }
     
     if (_endDate.isBefore(_startDate)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء!'), backgroundColor: AppConstants.statusDanger));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء!'), backgroundColor: AppColors.error));
       return;
     }
 
@@ -576,7 +578,7 @@ labelText: 'ملاحظة التذكير (ستظهر في مهام اليوم ع�
     );
 
     if (isDuplicate) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('عقد بهذا العنوان موجود مسبقاً!'), backgroundColor: AppConstants.statusDanger));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('عقد بهذا العنوان موجود مسبقاً!'), backgroundColor: AppColors.error));
       return;
     }
 
@@ -639,7 +641,7 @@ labelText: 'ملاحظة التذكير (ستظهر في مهام اليوم ع�
 
       if (mounted) {
         ref.invalidate(allContractsProvider);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.archiveContext?.isClosed == true ? 'تم حفظ العقد في الأرشيف المنتهي بنجاح!' : 'تم تنظيم وحفظ العقد وتوليد التذكيرات بنجاح!'), backgroundColor: AppConstants.statusSuccess));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.archiveContext?.isClosed == true ? 'تم حفظ العقد في الأرشيف المنتهي بنجاح!' : 'تم تنظيم وحفظ العقد وتوليد التذكيرات بنجاح!'), backgroundColor: AppColors.success));
         GoRouter.of(context).pushReplacement('/contracts/$contractId');
       }
     } catch (e) {
@@ -655,7 +657,7 @@ labelText: 'ملاحظة التذكير (ستظهر في مهام اليوم ع�
           errorMessage = 'خطأ أثناء تنظيم العقد';
         }
         
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: AppConstants.statusDanger));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: AppColors.error));
         
         // تسجيل الخطأ التفصيلي
         await ref.read(auditServiceProvider).log(

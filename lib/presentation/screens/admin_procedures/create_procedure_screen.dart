@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import 'package:file_picker/file_picker.dart' as file_picker;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -76,18 +77,18 @@ class _CreateProcedureScreenState extends ConsumerState<CreateProcedureScreen> {
         title: Text(title),
         content: TextField(controller: controller, autofocus: true, decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'القيمة الجديدة')),
         actions: [
@@ -131,7 +132,7 @@ labelText: 'القيمة الجديدة')),
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('يرجى اختيار الموكل'),
-              backgroundColor: AppConstants.statusDanger,
+              backgroundColor: AppColors.error,
             ),
           );
           return false;
@@ -140,7 +141,7 @@ labelText: 'القيمة الجديدة')),
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('يرجى إدخال عنوان المعاملة'),
-              backgroundColor: AppConstants.statusDanger,
+              backgroundColor: AppColors.error,
             ),
           );
           return false;
@@ -157,7 +158,7 @@ labelText: 'القيمة الجديدة')),
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('يرجى تحديد موعد المراجعة القادم'),
-              backgroundColor: AppConstants.statusDanger,
+              backgroundColor: AppColors.error,
             ),
           );
           return false;
@@ -211,7 +212,7 @@ labelText: 'القيمة الجديدة')),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppConstants.surfaceWhite,
+          color: AppColors.cardBackground,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -231,8 +232,8 @@ labelText: 'القيمة الجديدة')),
                   icon: const Icon(Icons.arrow_back),
                   label: const Text('السابق'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.backgroundLight,
-                    foregroundColor: AppConstants.primaryNavy,
+                    backgroundColor: AppColors.cardBackground,
+                    foregroundColor: AppColors.primaryNavy,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -249,7 +250,7 @@ labelText: 'القيمة الجديدة')),
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text('التالي'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.primaryNavy,
+                    backgroundColor: AppColors.primaryNavy,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -275,7 +276,7 @@ labelText: 'القيمة الجديدة')),
                       ? 'حفظ في الأرشيف' 
                       : 'اعتماد وحفظ'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.statusSuccess,
+                    backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -302,7 +303,7 @@ labelText: 'القيمة الجديدة')),
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
-        color: AppConstants.surfaceWhite,
+        color: AppColors.cardBackground,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -331,14 +332,14 @@ labelText: 'القيمة الجديدة')),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: isCompleted 
-                              ? AppConstants.statusSuccess 
+                              ? AppColors.success 
                               : isCurrent 
-                                  ? AppConstants.primaryNavy 
-                                  : AppConstants.backgroundLight,
+                                  ? AppColors.primaryNavy 
+                                  : AppColors.cardBackground,
                           boxShadow: isCurrent 
                               ? [
                                   BoxShadow(
-                                    color: AppConstants.primaryNavy.withOpacity(0.3),
+                                    color: AppColors.primaryNavy.withOpacity(0.3),
                                     blurRadius: 8,
                                     spreadRadius: 2,
                                   ),
@@ -350,7 +351,7 @@ labelText: 'القيمة الجديدة')),
                               ? const Icon(Icons.check, color: Colors.white, size: 24)
                               : Icon(
                                   _getStepIcon(index),
-                                  color: isCurrent ? Colors.white : AppConstants.textMuted,
+                                  color: isCurrent ? Colors.white : AppColors.textSecondary,
                                   size: 24,
                                 ),
                         ),
@@ -362,8 +363,8 @@ labelText: 'القيمة الجديدة')),
                           fontSize: 12,
                           fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                           color: isCompleted || isCurrent 
-                              ? AppConstants.primaryNavy 
-                              : AppConstants.textMuted,
+                              ? AppColors.primaryNavy 
+                              : AppColors.textSecondary,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -378,8 +379,8 @@ labelText: 'القيمة الجديدة')),
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
                         color: isCompleted 
-                            ? AppConstants.statusSuccess 
-                            : AppConstants.backgroundLight,
+                            ? AppColors.success 
+                            : AppColors.cardBackground,
                         borderRadius: BorderRadius.circular(1),
                       ),
                     ),
@@ -442,14 +443,14 @@ labelText: 'القيمة الجديدة')),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppConstants.primaryNavy.withOpacity(0.1),
-            AppConstants.surfaceWhite,
+            AppColors.primaryNavy.withOpacity(0.1),
+            AppColors.cardBackground,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppConstants.primaryNavy.withOpacity(0.2), width: 1),
+        border: Border.all(color: AppColors.primaryNavy.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -466,12 +467,12 @@ labelText: 'القيمة الجديدة')),
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppConstants.primaryNavy.withOpacity(0.2),
+                  color: AppColors.primaryNavy.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   _getStepIcon(_currentStep),
-                  color: AppConstants.primaryNavy,
+                  color: AppColors.primaryNavy,
                   size: 24,
                 ),
               ),
@@ -485,7 +486,7 @@ labelText: 'القيمة الجديدة')),
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: AppConstants.primaryNavy,
+                        color: AppColors.primaryNavy,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -493,7 +494,7 @@ labelText: 'القيمة الجديدة')),
                       description,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppConstants.textMuted,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -530,18 +531,18 @@ labelText: 'القيمة الجديدة')),
                   decoration: InputDecoration(
                     labelText: 'التصنيف الرئيسي *',
                     filled: true,
-                    fillColor: AppConstants.surfaceWhite,
+                    fillColor: AppColors.cardBackground,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppConstants.backgroundLight),
+                      borderSide: BorderSide(color: AppColors.cardBackground),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppConstants.backgroundLight),
+                      borderSide: BorderSide(color: AppColors.cardBackground),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+                      borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                     ),
                   ),
                   items: _subTypesMap.keys.map((k) => DropdownMenuItem(value: k, child: Text(k))).toList(),
@@ -562,18 +563,18 @@ labelText: 'القيمة الجديدة')),
                   decoration: InputDecoration(
                     labelText: 'النوع الفرعي *',
                     filled: true,
-                    fillColor: AppConstants.surfaceWhite,
+                    fillColor: AppColors.cardBackground,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppConstants.backgroundLight),
+                      borderSide: BorderSide(color: AppColors.cardBackground),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppConstants.backgroundLight),
+                      borderSide: BorderSide(color: AppColors.cardBackground),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+                      borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                     ),
                   ),
                   items: _subTypesMap[_category]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
@@ -668,18 +669,18 @@ labelText: 'القيمة الجديدة')),
                     margin: const EdgeInsets.only(top: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppConstants.statusWarning.withOpacity(0.1),
+                      color: AppColors.warning.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: AppConstants.statusWarning.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.warning.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.warning_amber, size: 16, color: AppConstants.statusWarning),
+                        Icon(Icons.warning_amber, size: 16, color: AppColors.warning),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             '⚠️ هذا الشخص هو أيضاً خصم في دعاوى أخرى. تأكد من عدم وجود تعارض في المصالح.',
-                            style: TextStyle(fontSize: 12, color: AppConstants.statusWarning),
+                            style: TextStyle(fontSize: 12, color: AppColors.warning),
                           ),
                         ),
                       ],
@@ -699,18 +700,18 @@ labelText: 'القيمة الجديدة')),
             hintText: 'مثال: معاملة حصر إرث',
             prefixIcon: const Icon(Icons.title),
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
           ),
         ),
@@ -725,18 +726,18 @@ labelText: 'القيمة الجديدة')),
                   hintText: 'مثال: محكمة الصلح',
                   prefixIcon: const Icon(Icons.account_balance),
                   filled: true,
-                  fillColor: AppConstants.surfaceWhite,
+                  fillColor: AppColors.cardBackground,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.backgroundLight),
+                    borderSide: BorderSide(color: AppColors.cardBackground),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.backgroundLight),
+                    borderSide: BorderSide(color: AppColors.cardBackground),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+                    borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                   ),
                 ),
               ),
@@ -750,18 +751,18 @@ labelText: 'القيمة الجديدة')),
                   hintText: 'مثال: 12345',
                   prefixIcon: const Icon(Icons.numbers),
                   filled: true,
-                  fillColor: AppConstants.surfaceWhite,
+                  fillColor: AppColors.cardBackground,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.backgroundLight),
+                    borderSide: BorderSide(color: AppColors.cardBackground),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.backgroundLight),
+                    borderSide: BorderSide(color: AppColors.cardBackground),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+                    borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
                   ),
                 ),
               ),
@@ -790,12 +791,12 @@ labelText: 'القيمة الجديدة')),
         if (_attachmentPaths.isNotEmpty) ...[
           Text(
             'المرفقات المرفوعة:',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
           ),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: AppConstants.backgroundLight, width: 0.5),
+              border: Border.all(color: AppColors.cardBackground, width: 0.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: ListView.builder(
@@ -806,11 +807,11 @@ labelText: 'القيمة الجديدة')),
                 return Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppConstants.backgroundLight, width: 0.5),
+                    border: Border.all(color: AppColors.cardBackground, width: 0.5),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.attach_file, color: AppConstants.textMuted, size: 20),
+                      const Icon(Icons.attach_file, color: AppColors.textSecondary, size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -824,7 +825,7 @@ labelText: 'القيمة الجديدة')),
                       ),
                       IconButton(
                         tooltip: 'حذف',
-                        icon: const Icon(Icons.delete, color: AppConstants.statusDanger),
+                        icon: const Icon(Icons.delete, color: AppColors.error),
                         onPressed: () => _removeAttachment(index),
                       ),
                     ],
@@ -845,7 +846,7 @@ labelText: 'القيمة الجديدة')),
         const SizedBox(height: 8),
         Text(
           'يمكنك إضافة المرفقات لاحقاً من شاشة تفاصيل الإجراء',
-          style: TextStyle(fontSize: 12, color: AppConstants.textMuted),
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
       ],
@@ -894,13 +895,13 @@ labelText: 'القيمة الجديدة')),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppConstants.primaryNavy.withOpacity(0.08),
+              color: AppColors.primaryNavy.withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppConstants.primaryNavy.withOpacity(0.25)),
+              border: Border.all(color: AppColors.primaryNavy.withOpacity(0.25)),
             ),
             child: const Row(
               children: [
-                Icon(Icons.inventory_2, color: AppConstants.primaryNavy),
+                Icon(Icons.inventory_2, color: AppColors.primaryNavy),
                 SizedBox(width: 12),
                 Expanded(child: Text('هذا الإجراء محفوظ للأرشيف والبحث فقط، ولن يتم تسجيل موعد مراجعة قادم أو توليد مهمة في مكتب العمل.')),
               ],
@@ -922,18 +923,18 @@ labelText: 'القيمة الجديدة')),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _nextDate != null ? AppConstants.statusSuccess.withOpacity(0.1) : AppConstants.statusDanger.withOpacity(0.1),
+            color: _nextDate != null ? AppColors.success.withOpacity(0.1) : AppColors.error.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _nextDate != null ? AppConstants.statusSuccess : AppConstants.statusDanger),
+            border: Border.all(color: _nextDate != null ? AppColors.success : AppColors.error),
           ),
           child: Row(
             children: [
-              Icon(_nextDate != null ? Icons.check_circle : Icons.warning_amber, color: _nextDate != null ? AppConstants.statusSuccess : AppConstants.statusDanger),
+              Icon(_nextDate != null ? Icons.check_circle : Icons.warning_amber, color: _nextDate != null ? AppColors.success : AppColors.error),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   _nextDate != null ? 'موعد المراجعة القادم: ${_nextDate!.toString().substring(0, 10)}' : 'لم يتم تحديد موعد (سيولد إشعار نقص)',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: _nextDate != null ? AppConstants.statusSuccess : AppConstants.statusDanger),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: _nextDate != null ? AppColors.success : AppColors.error),
                 ),
               ),
               ElevatedButton(
@@ -961,12 +962,12 @@ labelText: 'القيمة الجديدة')),
         severity: 'warning',
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('لا تملك صلاحية إنشاء إجراء إداري'), backgroundColor: AppConstants.statusDanger));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('لا تملك صلاحية إنشاء إجراء إداري'), backgroundColor: AppColors.error));
       }
       return;
     }
     if (!_formKey.currentState!.validate() || _selectedClientId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى اختيار الموكل وتعبئة الحقول المطلوبة!'), backgroundColor: AppConstants.statusDanger));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى اختيار الموكل وتعبئة الحقول المطلوبة!'), backgroundColor: AppColors.error));
       return;
     }
 
@@ -1014,12 +1015,12 @@ labelText: 'القيمة الجديدة')),
 
       if (mounted) {
         ref.invalidate(allProceduresProvider);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.archiveContext?.isClosed == true ? 'تم حفظ الإجراء في الأرشيف المنتهي بنجاح!' : 'تم تسجيل المعاملة وتوليد خطوات الـ Checklist بنجاح!'), backgroundColor: AppConstants.statusSuccess));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.archiveContext?.isClosed == true ? 'تم حفظ الإجراء في الأرشيف المنتهي بنجاح!' : 'تم تسجيل المعاملة وتوليد خطوات الـ Checklist بنجاح!'), backgroundColor: AppColors.success));
         GoRouter.of(context).pushReplacement('/procedures/$procId');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ في حفظ المعاملة: $e'), backgroundColor: AppConstants.statusDanger));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ في حفظ المعاملة: $e'), backgroundColor: AppColors.error));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

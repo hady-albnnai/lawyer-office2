@@ -91,7 +91,7 @@ class MainShellScreen extends ConsumerWidget {
                 child: Image.asset(
                   AppConstants.appIconAsset,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.verified_user, color: AppConstants.accentGold),
+                  errorBuilder: (_, __, ___) => const Icon(Icons.verified_user, color: AppColors.secondaryGold),
                 ),
               ),
               version: '6.2.0',
@@ -173,7 +173,7 @@ class _TopBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final permissions = ref.watch(permissionServiceProvider);
     return Material(
-      color: AppConstants.primaryNavy,
+      color: AppColors.primaryNavy,
       elevation: 1,
       child: SizedBox(
         height: 64,
@@ -187,7 +187,7 @@ class _TopBar extends ConsumerWidget {
                 child: Image.asset(
                   AppConstants.appIconAsset,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.verified_user, color: AppConstants.accentGold),
+                  errorBuilder: (_, __, ___) => const Icon(Icons.verified_user, color: AppColors.secondaryGold),
                 ),
               ),
               const SizedBox(width: 10),
@@ -205,7 +205,7 @@ class _TopBar extends ConsumerWidget {
                   ),
                   Text(
                     AppConstants.appTagline,
-                    style: AppTextStyles.bodySmall.copyWith(color: AppConstants.accentGold, fontSize: 11),
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.secondaryGold, fontSize: 11),
                   ),
                 ],
               ),
@@ -225,7 +225,7 @@ class _TopBar extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppConstants.accentGold.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.secondaryGold.withOpacity(0.3)),
                   ),
                   child: InkWell(
                     onTap: () => _showOmnibarSearch(context, ref),
@@ -234,7 +234,7 @@ class _TopBar extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Row(
                         children: [
-                          const Icon(Icons.search, color: AppConstants.accentGold, size: 20),
+                          const Icon(Icons.search, color: AppColors.secondaryGold, size: 20),
                           const SizedBox(width: 8),
                           Text(
                             "بحث شامل أو أمر سريع (Ctrl+K)...",
@@ -254,7 +254,7 @@ class _TopBar extends ConsumerWidget {
                 IconButton(
                   tooltip: "الإعدادات",
                   onPressed: () => context.go("/settings"),
-                  icon: const Icon(Icons.settings_outlined, color: AppConstants.accentGold),
+                  icon: const Icon(Icons.settings_outlined, color: AppColors.secondaryGold),
                 ),
               IconButton(
                 tooltip: "تسجيل الخروج",
@@ -262,7 +262,7 @@ class _TopBar extends ConsumerWidget {
                   await ref.read(authControllerProvider.notifier).logout();
                   if (context.mounted) context.go('/login');
                 },
-                icon: const Icon(Icons.logout, color: AppConstants.accentGold),
+                icon: const Icon(Icons.logout, color: AppColors.secondaryGold),
               ),
             ],
           ),

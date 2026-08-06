@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,18 +44,18 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
         // شريط اختيار اليوم والإحصائيات
         Container(
           padding: const EdgeInsets.all(16),
-          color: AppConstants.surfaceWhite,
+          color: AppColors.cardBackground,
           child: Row(
             children: [
-              const Icon(Icons.calendar_month, color: AppConstants.primaryNavy, size: 28),
+              const Icon(Icons.calendar_month, color: AppColors.primaryNavy, size: 28),
               const SizedBox(width: 12),
               Text(
                 'أجندة المكتب ليوم: ${_selectedDate.toString().substring(0, 10)}',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
               ),
               const SizedBox(width: 16),
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: AppConstants.primaryNavy),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryNavy),
                 icon: const Icon(Icons.today),
                 label: const Text('اليوم'),
                 onPressed: () => setState(() => _selectedDate = DateTime.now()),
@@ -67,7 +68,7 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
               ),
               const Spacer(),
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentGold, foregroundColor: AppConstants.primaryNavy),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryGold, foregroundColor: AppColors.primaryNavy),
                 icon: const Icon(Icons.add_task),
                 label: const Text('إضافة مهمة يدوية'),
                 onPressed: _openAddTaskDialog,
@@ -78,11 +79,11 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
 
         // تبويبات التصنيف
         Container(
-          color: AppConstants.primaryNavy,
+          color: AppColors.primaryNavy,
           child: TabBar(
             controller: _tabController,
-            indicatorColor: AppConstants.accentGold,
-            labelColor: AppConstants.accentGold,
+            indicatorColor: AppColors.secondaryGold,
+            labelColor: AppColors.secondaryGold,
             unselectedLabelColor: Colors.white70,
             labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             tabs: const [
@@ -122,9 +123,9 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.event_available, size: 64, color: AppConstants.statusSuccess),
+                Icon(Icons.event_available, size: 64, color: AppColors.success),
                 SizedBox(height: 16),
-                Text('لا توجد مهام أو جلسات مجدولة لهذا اليوم في المكتب ✓', style: TextStyle(fontSize: 18, color: AppConstants.statusSuccess, fontWeight: FontWeight.bold)),
+                Text('لا توجد مهام أو جلسات مجدولة لهذا اليوم في المكتب ✓', style: TextStyle(fontSize: 18, color: AppColors.success, fontWeight: FontWeight.bold)),
               ],
             ),
           );
@@ -149,7 +150,7 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
     return stream.when(
       data: (tasks) {
         final overdue = tasks.where((t) => t.status == LifecycleStatus.scheduled.index || t.status == LifecycleStatus.inProgress.index).toList();
-        if (overdue.isEmpty) return const Center(child: Text('لا توجد مهام متأخرة ✓', style: TextStyle(color: AppConstants.statusSuccess, fontSize: 18, fontWeight: FontWeight.bold)));
+        if (overdue.isEmpty) return const Center(child: Text('لا توجد مهام متأخرة ✓', style: TextStyle(color: AppColors.success, fontSize: 18, fontWeight: FontWeight.bold)));
         return ListView.builder(padding: const EdgeInsets.all(16), itemCount: overdue.length, itemBuilder: (context, idx) => _buildTaskCard(overdue[idx], isOverdue: true));
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -175,14 +176,14 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
     final priorityEnum = TaskPriority.values[t.priority];
     final isDone = statusEnum == LifecycleStatus.completed;
 
-    Color badgeColor = AppConstants.primaryNavy;
-    if (priorityEnum == TaskPriority.urgent) badgeColor = AppConstants.statusDanger;
-    if (priorityEnum == TaskPriority.high) badgeColor = AppConstants.statusWarning;
-    if (isOverdue) badgeColor = AppConstants.statusDanger;
+    Color badgeColor = AppColors.primaryNavy;
+    if (priorityEnum == TaskPriority.urgent) badgeColor = AppColors.error;
+    if (priorityEnum == TaskPriority.high) badgeColor = AppColors.warning;
+    if (isOverdue) badgeColor = AppColors.error;
 
     return GlassmorphicCard(
       elevation: isDone ? 1 : 3,
-      color: isDone ? Colors.grey.withOpacity(0.08) : (isOverdue ? AppConstants.statusDanger.withOpacity(0.05) : AppConstants.surfaceWhite),
+      color: isDone ? Colors.grey.withOpacity(0.08) : (isOverdue ? AppColors.error.withOpacity(0.05) : AppColors.cardBackground),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: badgeColor, width: isOverdue || priorityEnum == TaskPriority.urgent ? 1.5 : 0.8)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -200,9 +201,9 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, decoration: isDone ? TextDecoration.lineThrough : null, color: AppConstants.primaryNavy)),
+                      Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, decoration: isDone ? TextDecoration.lineThrough : null, color: AppColors.primaryNavy)),
                       const SizedBox(height: 4),
-                      Text('النوع: ${_getLabelForType(t.taskType)} • الوقت: ${t.taskTime ?? "طوال اليوم"} • المكلف: ${t.assignedTo ?? "المكتب"}', style: const TextStyle(fontSize: 12, color: AppConstants.textMuted)),
+                      Text('النوع: ${_getLabelForType(t.taskType)} • الوقت: ${t.taskTime ?? "طوال اليوم"} • المكلف: ${t.assignedTo ?? "المكتب"}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
@@ -229,21 +230,21 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
                 const Spacer(),
                 if (!isDone && statusEnum != LifecycleStatus.cancelled) ...[
                   TextButton.icon(
-                    style: TextButton.styleFrom(foregroundColor: AppConstants.statusWarning),
+                    style: TextButton.styleFrom(foregroundColor: AppColors.warning),
                     icon: const Icon(Icons.schedule),
                     label: const Text('تأجيل الموعد ⏰'),
                     onPressed: () => _openPostponeDialog(t),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppConstants.statusSuccess),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
                     icon: const Icon(Icons.check),
                     label: const Text('إتمام وإنجاز'),
                     onPressed: () async {
                       await ref.read(taskRepositoryProvider).completeTask(t.id, AppConstants.defaultLawyerName);
                       if (context.mounted) {
                         ref.invalidate(tasksByDateProvider(_selectedDate));
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إنجاز المهمة بنجاح!'), backgroundColor: AppConstants.statusSuccess));
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إنجاز المهمة بنجاح!'), backgroundColor: AppColors.success));
                       }
                     },
                   ),
@@ -301,7 +302,7 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('تطبيقاً لدستور المكتب (V6.2): يجب تحديد سبب التأجيل والتاريخ الجديد، وسيحتفظ النظام بالسجل السابق في الأرشيف.', style: TextStyle(fontSize: 13, color: AppConstants.textMuted)),
+              const Text('تطبيقاً لدستور المكتب (V6.2): يجب تحديد سبب التأجيل والتاريخ الجديد، وسيحتفظ النظام بالسجل السابق في الأرشيف.', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
               const SizedBox(height: 16),
               TextField(controller: reasonController, decoration: const InputDecoration(labelText: 'سبب التأجيل * (مثال: تأجيل لإبراز دفوع الخصم)')),
               const SizedBox(height: 16),
@@ -323,7 +324,7 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.statusWarning, foregroundColor: Colors.black),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning, foregroundColor: Colors.black),
               child: const Text('اعتماد التأجيل وترحيل الموعد'),
               onPressed: () async {
                 if (reasonController.text.trim().isEmpty) return;
@@ -336,7 +337,7 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
                 if (context.mounted) {
                   Navigator.pop(context);
                   ref.invalidate(tasksByDateProvider(_selectedDate));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تأجيل الموعد وترحيله بنجاح!'), backgroundColor: AppConstants.statusWarning));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تأجيل الموعد وترحيله بنجاح!'), backgroundColor: AppColors.warning));
                 }
               },
             ),
@@ -381,7 +382,7 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
               if (context.mounted) {
                 Navigator.pop(context);
                 ref.invalidate(tasksByDateProvider(_selectedDate));
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إضافة المهمة بنجاح!'), backgroundColor: AppConstants.statusSuccess));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إضافة المهمة بنجاح!'), backgroundColor: AppColors.success));
               }
             },
           ),

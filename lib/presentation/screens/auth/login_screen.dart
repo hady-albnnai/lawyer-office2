@@ -69,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Text(
                       AppConstants.appTagline,
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppConstants.accentGoldDark),
+                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.secondaryGold),
                     ),
                     const Divider(height: 32),
                     TextField(
@@ -122,7 +122,7 @@ class SplashScreen extends ConsumerWidget {
             children: [
               Image.asset(AppConstants.appBrandLockupAsset, width: 360, fit: BoxFit.contain),
               const SizedBox(height: 16),
-              const CircularProgressIndicator(color: AppConstants.accentGold),
+              const CircularProgressIndicator(color: AppColors.secondaryGold),
               const SizedBox(height: 12),
               const Text('جارٍ تهيئة قاعدة البيانات المحلية...', style: TextStyle(color: Colors.white70)),
             ],

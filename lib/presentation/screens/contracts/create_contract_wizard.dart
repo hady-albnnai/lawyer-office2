@@ -478,7 +478,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                 width: 32, height: 32,
                 decoration: BoxDecoration(
                   color: AppColors.primaryNavy,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
                   child: Text('${index + 1}', style: const TextStyle(
@@ -755,7 +755,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.secondaryGold.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Text('افتراضي ⭐', style: TextStyle(fontSize: 10)),
                     ),
@@ -1007,7 +1007,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                   margin: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: AppColors.success.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text('تلقائي', style: TextStyle(fontSize: 10, color: AppColors.success)),
                 )

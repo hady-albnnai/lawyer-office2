@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -188,15 +189,15 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
         label: Text(
           label,
           style: TextStyle(
-            color: selected ? AppConstants.primaryNavy : AppConstants.textDark,
+            color: selected ? AppColors.primaryNavy : AppColors.textPrimary,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         selected: selected,
-        selectedColor: AppConstants.primaryNavy.withOpacity(0.15),
-        backgroundColor: AppConstants.surfaceWhite,
+        selectedColor: AppColors.primaryNavy.withOpacity(0.15),
+        backgroundColor: AppColors.cardBackground,
         side: BorderSide(
-          color: selected ? AppConstants.primaryNavy : AppConstants.textMuted,
+          color: selected ? AppColors.primaryNavy : AppColors.textSecondary,
         ),
         onSelected: (_) => onTap(),
       );
@@ -227,18 +228,18 @@ class _CreateCompanyWizardState extends ConsumerState<CreateCompanyWizard> {
         title: Text(title),
         content: TextField(controller: controller, autofocus: true, decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'القيمة الجديدة')),
         actions: [
@@ -293,18 +294,18 @@ labelText: 'القيمة الجديدة')),
             labelText: 'الاسم التجاري للشركة *',
             prefixIcon: Icon(Icons.business),
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
           ),
           validator: (value) => (value?.trim().isEmpty ?? true) ? 'الاسم التجاري إلزامي' : null,
@@ -316,18 +317,18 @@ labelText: 'القيمة الجديدة')),
             labelText: 'الغاية / نشاط الشركة *',
             prefixIcon: Icon(Icons.work),
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
           ),
           validator: (value) => (value?.trim().isEmpty ?? true) ? 'النشاط إلزامي' : null,
@@ -341,18 +342,18 @@ labelText: 'القيمة الجديدة')),
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'رأس المال المكتتب به (ل.س) *'),
                 validator: (value) {
@@ -370,18 +371,18 @@ labelText: 'رأس المال المكتتب به (ل.س) *'),
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'رأس المال المدفوع (ل.س) *'),
                 validator: (value) {
@@ -405,18 +406,18 @@ labelText: 'رأس المال المدفوع (ل.س) *'),
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'مدة الشركة (بالسنوات)'),
                 validator: (value) {
@@ -434,18 +435,18 @@ labelText: 'مدة الشركة (بالسنوات)'),
                 controller: _addressController,
                 decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'المقر الرئيسي / المحافظة *'),
                 validator: (value) => (value?.trim().isEmpty ?? true) ? 'المقر الرئيسي إلزامي' : null,
@@ -458,18 +459,18 @@ labelText: 'المقر الرئيسي / المحافظة *'),
           controller: _propertyDetailsController,
           decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'بيانات وصفة المقر (عقد إيجار / ملك / رقم قيد)', prefixIcon: Icon(Icons.location_city)),
         ),
@@ -526,18 +527,18 @@ labelText: 'بيانات وصفة المقر (عقد إيجار / ملك / رق�
                   autofocus: true,
                   decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 
                     labelText: 'الاسم الثلاثي *',
@@ -559,18 +560,18 @@ labelText: 'بيانات وصفة المقر (عقد إيجار / ملك / رق�
                   keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 
                     labelText: 'رقم الهاتف *',
@@ -587,18 +588,18 @@ labelText: 'بيانات وصفة المقر (عقد إيجار / ملك / رق�
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 
                     labelText: 'البريد الإلكتروني',
@@ -617,18 +618,18 @@ labelText: 'بيانات وصفة المقر (عقد إيجار / ملك / رق�
                   controller: addressCtrl,
                   decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 
                     labelText: 'عنوان الإقامة',
@@ -691,13 +692,13 @@ labelText: 'بيانات وصفة المقر (عقد إيجار / ملك / رق�
         Row(
           children: [
             const Icon(Icons.info_outline,
-                size: 16, color: AppConstants.statusInfo),
+                size: 16, color: AppColors.info),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 'الشكل المختار: $_companyType — المطلوب: $_partnersRuleLabel',
                 style: const TextStyle(
-                    fontSize: 12, color: AppConstants.textMuted),
+                    fontSize: 12, color: AppColors.textSecondary),
               ),
             ),
           ],
@@ -706,7 +707,7 @@ labelText: 'بيانات وصفة المقر (عقد إيجار / ملك / رق�
           const SizedBox(height: 8),
           const Text(
               'هذه شركة مؤرشفة كمنتهية؛ إدخال الشركاء هنا للتوثيق التاريخي فقط ولا يولد نواقص أو عمل قادم.',
-              style: TextStyle(color: AppConstants.textMuted)),
+              style: TextStyle(color: AppColors.textSecondary)),
         ],
         const SizedBox(height: 12),
         personsAsync.when(
@@ -746,18 +747,18 @@ labelText: 'بيانات وصفة المقر (عقد إيجار / ملك / رق�
                         decoration:
                             InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 labelText: 'نوع الحصة'),
                         items: const [
@@ -825,8 +826,8 @@ labelText: 'نوع الحصة'),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: (_totalSharePercent - 100).abs() < 0.01
-                      ? AppConstants.statusSuccess
-                      : AppConstants.statusWarning,
+                      ? AppColors.success
+                      : AppColors.warning,
                 ),
               ),
             ],
@@ -837,7 +838,7 @@ labelText: 'نوع الحصة'),
               child: Text(
                 'تنبيه: مجموع النسب لا يساوي 100%.',
                 style: const TextStyle(
-                    color: AppConstants.statusWarning, fontSize: 12),
+                    color: AppColors.warning, fontSize: 12),
               ),
             ),
         ],
@@ -852,13 +853,13 @@ labelText: 'نوع الحصة'),
           return GlassmorphicCard(
             child: ListTile(
               leading:
-                  const Icon(Icons.person, color: AppConstants.primaryNavy),
+                  const Icon(Icons.person, color: AppColors.primaryNavy),
               title: Text('$name • النسبة: ${p.sharePercentage.value}%'),
               subtitle: Text(
                   'قيمة الحصة: ${p.shareValue.value} ل.س • النوع: ${_shareTypeLabel(p.shareType.value)}'),
               trailing: IconButton(
                 icon: const Icon(Icons.delete,
-                    color: AppConstants.statusDanger),
+                    color: AppColors.error),
                 onPressed: () =>
                     setState(() => _selectedPartners.removeAt(idx)),
               ),
@@ -952,7 +953,7 @@ labelText: 'نوع الحصة'),
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: AppConstants.statusDanger),
+      SnackBar(content: Text(msg), backgroundColor: AppColors.error),
     );
   }
 
@@ -968,7 +969,7 @@ labelText: 'نوع الحصة'),
           const SizedBox(height: 8),
           const Text(
               'إدخال المديرين والمفوضين هنا للتوثيق التاريخي فقط، ولن ينشئ متابعة تأسيس.',
-              style: TextStyle(color: AppConstants.textMuted)),
+              style: TextStyle(color: AppColors.textSecondary)),
         ],
         const SizedBox(height: 12),
         personsAsync.when(
@@ -1003,18 +1004,18 @@ labelText: 'نوع الحصة'),
                   controller: _tempAuthorityController,
                   decoration: InputDecoration(
             filled: true,
-            fillColor: AppConstants.surfaceWhite,
+            fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.backgroundLight),
+              borderSide: BorderSide(color: AppColors.cardBackground),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppConstants.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
 
                       labelText: 'المنصب ونطاق الصلاحيات *'),
@@ -1045,12 +1046,12 @@ labelText: 'نوع الحصة'),
               'مدير #${d.personId.value}';
           return GlassmorphicCard(
             child: ListTile(
-              leading: const Icon(Icons.gavel, color: AppConstants.accentGold),
+              leading: const Icon(Icons.gavel, color: AppColors.secondaryGold),
               title: Text(name),
               subtitle: Text('الصلاحيات: ${d.authorityScope.value ?? ""}'),
               trailing: IconButton(
                 icon: const Icon(Icons.delete,
-                    color: AppConstants.statusDanger),
+                    color: AppColors.error),
                 onPressed: () =>
                     setState(() => _selectedDirectors.removeAt(idx)),
               ),
@@ -1097,7 +1098,7 @@ labelText: 'نوع الحصة'),
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('يرجى إدخال الاسم التجاري للشركة!'),
-          backgroundColor: AppConstants.statusDanger,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -1107,7 +1108,7 @@ labelText: 'نوع الحصة'),
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('$_companyType تتطلب $_partnersRuleLabel.'),
-          backgroundColor: AppConstants.statusDanger,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -1117,7 +1118,7 @@ labelText: 'نوع الحصة'),
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('يرجى تعيين مدير عام واحد على الأقل!'),
-          backgroundColor: AppConstants.statusDanger,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -1147,7 +1148,7 @@ labelText: 'نوع الحصة'),
         SnackBar(
           content: Text(
               'يوجد شركة مسجّلة بهذا الاسم: «${duplicate.name}». غيّر الاسم أو افتح الشركة القائمة.'),
-          backgroundColor: AppConstants.statusDanger,
+          backgroundColor: AppColors.error,
           duration: const Duration(seconds: 5),
         ),
       );
@@ -1174,7 +1175,7 @@ labelText: 'نوع الحصة'),
         severity: 'warning',
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('لا تملك صلاحية تأسيس/أرشفة شركة'), backgroundColor: AppConstants.statusDanger));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('لا تملك صلاحية تأسيس/أرشفة شركة'), backgroundColor: AppColors.error));
       }
       return;
     }
@@ -1182,7 +1183,7 @@ labelText: 'نوع الحصة'),
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('يرجى إدخال الاسم التجاري للشركة!'),
-          backgroundColor: AppConstants.statusDanger,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -1232,7 +1233,7 @@ labelText: 'نوع الحصة'),
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(widget.archiveContext?.isClosed == true ? 'تم حفظ الشركة في الأرشيف المنتهي بنجاح!' : 'تم تأسيس الشركة بنجاح!'),
-            backgroundColor: AppConstants.statusSuccess,
+            backgroundColor: AppColors.success,
           ),
         );
         GoRouter.of(context).pushReplacement('/companies/$companyId');
@@ -1251,7 +1252,7 @@ labelText: 'نوع الحصة'),
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage), backgroundColor: AppConstants.statusDanger),
+          SnackBar(content: Text(errorMessage), backgroundColor: AppColors.error),
         );
         
         // تسجيل الخطأ التفصيلي

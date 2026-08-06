@@ -34,13 +34,13 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            color: AppConstants.surfaceWhite,
+            color: AppColors.cardBackground,
             child: Column(
               children: [
                 TextField(
                   decoration: InputDecoration(
                     hintText: 'بحث برقم الملف الداخلي، رقم الأساس، اسم العميل، موضوع القضية، أو العنوان...',
-                    prefixIcon: const Icon(Icons.search, size: 28, color: AppConstants.primaryNavy),
+                    prefixIcon: const Icon(Icons.search, size: 28, color: AppColors.primaryNavy),
                     suffixIcon: _searchQuery.isNotEmpty ? IconButton(icon: const Icon(Icons.clear), onPressed: () => setState(() => _searchQuery = '')) : null,
                   ),
                   onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
@@ -78,9 +78,9 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.manage_search, size: 80, color: AppConstants.textMuted),
+                        Icon(Icons.manage_search, size: 80, color: AppColors.textSecondary),
                         SizedBox(height: 16),
-                        Text('ابدأ بكتابة كلمة البحث للوصول الفوري إلى أي إضبارة في المكتب', style: TextStyle(fontSize: 18, color: AppConstants.textMuted)),
+                        Text('ابدأ بكتابة كلمة البحث للوصول الفوري إلى أي إضبارة في المكتب', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
                       ],
                     ),
                   )
@@ -118,7 +118,7 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
         
         return filtered.map<Widget>((c) => Card(
           child: ListTile(
-            leading: const CircleAvatar(backgroundColor: AppConstants.primaryNavy, child: Icon(Icons.gavel, color: AppConstants.accentGold)),
+            leading: const CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Icon(Icons.gavel, color: AppColors.secondaryGold)),
             title: Text('دعوى قضائية [${c.internalNumber}] • ${c.caseType}', style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text('الموضوع: ${c.subject ?? "---"} • رقم الأساس: ${c.baseNumber ?? "---"}'),
             trailing: const Icon(Icons.arrow_forward_ios),
@@ -211,8 +211,8 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
           (person) => Card(
             child: ListTile(
               leading: CircleAvatar(
-                backgroundColor: AppConstants.primaryNavy,
-                child: Icon(person.kind.icon, color: AppConstants.accentGold),
+                backgroundColor: AppColors.primaryNavy,
+                child: Icon(person.kind.icon, color: AppColors.secondaryGold),
               ),
               title: Text('سجل شخص/جهة: ${person.fullName}', style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text('الأدوار: ${person.roles.map((role) => role.displayName).join(', ')} • الهاتف: ${person.phone.isEmpty ? '---' : person.phone}'),
@@ -238,7 +238,7 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
         .map<Widget>(
           (agency) => Card(
             child: ListTile(
-              leading: const CircleAvatar(backgroundColor: AppConstants.primaryNavy, child: Icon(Icons.verified_user, color: AppConstants.accentGold)),
+              leading: const CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Icon(Icons.verified_user, color: AppColors.secondaryGold)),
               title: Text('وكالة [${agency.number}] • ${agency.type.displayName}', style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text('الموكل: ${directoryState.personById(agency.principalPersonId)?.fullName ?? '---'} • ${agency.source.displayName} - ${agency.branch}'),
               trailing: const Icon(Icons.arrow_forward_ios),

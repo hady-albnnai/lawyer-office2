@@ -71,8 +71,8 @@ class _LegalTemplatesScreenState extends ConsumerState<LegalTemplatesScreen> {
             if (permissions.can(PermissionKeys.templatesImport))
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.accentGold,
-                  foregroundColor: AppConstants.primaryNavy,
+                  backgroundColor: AppColors.secondaryGold,
+                  foregroundColor: AppColors.primaryNavy,
                 ),
                 icon: const Icon(Icons.upload_file),
                 label: const Text('استيراد نموذج'),
@@ -174,8 +174,8 @@ class _LegalTemplatesScreenState extends ConsumerState<LegalTemplatesScreen> {
             Row(
               children: [
                 const CircleAvatar(
-                  backgroundColor: AppConstants.primaryNavy,
-                  child: Icon(Icons.article, color: AppConstants.accentGold),
+                  backgroundColor: AppColors.primaryNavy,
+                  child: Icon(Icons.article, color: AppColors.secondaryGold),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -196,7 +196,7 @@ class _LegalTemplatesScreenState extends ConsumerState<LegalTemplatesScreen> {
             Wrap(
               spacing: 8,
               children: [
-                if (template.isDefault) _chip('افتراضي', AppConstants.accentGold),
+                if (template.isDefault) _chip('افتراضي', AppColors.secondaryGold),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.visibility),
                   label: const Text('معاينة'),
@@ -336,7 +336,7 @@ class _LegalTemplatesScreenState extends ConsumerState<LegalTemplatesScreen> {
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(border: Border.all(color: AppConstants.accentGold), borderRadius: BorderRadius.circular(16)),
+                  decoration: BoxDecoration(border: Border.all(color: AppColors.secondaryGold), borderRadius: BorderRadius.circular(16)),
                   child: Row(
                     children: [
                       Expanded(child: Text(selectedFile == null ? 'لم يتم اختيار ملف' : selectedFile!.path.split(Platform.pathSeparator).last)),

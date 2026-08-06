@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,7 +41,7 @@ class _ContractsListScreenState extends ConsumerState<ContractsListScreen> with 
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          color: AppConstants.surfaceWhite,
+          color: AppColors.cardBackground,
           child: Row(
             children: [
               Expanded(
@@ -65,7 +66,7 @@ class _ContractsListScreenState extends ConsumerState<ContractsListScreen> with 
               const SizedBox(width: 12),
               if (permissions.can(PermissionKeys.contractsCreate))
                 ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentGold, foregroundColor: AppConstants.primaryNavy),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryGold, foregroundColor: AppColors.primaryNavy),
                   icon: const Icon(Icons.add),
                   label: const Text('تنظيم عقد جديد'),
                   onPressed: () {
@@ -78,12 +79,12 @@ class _ContractsListScreenState extends ConsumerState<ContractsListScreen> with 
           ),
         ),
         Container(
-          color: AppConstants.primaryNavy,
+          color: AppColors.primaryNavy,
           child: TabBar(
             controller: _tabController,
             isScrollable: true,
-            indicatorColor: AppConstants.accentGold,
-            labelColor: AppConstants.accentGold,
+            indicatorColor: AppColors.secondaryGold,
+            labelColor: AppColors.secondaryGold,
             unselectedLabelColor: Colors.white70,
             labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             tabs: const [
@@ -130,9 +131,9 @@ class _ContractsListScreenState extends ConsumerState<ContractsListScreen> with 
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.description_outlined, size: 64, color: AppConstants.textMuted),
+                Icon(Icons.description_outlined, size: 64, color: AppColors.textSecondary),
                 SizedBox(height: 16),
-                Text('لا توجد عقود مطابقة للبحث الحالي', style: TextStyle(fontSize: 18, color: AppConstants.textMuted)),
+                Text('لا توجد عقود مطابقة للبحث الحالي', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
               ],
             ),
           );
@@ -149,12 +150,12 @@ class _ContractsListScreenState extends ConsumerState<ContractsListScreen> with 
               elevation: 2,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: isActive ? AppConstants.primaryNavy : Colors.grey,
-                  child: const Icon(Icons.description, color: AppConstants.accentGold),
+                  backgroundColor: isActive ? AppColors.primaryNavy : Colors.grey,
+                  child: const Icon(Icons.description, color: AppColors.secondaryGold),
                 ),
                 title: Text(
                   'عقد [${c.title}] • رقم الملف: ${c.internalNumber}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: AppConstants.primaryNavy),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: AppColors.primaryNavy),
                 ),
                 subtitle: Text(
                   'النوع: ${c.contractType} • تاريخ الإبرام: ${c.dateSigned?.toString().substring(0, 10) ?? "---"} • القيمة: ${c.financialValue ?? 0} ${c.currency}',

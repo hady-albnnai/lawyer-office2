@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,8 +58,8 @@ class _ProcedureDetailScreenState extends ConsumerState<ProcedureDetailScreen> w
             bottom: TabBar(
               controller: _tabController,
               isScrollable: true,
-              indicatorColor: AppConstants.accentGold,
-              labelColor: AppConstants.accentGold,
+              indicatorColor: AppColors.secondaryGold,
+              labelColor: AppColors.secondaryGold,
               unselectedLabelColor: Colors.white70,
               labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               tabs: const [
@@ -75,7 +76,7 @@ class _ProcedureDetailScreenState extends ConsumerState<ProcedureDetailScreen> w
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                color: AppConstants.primaryNavy.withOpacity(0.08),
+                color: AppColors.primaryNavy.withOpacity(0.08),
                 child: Row(
                   children: [
                     _statusItem(Icons.assignment, 'التصنيف:', p.procedureType),
@@ -85,7 +86,7 @@ class _ProcedureDetailScreenState extends ConsumerState<ProcedureDetailScreen> w
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(color: statusEnum == LifecycleStatus.completed ? AppConstants.statusSuccess : AppConstants.statusInfo, borderRadius: BorderRadius.circular(12)),
+                      decoration: BoxDecoration(color: statusEnum == LifecycleStatus.completed ? AppColors.success : AppColors.info, borderRadius: BorderRadius.circular(12)),
                       child: Text(statusEnum == LifecycleStatus.completed ? 'منجزة ✓' : 'قيد المتابعة ⏳', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                   ],
@@ -117,11 +118,11 @@ class _ProcedureDetailScreenState extends ConsumerState<ProcedureDetailScreen> w
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: AppConstants.accentGold),
+          Icon(icon, size: 18, color: AppColors.secondaryGold),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 12, color: AppConstants.textMuted)),
+          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           const SizedBox(width: 4),
-          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
         ],
       ),
     );
@@ -137,7 +138,7 @@ class _ProcedureDetailScreenState extends ConsumerState<ProcedureDetailScreen> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('تفاصيل ومتابعة المعاملة الإدارية:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+              const Text('تفاصيل ومتابعة المعاملة الإدارية:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
               const Divider(height: 24),
               _row('عنوان المعاملة:', p.title),
               _row('النوع الفرعي:', p.subType ?? '---'),
@@ -155,8 +156,8 @@ class _ProcedureDetailScreenState extends ConsumerState<ProcedureDetailScreen> w
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          SizedBox(width: 180, child: Text(l, style: const TextStyle(fontWeight: FontWeight.bold, color: AppConstants.textMuted))),
-          Expanded(child: Text(v, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppConstants.textDark))),
+          SizedBox(width: 180, child: Text(l, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary))),
+          Expanded(child: Text(v, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary))),
         ],
       ),
     );
@@ -173,7 +174,7 @@ class _ProcedureDetailScreenState extends ConsumerState<ProcedureDetailScreen> w
           padding: const EdgeInsets.all(24),
           child: Card(
             child: ListTile(
-              leading: const CircleAvatar(backgroundColor: AppConstants.primaryNavy, child: Icon(Icons.person, color: AppConstants.accentGold)),
+              leading: const CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Icon(Icons.person, color: AppColors.secondaryGold)),
               title: Text('الموكل صاحب المعاملة: ${p.fullName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               subtitle: Text('الهاتف: ${p.phone1 ?? "---"} • العنوان: ${p.permanentAddress ?? "---"}'),
             ),
@@ -189,10 +190,10 @@ class _ProcedureDetailScreenState extends ConsumerState<ProcedureDetailScreen> w
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          color: AppConstants.surfaceWhite,
+          color: AppColors.cardBackground,
           child: const Row(
             children: [
-              Icon(Icons.checklist, color: AppConstants.primaryNavy),
+              Icon(Icons.checklist, color: AppColors.primaryNavy),
               SizedBox(width: 8),
               Text('خطوات الإنجاز وقائمة الـ Checklist التلقائية:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ],
@@ -211,7 +212,7 @@ class _ProcedureDetailScreenState extends ConsumerState<ProcedureDetailScreen> w
                   final step = list[index];
                   final isDone = step.status == LifecycleStatus.completed.index;
                   return GlassmorphicCard(
-                    color: isDone ? AppConstants.statusSuccess.withOpacity(0.05) : AppConstants.surfaceWhite,
+                    color: isDone ? AppColors.success.withOpacity(0.05) : AppColors.cardBackground,
                     child: ListTile(
                       leading: Checkbox(
                         value: isDone,

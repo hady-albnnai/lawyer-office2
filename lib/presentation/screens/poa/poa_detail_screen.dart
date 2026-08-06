@@ -98,7 +98,7 @@ class _PoaDetailScreenState extends ConsumerState<PoaDetailScreen> with SingleTi
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
+          GlassmorphicCard(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -153,7 +153,7 @@ class _PoaDetailScreenState extends ConsumerState<PoaDetailScreen> with SingleTi
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Card(
+        GlassmorphicCard(
           child: ListTile(
             leading: CircleAvatar(backgroundColor: AppColors.success.withOpacity(0.12), child: Icon(Icons.person, color: AppColors.success)),
             title: Text(principal?.fullName ?? 'غير محدد', style: AppTextStyles.labelLarge),
@@ -163,7 +163,7 @@ class _PoaDetailScreenState extends ConsumerState<PoaDetailScreen> with SingleTi
                 : () => GoRouter.of(context).push('/persons/${principal.id}'),
           ),
         ),
-        Card(
+        GlassmorphicCard(
           child: ListTile(
             leading: CircleAvatar(backgroundColor: AppColors.primaryNavy.withOpacity(0.12), child: Icon(Icons.gavel, color: AppColors.primaryNavy)),
             title: Text(agency.agentName, style: AppTextStyles.labelLarge),

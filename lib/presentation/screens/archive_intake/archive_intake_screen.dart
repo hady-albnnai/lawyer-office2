@@ -2283,7 +2283,7 @@ class _ArchiveIntakeScreenState extends ConsumerState<ArchiveIntakeScreen> {
             ),
             const SizedBox(height: 12),
             if (batches.isEmpty)
-              Card(
+              GlassmorphicCard(
                 child: Padding(
                   padding: const EdgeInsets.all(18),
                   child: Text('لا توجد دفعات مطابقة للبحث الحالي.', style: AppTextStyles.bodyMediumSecondary),

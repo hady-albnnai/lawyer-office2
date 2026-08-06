@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../persons/persons_list_screen.dart';
@@ -36,12 +37,12 @@ class _ArchiveScreenState extends State<ArchiveScreen> with SingleTickerProvider
     return Column(
       children: [
         Container(
-          color: AppConstants.primaryNavy,
+          color: AppColors.primaryNavy,
           child: TabBar(
             controller: _tabController,
             isScrollable: true,
-            indicatorColor: AppConstants.accentGold,
-            labelColor: AppConstants.accentGold,
+            indicatorColor: AppColors.secondaryGold,
+            labelColor: AppColors.secondaryGold,
             unselectedLabelColor: Colors.white70,
             labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             tabs: const [

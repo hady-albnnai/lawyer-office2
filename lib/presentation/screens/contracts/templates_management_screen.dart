@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -29,7 +30,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
         title: const Text('إدارة قوالب ونماذج Word للعقود (Templates Library)'),
         actions: [
           ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentGold, foregroundColor: AppConstants.primaryNavy),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryGold, foregroundColor: AppColors.primaryNavy),
             icon: const Icon(Icons.upload_file),
             label: const Text('رفع قالب Word جديد'),
             onPressed: _openUploadDialog,
@@ -41,7 +42,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            color: AppConstants.surfaceWhite,
+            color: AppColors.cardBackground,
             child: Row(
               children: [
                 const Text('فلترة حسب تصنيف العقد:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -64,9 +65,9 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.library_books_outlined, size: 64, color: AppConstants.textMuted),
+                        Icon(Icons.library_books_outlined, size: 64, color: AppColors.textSecondary),
                         SizedBox(height: 16),
-                        Text('مكتبة القوالب فارغة حالياً. يمكنك رفع ملفات .docx الجاهزة من جهازك.', style: TextStyle(fontSize: 16, color: AppConstants.textMuted)),
+                        Text('مكتبة القوالب فارغة حالياً. يمكنك رفع ملفات .docx الجاهزة من جهازك.', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                       ],
                     ),
                   );
@@ -85,7 +86,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
                     final t = list[index];
                     return GlassmorphicCard(
                       elevation: 3,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppConstants.primaryNavy.withOpacity(0.2))),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.primaryNavy.withOpacity(0.2))),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -93,22 +94,22 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
                           children: [
                             Row(
                               children: [
-                                const CircleAvatar(backgroundColor: AppConstants.primaryNavy, child: Icon(Icons.description, color: AppConstants.accentGold)),
+                                const CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Icon(Icons.description, color: AppColors.secondaryGold)),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: Text(t.templateName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppConstants.primaryNavy), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  child: Text(t.templateName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryNavy), maxLines: 1, overflow: TextOverflow.ellipsis),
                                 ),
                               ],
                             ),
                             const Divider(height: 20),
-                            Text('التصنيف: ${t.contractType}', style: const TextStyle(color: AppConstants.textMuted)),
+                            Text('التصنيف: ${t.contractType}', style: const TextStyle(color: AppColors.textSecondary)),
                             const SizedBox(height: 4),
                             Text('مسار الملف: ${t.filePath.split("/").last}', style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
                             const Spacer(),
                             Row(
                               children: [
                                 if (t.isDefault)
-                                  const Chip(label: Text('افتراضي ⭐'), backgroundColor: AppConstants.accentGold)
+                                  const Chip(label: Text('افتراضي ⭐'), backgroundColor: AppColors.secondaryGold)
                                 else
                                   TextButton(
                                     onPressed: () => _setDefault(t),
@@ -116,7 +117,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
                                   ),
                                 const Spacer(),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: AppConstants.statusDanger),
+                                  icon: const Icon(Icons.delete, color: AppColors.error),
                                   tooltip: 'حذف القالب',
                                   onPressed: () => _deleteTemplate(t),
                                 ),
@@ -160,7 +161,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(border: Border.all(color: AppConstants.accentGold), borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(border: Border.all(color: AppColors.secondaryGold), borderRadius: BorderRadius.circular(16)),
                 child: Row(
                   children: [
                     Expanded(child: Text(docxFile == null ? 'لم يتم اختيار ملف .docx' : docxFile!.path.split("/").last.split("\\").last)),
@@ -209,7 +210,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
 
                 if (context.mounted) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ القالب بنجاح!'), backgroundColor: AppConstants.statusSuccess));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ القالب بنجاح!'), backgroundColor: AppColors.success));
                 }
               },
             ),
@@ -229,14 +230,14 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
       messenger.showSnackBar(
         SnackBar(
           content: Text('تم تعيين «${t.templateName}» افتراضياً لعقود ${t.contractType}'),
-          backgroundColor: AppConstants.statusSuccess,
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(
           content: Text('تعذّر التعيين: $e'),
-          backgroundColor: AppConstants.statusDanger,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -259,7 +260,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppConstants.statusDanger),
+                backgroundColor: AppColors.error),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('حذف'),
           ),
@@ -281,8 +282,8 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
               ? 'تم حذف «${t.templateName}»'
               : 'لم يُعثر على القالب'),
           backgroundColor: removed > 0
-              ? AppConstants.statusSuccess
-              : AppConstants.statusWarning,
+              ? AppColors.success
+              : AppColors.warning,
         ),
       );
     } catch (e) {
@@ -290,7 +291,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تعذّر الحذف: $e'),
-          backgroundColor: AppConstants.statusDanger,
+          backgroundColor: AppColors.error,
         ),
       );
     }

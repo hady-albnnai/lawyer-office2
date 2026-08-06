@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,8 +62,8 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
             bottom: TabBar(
               controller: _tabController,
               isScrollable: true,
-              indicatorColor: AppConstants.accentGold,
-              labelColor: AppConstants.accentGold,
+              indicatorColor: AppColors.secondaryGold,
+              labelColor: AppColors.secondaryGold,
               unselectedLabelColor: Colors.white70,
               labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               tabs: [
@@ -76,7 +77,7 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
                   child: Row(
                     children: [
                       const Text('7️⃣ النواقص '),
-                      if (hasDeficiencies) const Icon(Icons.error, color: AppConstants.statusDanger, size: 16),
+                      if (hasDeficiencies) const Icon(Icons.error, color: AppColors.error, size: 16),
                     ],
                   ),
                 ),
@@ -114,8 +115,8 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: AppConstants.primaryNavy.withOpacity(0.08),
-        border: Border(bottom: BorderSide(color: AppConstants.primaryNavy.withOpacity(0.2))),
+        color: AppColors.primaryNavy.withOpacity(0.08),
+        border: Border(bottom: BorderSide(color: AppColors.primaryNavy.withOpacity(0.2))),
       ),
       child: Row(
         children: [
@@ -127,13 +128,13 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
           if (hasDeficiencies)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: AppConstants.statusDanger, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(12)),
               child: const Text('يوجد نواقص في التأسيس ⚠️', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
             )
           else
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: AppConstants.statusSuccess, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: AppColors.success, borderRadius: BorderRadius.circular(12)),
               child: const Text('ملف الشركة مكتمل ✓', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
             ),
         ],
@@ -147,11 +148,11 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: AppConstants.accentGold),
+          Icon(icon, size: 18, color: AppColors.secondaryGold),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 12, color: AppConstants.textMuted)),
+          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           const SizedBox(width: 4),
-          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
         ],
       ),
     );
@@ -163,14 +164,14 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Card(
+          GlassmorphicCard(
             elevation: 3,
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('البيانات الأساسية والقانونية للشركة:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                  const Text('البيانات الأساسية والقانونية للشركة:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
                   const Divider(height: 24),
                   _row('الاسم التجاري:', c.name),
                   _row('الشكل القانوني:', c.companyType),
@@ -185,14 +186,14 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
             ),
           ),
           const SizedBox(height: 20),
-          Card(
+          GlassmorphicCard(
             elevation: 3,
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('مقر الشركة وبيانات العقار والضرائب:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                  const Text('مقر الشركة وبيانات العقار والضرائب:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
                   const Divider(height: 24),
                   _row('العنوان التفصيلي:', c.mainAddress ?? '---'),
                   _row('صفة المقر ورقم القيد:', c.propertyDetails ?? '---'),
@@ -211,8 +212,8 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          SizedBox(width: 180, child: Text(l, style: const TextStyle(fontWeight: FontWeight.bold, color: AppConstants.textMuted))),
-          Expanded(child: Text(v, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppConstants.textDark))),
+          SizedBox(width: 180, child: Text(l, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary))),
+          Expanded(child: Text(v, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary))),
         ],
       ),
     );
@@ -227,7 +228,7 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('الشركاء وحصص رأس المال:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+          const Text('الشركاء وحصص رأس المال:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
           const SizedBox(height: 12),
           StreamBuilder<List<CompanyPartner>>(
             stream: partnersStream,
@@ -237,7 +238,7 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
               return Column(
                 children: list.map((p) => Card(
                       child: ListTile(
-                        leading: const CircleAvatar(backgroundColor: AppConstants.primaryNavy, child: Icon(Icons.person, color: AppConstants.accentGold)),
+                        leading: const CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Icon(Icons.person, color: AppColors.secondaryGold)),
                         title: Text('شريك رقم ID: ${p.personId} • النسبة: ${p.sharePercentage}%'),
                         subtitle: Text('قيمة الحصة: ${p.shareValue} ل.س • النوع: ${p.shareType == "cash" ? "نقدية" : "عينية/جهد"}'),
                       ),
@@ -246,7 +247,7 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
             },
           ),
           const SizedBox(height: 24),
-          const Text('الإدارة ومجلس الإدارة والمفوضون بالتوقيع:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+          const Text('الإدارة ومجلس الإدارة والمفوضون بالتوقيع:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
           const SizedBox(height: 12),
           StreamBuilder<List<CompanyDirector>>(
             stream: directorsStream,
@@ -256,7 +257,7 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
               return Column(
                 children: list.map((d) => Card(
                       child: ListTile(
-                        leading: const CircleAvatar(backgroundColor: AppConstants.accentGold, child: Icon(Icons.gavel, color: AppConstants.primaryNavy)),
+                        leading: const CircleAvatar(backgroundColor: AppColors.secondaryGold, child: Icon(Icons.gavel, color: AppColors.primaryNavy)),
                         title: Text('مدير رقم ID: ${d.personId} • المنصب: ${d.roleType}'),
                         subtitle: Text('نطاق الصلاحيات والتفويض: ${d.authorityScope ?? "---"}'),
                       ),
@@ -276,10 +277,10 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          color: AppConstants.surfaceWhite,
+          color: AppColors.cardBackground,
           child: const Row(
             children: [
-              Icon(Icons.timeline, color: AppConstants.primaryNavy),
+              Icon(Icons.timeline, color: AppColors.primaryNavy),
               SizedBox(width: 8),
               Text('مراحل التأسيس الـ 10 (دورة الحياة الموحدة لكل مرحلة):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             ],
@@ -301,16 +302,16 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
                   final isDone = statusEnum == LifecycleStatus.completed;
 
                   return GlassmorphicCard(
-                    color: isDone ? AppConstants.statusSuccess.withOpacity(0.05) : AppConstants.surfaceWhite,
+                    color: isDone ? AppColors.success.withOpacity(0.05) : AppColors.cardBackground,
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: isDone ? AppConstants.statusSuccess : AppConstants.primaryNavy,
+                        backgroundColor: isDone ? AppColors.success : AppColors.primaryNavy,
                         child: Icon(isDone ? Icons.check : Icons.hourglass_top, color: Colors.white),
                       ),
                       title: Text('${p.phaseOrder}. ${p.phaseName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       subtitle: Text('الحالة: ${statusEnum.label} • الموعد المحدد: ${p.scheduledDate?.toString().substring(0, 10) ?? "---"}'),
                       trailing: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: isDone ? Colors.grey : AppConstants.statusSuccess),
+                        style: ElevatedButton.styleFrom(backgroundColor: isDone ? Colors.grey : AppColors.success),
                         onPressed: isDone ? null : () => _completePhase(p),
                         child: Text(isDone ? 'مكتملة ✓' : 'إتمام المرحلة'),
                       ),
@@ -344,14 +345,14 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
       stream: defsStream,
       builder: (context, snapshot) {
         final list = snapshot.data ?? [];
-        if (list.isEmpty) return const Center(child: Text('لا توجد نواقص في ملف الشركة ✓', style: TextStyle(color: AppConstants.statusSuccess, fontSize: 18, fontWeight: FontWeight.bold)));
+        if (list.isEmpty) return const Center(child: Text('لا توجد نواقص في ملف الشركة ✓', style: TextStyle(color: AppColors.success, fontSize: 18, fontWeight: FontWeight.bold)));
         return ListView(
           padding: const EdgeInsets.all(24),
           children: list.map((d) => Card(
-                color: AppConstants.statusDanger.withOpacity(0.08),
+                color: AppColors.error.withOpacity(0.08),
                 child: ListTile(
-                  leading: const Icon(Icons.error, color: AppConstants.statusDanger),
-                  title: Text(d.fieldName, style: const TextStyle(fontWeight: FontWeight.bold, color: AppConstants.statusDanger)),
+                  leading: const Icon(Icons.error, color: AppColors.error),
+                  title: Text(d.fieldName, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
                   subtitle: Text(d.description),
                 ),
               )).toList(),
@@ -371,7 +372,7 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
           padding: const EdgeInsets.all(24),
           children: list.map((e) => Card(
                 child: ListTile(
-                  leading: const Icon(Icons.history, color: AppConstants.primaryNavy),
+                  leading: const Icon(Icons.history, color: AppColors.primaryNavy),
                   title: Text(e.description, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('${e.eventType} • ${e.eventDate.toString().substring(0, 16)}'),
                 ),
@@ -430,7 +431,7 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تم إتمام مرحلة: ${phase.phaseName}'),
-          backgroundColor: AppConstants.statusSuccess,
+          backgroundColor: AppColors.success,
         ),
       );
       setState(() {}); // إعادة بناء لتحديث الـ StreamBuilder
@@ -439,7 +440,7 @@ class _CompanyDetailScreenState extends ConsumerState<CompanyDetailScreen> with 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تعذّر إتمام المرحلة: $e'),
-          backgroundColor: AppConstants.statusDanger,
+          backgroundColor: AppColors.error,
         ),
       );
     }

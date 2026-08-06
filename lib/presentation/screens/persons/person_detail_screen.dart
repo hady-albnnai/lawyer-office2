@@ -105,7 +105,7 @@ class _PersonDetailScreenState extends ConsumerState<PersonDetailScreen> with Si
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
+          GlassmorphicCard(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Row(

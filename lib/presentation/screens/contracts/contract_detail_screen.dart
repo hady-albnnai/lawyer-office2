@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -58,8 +59,8 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
             bottom: TabBar(
               controller: _tabController,
               isScrollable: true,
-              indicatorColor: AppConstants.accentGold,
-              labelColor: AppConstants.accentGold,
+              indicatorColor: AppColors.secondaryGold,
+              labelColor: AppColors.secondaryGold,
               unselectedLabelColor: Colors.white70,
               labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               tabs: const [
@@ -102,8 +103,8 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: AppConstants.primaryNavy.withOpacity(0.08),
-        border: Border(bottom: BorderSide(color: AppConstants.primaryNavy.withOpacity(0.2))),
+        color: AppColors.primaryNavy.withOpacity(0.08),
+        border: Border(bottom: BorderSide(color: AppColors.primaryNavy.withOpacity(0.2))),
       ),
       child: Row(
         children: [
@@ -115,7 +116,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
           if (c.needsFollowup)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: AppConstants.statusWarning, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: AppColors.warning, borderRadius: BorderRadius.circular(12)),
               child: const Text('مرتبط بتنبيه أتمتة ⏰', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 12)),
             )
           else
@@ -135,11 +136,11 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: AppConstants.accentGold),
+          Icon(icon, size: 18, color: AppColors.secondaryGold),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 12, color: AppConstants.textMuted)),
+          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           const SizedBox(width: 4),
-          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
         ],
       ),
     );
@@ -151,14 +152,14 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Card(
+          GlassmorphicCard(
             elevation: 3,
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('البيانات المالية والقانونية للعقد:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                  const Text('البيانات المالية والقانونية للعقد:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
                   const Divider(height: 24),
                   _row('القيمة المالية الإجمالية:', '${c.financialValue ?? 0} ${c.currency}'),
                   _row('مكان الإبرام والتوقيع:', c.location ?? '---'),
@@ -178,8 +179,8 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          SizedBox(width: 180, child: Text(l, style: const TextStyle(fontWeight: FontWeight.bold, color: AppConstants.textMuted))),
-          Expanded(child: Text(v, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppConstants.textDark))),
+          SizedBox(width: 180, child: Text(l, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary))),
+          Expanded(child: Text(v, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary))),
         ],
       ),
     );
@@ -202,13 +203,13 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Card(
-                color: AppConstants.primaryNavy,
+              GlassmorphicCard(
+                color: AppColors.primaryNavy,
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      const Icon(Icons.description, size: 48, color: AppConstants.accentGold),
+                      const Icon(Icons.description, size: 48, color: AppColors.secondaryGold),
                       const SizedBox(width: 20),
                       Expanded(
                         child: Column(
@@ -228,14 +229,14 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                       ),
                       if (latest?.filePath != null)
                         ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentGold, foregroundColor: AppConstants.primaryNavy, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14)),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryGold, foregroundColor: AppColors.primaryNavy, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14)),
                           icon: const Icon(Icons.open_in_new),
                           label: const Text('فتح وتحرير في Word 📝', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           onPressed: () => _openVersionFile(latest!.filePath!),
                         )
                       else
                         ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentGold, foregroundColor: AppConstants.primaryNavy),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryGold, foregroundColor: AppColors.primaryNavy),
                           icon: const Icon(Icons.upload_file),
                           label: const Text('رفع ملف Word الآن'),
                           onPressed: () => _uploadVersionFile(contractId),
@@ -245,7 +246,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                 ),
               ),
               const SizedBox(height: 24),
-              const Text('سجل النسخ والتعديلات السابقة للعقد:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+              const Text('سجل النسخ والتعديلات السابقة للعقد:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
               const SizedBox(height: 12),
               Expanded(
                 child: ListView.builder(
@@ -254,11 +255,11 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                     final v = versions[index];
                     return GlassmorphicCard(
                       child: ListTile(
-                        leading: CircleAvatar(backgroundColor: AppConstants.primaryNavy, child: Text('v${v.versionNumber}', style: const TextStyle(color: AppConstants.accentGold, fontWeight: FontWeight.bold))),
+                        leading: CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Text('v${v.versionNumber}', style: const TextStyle(color: AppColors.secondaryGold, fontWeight: FontWeight.bold))),
                         title: Text('تعديل بواسطة: ${v.editedBy ?? "المكتب"} • التاريخ: ${v.editDate.toString().substring(0, 16)}'),
                         subtitle: Text('ملاحظات التعديل: ${v.notes ?? "---"}'),
                         trailing: IconButton(
-                          icon: const Icon(Icons.download_outlined, color: AppConstants.primaryNavy),
+                          icon: const Icon(Icons.download_outlined, color: AppColors.primaryNavy),
                           onPressed: v.filePath == null
                               ? null
                               : () => _openVersionFile(v.filePath!),
@@ -286,7 +287,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
           padding: const EdgeInsets.all(24),
           children: list.map((p) => Card(
                 child: ListTile(
-                  leading: const CircleAvatar(backgroundColor: AppConstants.primaryNavy, child: Icon(Icons.person, color: AppConstants.accentGold)),
+                  leading: const CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Icon(Icons.person, color: AppColors.secondaryGold)),
                   title: Text('طرف رقم ID: ${p.personId} • الدور: ${p.partyRole}'),
                 ),
               )).toList(),
@@ -305,16 +306,16 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
         return ListView(
           padding: const EdgeInsets.all(24),
           children: list.map((r) => Card(
-                color: AppConstants.statusWarning.withOpacity(0.08),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppConstants.statusWarning)),
+                color: AppColors.warning.withOpacity(0.08),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.warning)),
                 child: ListTile(
-                  leading: const Icon(Icons.alarm, size: 36, color: AppConstants.statusWarning),
+                  leading: const Icon(Icons.alarm, size: 36, color: AppColors.warning),
                   title: Text('تذكير مجدول في: ${r.reminderDate.toString().substring(0, 10)} • النوع: ${r.reminderType}', style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('هاتف التواصل: ${r.contactPhone ?? "---"} • الملاحظة: ${r.reminderNote ?? ""}'),
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: AppConstants.primaryNavy, borderRadius: BorderRadius.circular(16)),
-                    child: Text('مرتبط بمهمة يومية رقم [ID: ${r.autoTaskId ?? "-"}]', style: const TextStyle(color: AppConstants.accentGold, fontSize: 12)),
+                    decoration: BoxDecoration(color: AppColors.primaryNavy, borderRadius: BorderRadius.circular(16)),
+                    child: Text('مرتبط بمهمة يومية رقم [ID: ${r.autoTaskId ?? "-"}]', style: const TextStyle(color: AppColors.secondaryGold, fontSize: 12)),
                   ),
                 ),
               )).toList(),
@@ -342,7 +343,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
           padding: const EdgeInsets.all(24),
           children: list.map((e) => Card(
                 child: ListTile(
-                  leading: const Icon(Icons.history, color: AppConstants.primaryNavy),
+                  leading: const Icon(Icons.history, color: AppColors.primaryNavy),
                   title: Text(e.description, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('${e.eventType} • ${e.eventDate.toString().substring(0, 16)}'),
                 ),
@@ -377,7 +378,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('تم رفع الملف كنسخة جديدة'),
-          backgroundColor: AppConstants.statusSuccess,
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
@@ -385,7 +386,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تعذّر الرفع: $e'),
-          backgroundColor: AppConstants.statusDanger,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -406,7 +407,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.message ?? 'تعذّر فتح الملف'),
-          backgroundColor: AppConstants.statusDanger,
+          backgroundColor: AppColors.error,
         ),
       );
     }

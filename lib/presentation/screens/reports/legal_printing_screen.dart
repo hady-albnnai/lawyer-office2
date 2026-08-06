@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -35,17 +36,17 @@ class _LegalPrintingScreenState extends ConsumerState<LegalPrintingScreen> {
           Container(
             width: 320,
             padding: const EdgeInsets.all(20),
-            color: AppConstants.surfaceWhite,
+            color: AppColors.cardBackground,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('اختيار الكشف أو التقرير للطباعة:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryNavy)),
+                const Text('اختيار الكشف أو التقرير للطباعة:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
                 const Divider(height: 24),
                 _reportOption('summary_report', 'تقرير كشف الدعاوى القضائية', Icons.gavel, 'قائمة بالملفات، أرقام الأساس، والمحاكم المختصة.'),
                 _reportOption('agenda_report', 'تقرير أجندة وجلسات المكتب', Icons.calendar_month, 'جدول مواعيد الجلسات والمراجعات القادمة.'),
                 _reportOption('financial_report', 'التقرير المالي لأتعاب الموكلين', Icons.account_balance_wallet, 'كشف بالاتفاقيات المالية والدفعات والمتبقي.'),
                 const Spacer(),
-                const Text('ملاحظة: المطبوعات تصدر مزودة بالترويسة السورية الرسمية للمكتب وبخط Cairo المعتمد.', style: TextStyle(fontSize: 12, color: AppConstants.textMuted)),
+                const Text('ملاحظة: المطبوعات تصدر مزودة بالترويسة السورية الرسمية للمكتب وبخط Cairo المعتمد.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
               ],
             ),
           ),
@@ -74,12 +75,12 @@ class _LegalPrintingScreenState extends ConsumerState<LegalPrintingScreen> {
   Widget _reportOption(String key, String title, IconData icon, String subtitle) {
     final isSel = _selectedReportType == key;
     return GlassmorphicCard(
-      color: isSel ? AppConstants.primaryNavy.withOpacity(0.08) : Colors.transparent,
+      color: isSel ? AppColors.primaryNavy.withOpacity(0.08) : Colors.transparent,
       elevation: isSel ? 2 : 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: isSel ? AppConstants.primaryNavy : Colors.transparent, width: 1.5)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: isSel ? AppColors.primaryNavy : Colors.transparent, width: 1.5)),
       child: ListTile(
-        leading: Icon(icon, color: isSel ? AppConstants.primaryNavy : AppConstants.textMuted),
-        title: Text(title, style: TextStyle(fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? AppConstants.primaryNavy : AppConstants.textDark)),
+        leading: Icon(icon, color: isSel ? AppColors.primaryNavy : AppColors.textSecondary),
+        title: Text(title, style: TextStyle(fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? AppColors.primaryNavy : AppColors.textPrimary)),
         subtitle: Text(subtitle, style: const TextStyle(fontSize: 11)),
         onTap: () => setState(() => _selectedReportType = key),
       ),

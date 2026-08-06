@@ -1,3 +1,4 @@
+import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,7 +34,7 @@ class _CompaniesListScreenState extends ConsumerState<CompaniesListScreen> {
         actions: [
           if (permissions.can(PermissionKeys.companiesCreate))
             ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentGold, foregroundColor: AppConstants.primaryNavy),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryGold, foregroundColor: AppColors.primaryNavy),
               icon: const Icon(Icons.add_business),
               label: const Text('تأسيس أو أرشفة شركة'),
               onPressed: () {
@@ -50,7 +51,7 @@ class _CompaniesListScreenState extends ConsumerState<CompaniesListScreen> {
           // شريط البحث والفلترة
           Container(
             padding: const EdgeInsets.all(16),
-            color: AppConstants.surfaceWhite,
+            color: AppColors.cardBackground,
             child: Row(
               children: [
                 Expanded(
@@ -93,9 +94,9 @@ class _CompaniesListScreenState extends ConsumerState<CompaniesListScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.business_center_outlined, size: 64, color: AppConstants.textMuted),
+                        Icon(Icons.business_center_outlined, size: 64, color: AppColors.textSecondary),
                         SizedBox(height: 16),
-                        Text('لا توجد ملفات شركات مطابقة للبحث الحالي', style: TextStyle(fontSize: 18, color: AppConstants.textMuted)),
+                        Text('لا توجد ملفات شركات مطابقة للبحث الحالي', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
                       ],
                     ),
                   );
@@ -113,26 +114,26 @@ class _CompaniesListScreenState extends ConsumerState<CompaniesListScreen> {
                       elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: AppConstants.primaryNavy.withOpacity(0.2)),
+                        side: BorderSide(color: AppColors.primaryNavy.withOpacity(0.2)),
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(16),
                         leading: CircleAvatar(
                           radius: 28,
-                          backgroundColor: isDissolved ? Colors.grey : AppConstants.primaryNavy,
-                          child: const Icon(Icons.business, color: AppConstants.accentGold, size: 30),
+                          backgroundColor: isDissolved ? Colors.grey : AppColors.primaryNavy,
+                          child: const Icon(Icons.business, color: AppColors.secondaryGold, size: 30),
                         ),
                         title: Row(
                           children: [
                             Text(
                               'شركة [${c.name}] • ملف رقم [${c.internalNumber}]',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppConstants.primaryNavy),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primaryNavy),
                             ),
                             const SizedBox(width: 12),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: isUnderEst ? AppConstants.statusWarning : (isDissolved ? Colors.grey : AppConstants.statusSuccess),
+                                color: isUnderEst ? AppColors.warning : (isDissolved ? Colors.grey : AppColors.success),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -150,11 +151,11 @@ class _CompaniesListScreenState extends ConsumerState<CompaniesListScreen> {
                             const SizedBox(height: 4),
                             Text(
                               'رقم السجل التجاري: ${c.registrationNumber ?? "بانتظار الصدور ⚠️"} • المقر: ${c.mainAddress ?? "سوريا"}',
-                              style: TextStyle(fontWeight: FontWeight.w600, color: c.registrationNumber == null ? AppConstants.statusDanger : AppConstants.textDark),
+                              style: TextStyle(fontWeight: FontWeight.w600, color: c.registrationNumber == null ? AppColors.error : AppColors.textPrimary),
                             ),
                           ],
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios, color: AppConstants.primaryNavy),
+                        trailing: const Icon(Icons.arrow_forward_ios, color: AppColors.primaryNavy),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(builder: (context) => CompanyDetailScreen(companyId: c.id)),
