@@ -1358,16 +1358,20 @@ class AgendaScreen extends ConsumerWidget {
     }
 
     try {
-      await AutomationService().autoRecurringAppointments(
+      final result = await AutomationService().autoRecurringAppointments(
         db: ref.read(databaseProvider),
         currentDate: DateTime.now(),
       );
+      // تحديث كل مزودات الأجندة
       ref.invalidate(unifiedAgendaFromDBProvider);
+      ref.invalidate(unifiedAgendaProvider);
+      ref.invalidate(tasksByDateProvider(DateTime.now()));
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('اكتمل توليد المهام المتكررة.'),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: Text(result.summary),
+          backgroundColor: result.totalCreated > 0 ? AppColors.success : AppColors.info,
+          duration: const Duration(seconds: 4),
         ),
       );
     } catch (e) {
