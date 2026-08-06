@@ -105,7 +105,7 @@ class _ResultEntryDialogState extends ConsumerState<ResultEntryDialog> {
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: AppColors.cardBackground, borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppColors.cardBackground, borderRadius: BorderRadius.circular(16)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

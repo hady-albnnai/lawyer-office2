@@ -153,7 +153,7 @@ class NavSidebar extends ConsumerWidget {
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.cardBorder, width: 0.5),
             ),
             child: IconButton(

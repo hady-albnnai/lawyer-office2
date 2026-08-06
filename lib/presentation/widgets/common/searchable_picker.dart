@@ -77,7 +77,7 @@ class SearchablePicker<T> extends StatelessWidget {
     final selected = value;
     return InkWell(
       onTap: enabled ? () => _openSheet(context) : null,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(16),
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
@@ -86,7 +86,7 @@ class SearchablePicker<T> extends StatelessWidget {
           enabled: enabled,
           prefixIcon: prefixIcon,
           suffixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
         ),
         isEmpty: selected == null,
         child: selected == null
@@ -218,7 +218,7 @@ class _PickerSheetState<T> extends State<_PickerSheet<T>> {
                           onPressed: () => setState(() => _query.clear()),
                         ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 onChanged: (_) => setState(() {}),

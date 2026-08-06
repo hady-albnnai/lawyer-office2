@@ -306,7 +306,7 @@ class AgencyFileCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () => _openAgencyDetail(context),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

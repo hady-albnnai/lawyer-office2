@@ -304,7 +304,7 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         ),
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.primaryNavy.withOpacity(0.85),
           boxShadow: [
@@ -318,70 +318,68 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         child: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-            child: SafeArea(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (_currentStep > 0)
-                    GlassmorphicButton(
-                      onPressed: _isSaving ? null : _previousStep,
-                      isPrimary: false,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.arrow_back, color: AppColors.textOnLight),
-                          const SizedBox(width: 8),
-                          const Text('السابق', style: TextStyle(color: AppColors.textOnLight)),
-                        ],
-                      ),
-                    )
-                  else
-                    const SizedBox(width: 120),
-                  if (_currentStep < _getLastStepIndex())
-                    GlassmorphicButton(
-                      onPressed: _isSaving ? null : _nextStep,
-                      isPrimary: true,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('التالي', style: TextStyle(color: AppColors.textOnLight)),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.arrow_forward, color: AppColors.textOnLight),
-                        ],
-                      ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_currentStep > 0)
+                  GlassmorphicButton(
+                    onPressed: _isSaving ? null : _previousStep,
+                    isPrimary: false,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.arrow_back, color: AppColors.textOnLight),
+                        const SizedBox(width: 8),
+                        const Text('السابق', style: TextStyle(color: AppColors.textOnLight)),
+                      ],
                     ),
-                  if (_currentStep == _getLastStepIndex())
-                    GlassmorphicButton(
-                      onPressed: _isSaving ? null : _submitCase,
-                      isPrimary: true,
-                      backgroundColor: AppColors.success.withOpacity(0.85),
-                      child: _isSaving 
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.save, color: AppColors.textOnLight),
-                                const SizedBox(width: 8),
-                                Text(
-                                  widget.archiveContext == null 
-                                      ? 'إنشاء الدعوى' 
-                                      : (widget.archiveContext!.isRunning 
-                                          ? 'حفظ الدعوى الجارية' 
-                                          : 'حفظ الدعوى المنتهية'),
-                                  style: const TextStyle(color: AppColors.textOnLight),
-                                ),
-                              ],
+                  )
+                else
+                  const SizedBox(width: 120),
+                if (_currentStep < _getLastStepIndex())
+                  GlassmorphicButton(
+                    onPressed: _isSaving ? null : _nextStep,
+                    isPrimary: true,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('التالي', style: TextStyle(color: AppColors.textOnLight)),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward, color: AppColors.textOnLight),
+                      ],
+                    ),
+                  ),
+                if (_currentStep == _getLastStepIndex())
+                  GlassmorphicButton(
+                    onPressed: _isSaving ? null : _submitCase,
+                    isPrimary: true,
+                    backgroundColor: AppColors.success.withOpacity(0.85),
+                    child: _isSaving 
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
                             ),
-                    ),
-                ],
-              ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.save, color: AppColors.textOnLight),
+                              const SizedBox(width: 8),
+                              Text(
+                                widget.archiveContext == null 
+                                    ? 'إنشاء الدعوى' 
+                                    : (widget.archiveContext!.isRunning 
+                                        ? 'حفظ الدعوى الجارية' 
+                                        : 'حفظ الدعوى المنتهية'),
+                                style: const TextStyle(color: AppColors.textOnLight),
+                              ),
+                            ],
+                          ),
+                  ),
+              ],
             ),
           ),
         ),

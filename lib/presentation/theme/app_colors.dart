@@ -254,7 +254,7 @@ class AppColors {
         elevation: 2,
         shadowColor: shadowMedium,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: cardBorder, width: 0.5),
         ),
       ),
@@ -263,27 +263,27 @@ class AppColors {
         fillColor: inputBackground,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: inputBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: inputBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: inputBorderFocused, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: inputBorderError),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: inputBorderError, width: 2),
         ),
         disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: cardBorder),
         ),
       ),
@@ -293,7 +293,7 @@ class AppColors {
           foregroundColor: buttonPrimaryText,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           elevation: 2,
           shadowColor: shadowMedium,
@@ -305,7 +305,7 @@ class AppColors {
           side: const BorderSide(color: buttonOutlinedBorder),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
@@ -321,7 +321,7 @@ class AppColors {
       ),
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
         ),
         tileColor: cardBackground,
         selectedTileColor: tableRowSelected,

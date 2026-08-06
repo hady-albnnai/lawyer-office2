@@ -191,7 +191,7 @@ class CourtSelector extends ConsumerWidget {
             prefixIcon: const Icon(Icons.account_balance),
             errorText: errorText,
             border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
           ),
           items: [
             for (final kind in kindsInDegree)
@@ -248,7 +248,7 @@ class CourtSelector extends ConsumerWidget {
                   labelText: 'مقر المحكمة',
                   prefixIcon: const Icon(Icons.location_city),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(16)),
                 ),
                 child: Text('${court.name} (مقرها القانوني)',
                     style: AppTextStyles.bodyMedium),
@@ -307,7 +307,7 @@ class CourtSelector extends ConsumerWidget {
         labelText: 'الغرفة (اختياري)',
         hintText: 'اختر رقم الغرفة',
         prefixIcon: const Icon(Icons.meeting_room_outlined),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       ),
       items: [
         for (int i = 1; i <= 16; i++)
@@ -333,7 +333,7 @@ class CourtSelector extends ConsumerWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.info.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.info.withValues(alpha: 0.25)),
       ),
       child: Row(
@@ -352,7 +352,7 @@ class CourtSelector extends ConsumerWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(message, style: AppTextStyles.bodySmall),

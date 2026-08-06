@@ -149,12 +149,12 @@ class SidebarItem extends StatelessWidget {
       message: item.tooltip ?? item.label,
       child: InkWell(
         onTap: item.isDisabled ? null : () => onSelected(item),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           height: itemHeight,
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
             border: (accent != null && isSelected)
                 ? Border(right: BorderSide(color: accent, width: 3))
                 : null,
