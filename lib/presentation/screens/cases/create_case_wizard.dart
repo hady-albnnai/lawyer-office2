@@ -2654,7 +2654,10 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         chamberNumber: Value(_court.chamberNumber),
         baseNumber: Value(_baseNumberController.text.isNotEmpty ? _baseNumberController.text : null),
         subject: Value(_subjectController.text.isNotEmpty ? _subjectController.text : _titleController.text),
-        subjectDetails: Value(_detailsController.text),
+        subjectDetails: Value([
+          if (_claimController.text.trim().isNotEmpty) 'الطلب: ${_claimController.text.trim()}',
+          if (_detailsController.text.trim().isNotEmpty) _detailsController.text.trim(),
+        ].join('\n')),
         notes: Value(widget.archiveContext == null
             ? null
             : [
