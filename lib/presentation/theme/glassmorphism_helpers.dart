@@ -320,6 +320,10 @@ class GlassmorphicCard extends StatelessWidget {
   final EdgeInsetsGeometry? margin;
   final Color? backgroundColor;
   final double opacity;
+  final Color? color;
+  final double? elevation;
+  final ShapeBorder? shape;
+  final Clip? clipBehavior;
 
   const GlassmorphicCard({
     super.key,
@@ -329,16 +333,47 @@ class GlassmorphicCard extends StatelessWidget {
     this.margin,
     this.backgroundColor,
     this.opacity = 0.15,
+    this.color,
+    this.elevation,
+    this.shape,
+    this.clipBehavior,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Determine the effective background color
+    final effectiveBg = backgroundColor ?? color;
+    
+    // If a shape is provided, try to extract borderRadius from it
+    double effectiveRadius = borderRadius;
+    if (shape is RoundedRectangleBorder) {
+      final rr = (shape as RoundedRectangleBorder).borderRadius;
+      if (rr is BorderRadius) {
+        effectiveRadius = rr.topLeft.x;
+      }
+    }
+    
     return GlassmorphismContainer(
-      borderRadius: borderRadius,
+      borderRadius: effectiveRadius,
       padding: padding ?? const EdgeInsets.all(20),
       margin: margin ?? const EdgeInsets.all(8),
-      backgroundColor: backgroundColor,
-      opacity: opacity,
+      backgroundColor: effectiveBg,
+      opacity: effectiveBg != null ? 1.0 : opacity,
+      boxShadow: elevation != null && elevation! > 0
+          ? BoxShadow(
+              color: AppColors.primaryNavy.withOpacity(0.08 * elevation!),
+              blurRadius: elevation! * 4,
+              offset: Offset(0, elevation! * 2),
+            )
+          : null,
+      border: shape is RoundedRectangleBorder
+          ? (shape as RoundedRectangleBorder).side.color != Colors.transparent
+              ? Border.all(
+                  color: (shape as RoundedRectangleBorder).side.color,
+                  width: (shape as RoundedRectangleBorder).side.width,
+                )
+              : null
+          : null,
       child: child,
     );
   }

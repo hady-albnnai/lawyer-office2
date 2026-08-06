@@ -668,7 +668,7 @@ class _LookupsTabState extends ConsumerState<_LookupsTab> {
             color: AppColors.cardBackground,
             child: ListView(
               padding: const EdgeInsets.all(12),
-              children: _labels.entries.map((entry) {
+              children: _labels.entries.map<Widget>((entry) {
                 final selected = _selected == entry.key;
                 return GlassmorphicCard(
                   color: selected ? AppColors.primaryNavy.withOpacity(0.08) : null,
