@@ -321,7 +321,7 @@ class _SearchReportsScreenState extends ConsumerState<SearchReportsScreen>
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Text(text, style: AppTextStyles.labelSmall.copyWith(color: color, fontSize: 10)),
     );

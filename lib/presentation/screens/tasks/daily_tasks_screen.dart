@@ -207,7 +207,7 @@ class _DailyTasksScreenState extends ConsumerState<DailyTasksScreen> with Single
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: badgeColor.withOpacity(0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: badgeColor)),
+                  decoration: BoxDecoration(color: badgeColor.withOpacity(0.15), borderRadius: BorderRadius.circular(16), border: Border.all(color: badgeColor)),
                   child: Text(isOverdue ? 'متأخرة ⚠️' : priorityEnum.label, style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 12)),
                 ),
               ],

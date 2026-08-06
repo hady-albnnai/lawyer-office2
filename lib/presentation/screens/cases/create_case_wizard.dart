@@ -7,6 +7,7 @@
 library;
 
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:file_picker/file_picker.dart' as file_picker;
 import 'package:flutter/material.dart';
@@ -27,6 +28,7 @@ import '../../providers/auth_providers.dart';
 import '../../providers/ui_data_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/glassmorphism_helpers.dart';
 import '../../widgets/archive_context_banner.dart';
 import '../../widgets/common/court_selector.dart';
 import '../../widgets/common/searchable_picker.dart';
@@ -304,78 +306,86 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
+          color: AppColors.primaryNavy.withOpacity(0.85),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+              color: AppColors.primaryNavy.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
-        child: SafeArea(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // زر الرجوع (السابق)
-              if (_currentStep > 0)
-                ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _previousStep,
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('السابق'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.cardBorder,
-                    foregroundColor: AppColors.primaryNavy,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+        child: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: SafeArea(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (_currentStep > 0)
+                    GlassmorphicButton(
+                      onPressed: _isSaving ? null : _previousStep,
+                      isPrimary: false,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.arrow_back, color: AppColors.textOnLight),
+                          const SizedBox(width: 8),
+                          const Text('السابق', style: TextStyle(color: AppColors.textOnLight)),
+                        ],
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 120),
+                  if (_currentStep < _getLastStepIndex())
+                    GlassmorphicButton(
+                      onPressed: _isSaving ? null : _nextStep,
+                      isPrimary: true,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('التالي', style: TextStyle(color: AppColors.textOnLight)),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward, color: AppColors.textOnLight),
+                        ],
+                      ),
                     ),
-                  ),
-                )
-              else
-                const SizedBox(width: 120),
-              
-              // زر التالي أو حفظ
-              if (_currentStep < _getLastStepIndex())
-                ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _nextStep,
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('التالي'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryNavy,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  if (_currentStep == _getLastStepIndex())
+                    GlassmorphicButton(
+                      onPressed: _isSaving ? null : _submitCase,
+                      isPrimary: true,
+                      backgroundColor: AppColors.success.withOpacity(0.85),
+                      child: _isSaving 
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.save, color: AppColors.textOnLight),
+                                const SizedBox(width: 8),
+                                Text(
+                                  widget.archiveContext == null 
+                                      ? 'إنشاء الدعوى' 
+                                      : (widget.archiveContext!.isRunning 
+                                          ? 'حفظ الدعوى الجارية' 
+                                          : 'حفظ الدعوى المنتهية'),
+                                  style: const TextStyle(color: AppColors.textOnLight),
+                                ),
+                              ],
+                            ),
                     ),
-                    elevation: 4,
-                  ),
-                ),
-              if (_currentStep == _getLastStepIndex())
-                ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _submitCase,
-                  icon: _isSaving 
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.save),
-                  label: Text(widget.archiveContext == null 
-                      ? 'إنشاء الدعوى' 
-                      : (widget.archiveContext!.isRunning 
-                          ? 'حفظ الدعوى الجارية' 
-                          : 'حفظ الدعوى المنتهية')),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
                     elevation: 4,
                   ),
                 ),
@@ -387,103 +397,18 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
   }
 
   // ===========================================================================
-  // شريط التقدم (Stepper حديث)
+  // شريط التقدم (Stepper حديث مع Glassmorphism)
   // ===========================================================================
   
   Widget _buildProgressBar() {
     final lastStep = _getLastStepIndex();
     final totalSteps = lastStep + 1;
     
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: List.generate(totalSteps, (index) {
-          final isCompleted = index < _currentStep;
-          final isCurrent = index == _currentStep;
-          final isLast = index == totalSteps - 1;
-          
-          return Expanded(
-            child: Row(
-              children: [
-                // الدائرة مع الأيقونة
-                Expanded(
-                  flex: 0,
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isCompleted 
-                              ? AppColors.success 
-                              : isCurrent 
-                                  ? AppColors.primaryNavy 
-                                  : AppColors.cardBorder,
-                          boxShadow: isCurrent 
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.primaryNavy.withOpacity(0.3),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Center(
-                          child: isCompleted
-                              ? const Icon(Icons.check, color: Colors.white, size: 24)
-                              : Icon(
-                                  _getStepIcon(index),
-                                  color: isCurrent ? Colors.white : AppColors.textSecondary,
-                                  size: 24,
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _getStepLabel(index),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                          color: isCompleted || isCurrent 
-                              ? AppColors.primaryNavy 
-                              : AppColors.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                // الخط الواصل
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      height: 2,
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      decoration: BoxDecoration(
-                        color: isCompleted 
-                            ? AppColors.success 
-                            : AppColors.cardBorder,
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }),
-      ),
+    return GlassmorphicStepper(
+      currentStep: _currentStep,
+      totalSteps: totalSteps,
+      stepLabels: List.generate(totalSteps, (index) => _getStepLabel(index)),
+      stepIcons: List.generate(totalSteps, (index) => _getStepIcon(index)),
     );
   }
   

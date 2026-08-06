@@ -66,7 +66,7 @@ class AppTheme {
         shadowColor: AppColors.shadowMedium,
         margin: const EdgeInsets.all(8),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(20), // حواف دائرية
           side: const BorderSide(color: AppColors.cardBorder, width: 0.5),
         ),
       ),
@@ -80,27 +80,27 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         isDense: true,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16), // حواف دائرية
           borderSide: const BorderSide(color: AppColors.inputBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16), // حواف دائرية
           borderSide: const BorderSide(color: AppColors.inputBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16), // حواف دائرية
           borderSide: const BorderSide(color: AppColors.inputBorderFocused, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16), // حواف دائرية
           borderSide: const BorderSide(color: AppColors.inputBorderError),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16), // حواف دائرية
           borderSide: const BorderSide(color: AppColors.inputBorderError, width: 2),
         ),
         disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16), // حواف دائرية
           borderSide: const BorderSide(color: AppColors.cardBorder),
         ),
         hintStyle: AppTextStyles.inputHint,
@@ -117,7 +117,7 @@ class AppTheme {
           foregroundColor: AppColors.buttonPrimaryText,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           elevation: 2,
           shadowColor: AppColors.shadowMedium,
@@ -131,7 +131,7 @@ class AppTheme {
           side: const BorderSide(color: AppColors.buttonOutlinedBorder),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: AppTextStyles.buttonText,
         ),
@@ -149,7 +149,7 @@ class AppTheme {
           foregroundColor: AppColors.textPrimary,
           padding: const EdgeInsets.all(8),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
@@ -178,7 +178,7 @@ class AppTheme {
       // =========================================================================
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(24),
         ),
         tileColor: AppColors.cardBackground,
         selectedTileColor: AppColors.tableRowSelected,
@@ -500,7 +500,7 @@ class AppTheme {
         surfaceTintColor: const Color(0xFF1E1E1E),
         elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(24),
           side: const BorderSide(color: Color(0xFF424242), width: 0.5),
         ),
       ),

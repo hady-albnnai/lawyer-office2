@@ -308,7 +308,7 @@ class _SecurityTabState extends ConsumerState<_SecurityTab> {
                 ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: AppColors.success, borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: AppColors.success, borderRadius: BorderRadius.circular(16)),
                   child: const Text('محمي', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),

@@ -105,7 +105,7 @@ class _SmartExplorerViewState extends ConsumerState<_SmartExplorerView> {
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
@@ -240,11 +240,11 @@ class _SmartExplorerViewState extends ConsumerState<_SmartExplorerView> {
     return InkWell(
       onDoubleTap: () => _openDocumentWithPermission(context, ref, doc),
       onTap: () {},
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.transparent),
         ),
         padding: const EdgeInsets.all(12),
@@ -284,7 +284,7 @@ class _SmartExplorerViewState extends ConsumerState<_SmartExplorerView> {
     return ListTile(
       tileColor: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: AppColors.cardBorder),
       ),
       leading: Icon(doc.fileType.icon, size: 36, color: _getFileColor(doc.fileType)),
@@ -359,7 +359,7 @@ class _SmartExplorerViewState extends ConsumerState<_SmartExplorerView> {
   Widget _tag(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
       child: Text(label, style: AppTextStyles.labelSmall.copyWith(color: color)),
     );
   }

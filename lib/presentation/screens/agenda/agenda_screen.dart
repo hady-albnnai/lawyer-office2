@@ -688,7 +688,7 @@ class AgendaScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: (isCompleted ? AppColors.success : item.color).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
                         item.timeString,
@@ -734,7 +734,7 @@ class AgendaScreen extends ConsumerWidget {
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               color: (isCompleted ? AppColors.textSecondary : item.color).withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Icon(
                               item.icon, 
@@ -911,7 +911,7 @@ class AgendaScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDarkMode ? Colors.grey.shade700 : Colors.white,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -958,7 +958,7 @@ class AgendaScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDarkMode ? Colors.grey.shade700 : Colors.white,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             'لا توجد مستندات مرتبطة حالياً',
@@ -994,7 +994,7 @@ class AgendaScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDarkMode ? Colors.grey.shade700 : Colors.white,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             'لا توجد مواعيد سابقة مسجلة',
@@ -1123,7 +1123,7 @@ class AgendaScreen extends ConsumerWidget {
                   color: isSelected 
                       ? AppColors.primaryNavy.withOpacity(0.2)
                       : (isDarkMode ? Colors.grey.shade800 : Colors.white),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected 
                         ? AppColors.primaryNavy

@@ -491,7 +491,7 @@ class FileCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () => _openFile(context),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -865,7 +865,7 @@ class _CloseOfficeFileDialogState extends ConsumerState<CloseOfficeFileDialog> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: widget.file.financeStatus.color.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: widget.file.financeStatus.color.withOpacity(0.4)),
                 ),
                 child: Column(
@@ -988,7 +988,7 @@ class _CloseOfficeFileDialogState extends ConsumerState<CloseOfficeFileDialog> {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppColors.success.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(children: [
           const Icon(Icons.verified, color: AppColors.success, size: 18),
@@ -1002,7 +1002,7 @@ class _CloseOfficeFileDialogState extends ConsumerState<CloseOfficeFileDialog> {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.warning.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.warning.withOpacity(0.35)),
       ),
       child: Column(

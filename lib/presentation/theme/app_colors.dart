@@ -17,10 +17,10 @@ class AppColors {
   static const Color backgroundLight = Color(0xFFF8F9FA);
   
   /// كحلي قانوني هادئ وليس قاتماً جداً
-  static const Color primaryNavy = Color(0xFF2C3E50);
+  static const Color primaryNavy = Color(0xFF1A2332);
   
   /// ذهبي رسمي للتأكيدات والعناصر المهمة
-  static const Color secondaryGold = Color(0xFFD4AF37);
+  static const Color secondaryGold = Color(0xFFC9A961);
   
   /// أبيض نقي للبطاقات
   static const Color cardBackground = Color(0xFFFFFFFF);
@@ -169,6 +169,47 @@ class AppColors {
   
   /// حدود خلايا الجدول
   static const Color tableBorder = cardBorder;
+  
+  // ===========================================================================
+  // ألوان Glassmorphism و Neumorphism
+  // ===========================================================================
+  
+  /// Glassmorphism Colors
+  static const Color glassBackground = Color(0x26FFFFFF); // 15% white
+  static const Color glassBorder = Color(0x4DFFFFFF); // 30% white
+  static const Color glassShadow = Color(0x1A2C3E50); // 10% navy
+  
+  /// Neumorphism Colors
+  static const Color neumorphicLight = Color(0xE6FFFFFF); // 90% white
+  static const Color neumorphicDark = Color(0x1A2C3E50); // 10% navy
+  
+  /// Gradient Colors
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [
+      Color(0xFF2C3E50), // primaryNavy
+      Color(0xFF34495E), // lighter navy
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient goldGradient = LinearGradient(
+    colors: [
+      Color(0xFFD4AF37), // secondaryGold
+      Color(0xFFFFD700), // bright gold
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient successGradient = LinearGradient(
+    colors: [
+      Color(0xFF28A745), // success
+      Color(0xFF34CE57), // bright success
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
   
   // ===========================================================================
   /// الحصول على ColorScheme كامل للتطبيق

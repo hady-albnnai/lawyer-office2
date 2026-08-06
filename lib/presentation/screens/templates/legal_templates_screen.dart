@@ -323,7 +323,7 @@ class _LegalTemplatesScreenState extends ConsumerState<LegalTemplatesScreen> {
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(border: Border.all(color: AppConstants.accentGold), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(border: Border.all(color: AppConstants.accentGold), borderRadius: BorderRadius.circular(16)),
                   child: Row(
                     children: [
                       Expanded(child: Text(selectedFile == null ? 'لم يتم اختيار ملف' : selectedFile!.path.split(Platform.pathSeparator).last)),

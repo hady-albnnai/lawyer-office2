@@ -729,7 +729,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Text('$label: $value', style: AppTextStyles.bodySmall),

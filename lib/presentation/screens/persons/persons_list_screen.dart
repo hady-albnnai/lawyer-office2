@@ -221,7 +221,7 @@ class PersonDirectoryCard extends ConsumerWidget {
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => PersonDetailScreen(personId: person.id)),
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -278,7 +278,7 @@ class PersonDirectoryCard extends ConsumerWidget {
   Widget _kindBadge(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: AppColors.cardBackground, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: AppColors.cardBackground, borderRadius: BorderRadius.circular(16)),
       child: Text(label, style: AppTextStyles.labelSmall),
     );
   }

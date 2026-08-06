@@ -160,7 +160,7 @@ class _AgencyCard extends ConsumerWidget {
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => PoaDetailScreen(agencyId: agency.id)),
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

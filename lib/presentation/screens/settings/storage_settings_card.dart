@@ -75,7 +75,7 @@ class _StorageSettingsCardState extends ConsumerState<StorageSettingsCard> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.cardBorder.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

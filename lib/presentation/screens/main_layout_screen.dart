@@ -222,12 +222,12 @@ class _TopBar extends ConsumerWidget {
                   constraints: const BoxConstraints(maxWidth: 500),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppConstants.accentGold.withOpacity(0.3)),
                   ),
                   child: InkWell(
                     onTap: () => _showOmnibarSearch(context, ref),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Row(
