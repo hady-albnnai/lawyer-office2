@@ -366,15 +366,30 @@ class _WorkList extends StatelessWidget {
 
   Widget _empty() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.event_available, size: 72, color: AppColors.textSecondary.withOpacity(0.45)),
-          const SizedBox(height: 16),
-          Text('لا توجد أعمال ضمن هذا اليوم', style: AppTextStyles.headline6),
-          const SizedBox(height: 8),
-          Text('ستظهر هنا الجلسات والمراجعات وأوامر العمل والنواقص والمهام حسب تاريخها وصلاحياتك.', style: AppTextStyles.bodySmallSecondary, textAlign: TextAlign.center),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.event_available, size: 64, color: AppColors.textSecondary.withOpacity(0.4)),
+            const SizedBox(height: 16),
+            Text('لا توجد أعمال ضمن هذا اليوم', style: AppTextStyles.headline6.copyWith(color: AppColors.primaryNavy)),
+            const SizedBox(height: 8),
+            Text('ستظهر هنا الجلسات والمراجعات وأوامر العمل والنواقص والمهام حسب تاريخها.', style: AppTextStyles.bodySmallSecondary, textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => context.go('/new-work'),
+              icon: const Icon(Icons.add_circle_outline, size: 20),
+              label: const Text('إنشاء عمل جديد', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryNavy,
+                foregroundColor: AppColors.secondaryGold,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -604,7 +619,15 @@ class _AddWorkButton extends ConsumerWidget {
       ],
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: ElevatedButton.icon(onPressed: null, icon: const Icon(Icons.add), label: const Text('إنشاء جديد')),
+        child: ElevatedButton.icon(
+          onPressed: () {}, // no-op — PopupMenuButton يلتقط الضغط
+          icon: const Icon(Icons.add),
+          label: const Text('إنشاء جديد'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.secondaryGold,
+            foregroundColor: AppColors.primaryNavy,
+          ),
+        ),
       ),
     );
   }
@@ -715,7 +738,7 @@ List<_WorkItem> _collectItemsForDay(BuildContext context, WidgetRef ref, DateTim
         type: 'نقص',
         title: d.description,
         subtitle: d.fieldName,
-        entityRoute: d.entityType == 0 ? '/cases/${d.entityId}' : '',
+        entityRoute: _deficiencyRoute(d.entityType, d.entityId),
         assignedTo: '',
         date: day,
         color: AppColors.error,
@@ -968,6 +991,19 @@ String _taskRoute(db.DailyTask t) {
       return '/work-orders';
     default:
       return '';
+  }
+}
+
+/// مسار فتح ملف النقص حسب نوع الكيان المرتبط
+String _deficiencyRoute(int entityType, int entityId) {
+  switch (entityType) {
+    case 0: return '/cases/$entityId';
+    case 1: return '/contracts/$entityId';
+    case 2: return '/companies/$entityId';
+    case 3: return '/procedures/$entityId';
+    case 4: return '/persons/$entityId';
+    case 5: return '/poa/$entityId';
+    default: return '';
   }
 }
 
