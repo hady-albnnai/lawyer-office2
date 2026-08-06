@@ -39,6 +39,8 @@ part 'database.g.dart';
     Companies, CompanyPhases, CompanyManagement, CompanyPartners, CompanyDirectors,
     // 7. العقود
     Contracts, ContractParties, ContractReminders, ContractTemplates, ContractVersions,
+    // 7b. جداول الذكاء الاصطناعي للعقود
+    ContractTemplateVariables, ContractInstanceVariables, ContractTemplateUsageLog,
     // 8. الإجراءات الإدارية
     AdminProcedures, AdminSteps, AdminProcedureTypes,
     // 9. المهام والأعمال اليومية

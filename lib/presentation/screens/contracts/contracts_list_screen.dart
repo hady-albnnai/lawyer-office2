@@ -5,7 +5,7 @@ import '../../../core/auth/permission_catalog.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
-import 'create_contract_screen.dart';
+import 'create_contract_wizard.dart';
 import 'contract_detail_screen.dart';
 import 'templates_management_screen.dart';
 
@@ -70,7 +70,7 @@ class _ContractsListScreenState extends ConsumerState<ContractsListScreen> with 
                   label: const Text('تنظيم عقد جديد'),
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const CreateContractScreen()),
+                      MaterialPageRoute(builder: (context) => const CreateContractWizard()),
                     );
                   },
                 ),

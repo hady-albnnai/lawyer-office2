@@ -6,6 +6,7 @@ import '../../data/services/conflict_of_interest_service.dart';
 import '../../data/services/sequence_service.dart';
 import '../../data/services/task_sync_service.dart';
 import '../../data/services/deficiency_service.dart';
+import '../../data/services/template_variable_service.dart';
 import '../../data/services/attachment_service.dart';
 import '../../data/services/file_storage_service.dart';
 import '../../data/services/backup_service.dart';
@@ -106,6 +107,10 @@ final contractRepositoryProvider = Provider<ContractRepository>((ref) {
     ref.watch(fileStorageServiceProvider),
     ref.watch(officeFileRepositoryProvider),
   );
+});
+
+final templateVariableServiceProvider = Provider<TemplateVariableService>((ref) {
+  return TemplateVariableService(ref.watch(databaseProvider));
 });
 
 final adminProcedureRepositoryProvider = Provider<AdminProcedureRepository>((ref) {

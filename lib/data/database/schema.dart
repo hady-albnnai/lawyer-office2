@@ -454,6 +454,14 @@ class Contracts extends Table {
   TextColumn get internalNumber => text().unique()();
   TextColumn get title => text()();
   TextColumn get contractType => text()();
+  /// التصنيف القانوني الرئيسي (عقود واردة على الملكية، الانتفاع، العمل...)
+  TextColumn get legalCategory => text().nullable()();
+  /// التصنيف الفرعي (بيع عقار، إيجار سكني، مقاولة...)
+  TextColumn get legalSubcategory => text().nullable()();
+  /// معرّف القالب المصدر الذي أُنشئ منه هذا العقد (template → instance)
+  IntColumn get sourceTemplateId => integer().nullable()();
+  /// كيف أُنشئ العقد: from_template / uploaded / blank
+  TextColumn get creationMethod => text().nullable()();
   TextColumn get status => text().withDefault(const Constant('active'))(); // active, expired, cancelled, disputed, suspended
   DateTimeColumn get dateSigned => dateTime().nullable()();
   DateTimeColumn get dateStart => dateTime().nullable()();
@@ -481,7 +489,10 @@ class ContractParties extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get contractId => integer().references(Contracts, #id, onDelete: KeyAction.cascade)();
   IntColumn get personId => integer().references(Persons, #id)();
-  TextColumn get partyRole => text().nullable()(); // طرف أول (بائع/مؤجر)، طرف ثاني (مشتري/مستأجر)
+  /// اسم الطرف داخل العقد (البائع، المشتري، المؤجر، الكفيل...)
+  TextColumn get partyRole => text().nullable()();
+  /// صفة الشخص داخل الطرف (أصيل، وكيل، ولي، وصي، ممثل شركة)
+  TextColumn get partyCapacity => text().nullable()();
   IntColumn get partyOrder => integer().withDefault(const Constant(1))();
 }
 
@@ -522,6 +533,52 @@ class ContractVersions extends Table {
   DateTimeColumn get editDate => dateTime().withDefault(currentDateAndTime)();
   TextColumn get editedBy => text().nullable()();
   TextColumn get notes => text().nullable()();
+}
+
+// ============================================================================
+// جداول الذكاء الاصطناعي — تعلّم من أنماط القوالب والمتغيرات
+// ============================================================================
+
+/// المتغيرات المكتشفة في كل قالب (AI-ready: يتعلم أي متغيرات يحتويها كل نوع عقد)
+class ContractTemplateVariables extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get templateId => integer().references(ContractTemplates, #id, onDelete: KeyAction.cascade)();
+  /// اسم المتغير كما يظهر في القالب: {{البائع}}, {{الثمن}}
+  TextColumn get variableName => text()();
+  /// نوع المتغير المُستنتج: person, money, date, text, property, number
+  TextColumn get variableType => text().nullable()();
+  /// هل يُملأ تلقائياً من بيانات الأطراف؟ (person → auto-fill)
+  BoolColumn get autoFillFromParty => boolean().withDefault(const Constant(false))();
+  /// عدد مرات الاستخدام (كلما استُخدم القالب يُزاد العدّاد)
+  IntColumn get usageCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// قيم المتغيرات لكل نسخة عقد (AI-ready: يتعلم أنماط الملء والتعديل)
+class ContractInstanceVariables extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get contractId => integer().references(Contracts, #id, onDelete: KeyAction.cascade)();
+  IntColumn get templateVariableId => integer().nullable().references(ContractTemplateVariables, #id)();
+  TextColumn get variableName => text()();
+  /// القيمة التي أدخلها المحامي أو ملأها النظام تلقائياً
+  TextColumn get variableValue => text().nullable()();
+  /// طريقة الملء: auto (من الأطراف), manual (يدوي), ai (ذكاء اصطناعي لاحقاً)
+  TextColumn get fillMethod => text().withDefault(const Constant('manual'))();
+  /// هل عدّل المحامي القيمة بعد الملء التلقائي؟ (تعلّم من التصحيحات)
+  BoolColumn get wasCorrected => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// سجل تفاعل المحامي مع القوالب (AI-ready: يتعلم أي قوالب تُستخدم وأيها يُهمل)
+class ContractTemplateUsageLog extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get templateId => integer().nullable().references(ContractTemplates, #id)();
+  IntColumn get contractId => integer().nullable().references(Contracts, #id)();
+  /// نوع الحدث: selected, variables_filled, word_opened, word_edited, saved_as_template
+  TextColumn get eventType => text()();
+  /// بيانات إضافية JSON (مثلاً: أي متغيرات عُدّلت)
+  TextColumn get eventData => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 // ============================================================================

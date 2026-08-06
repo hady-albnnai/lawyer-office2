@@ -30,7 +30,7 @@ import '../screens/companies/company_detail_screen.dart';
 import '../screens/companies/create_company_wizard.dart';
 import '../screens/contracts/contracts_list_screen.dart';
 import '../screens/contracts/contract_detail_screen.dart';
-import '../screens/contracts/create_contract_screen.dart';
+import '../screens/contracts/create_contract_wizard.dart';
 import '../screens/admin_procedures/procedures_list_screen.dart';
 import '../screens/admin_procedures/procedure_detail_screen.dart';
 import '../screens/admin_procedures/create_procedure_screen.dart';
@@ -107,7 +107,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/companies/create', name: 'company-create', builder: (_, state) => CreateCompanyWizard(archiveContext: ArchiveEntryContext.fromQuery(state.uri.queryParameters))),
           GoRoute(path: '/companies/:companyId', name: 'company-detail', builder: (_, state) { final id = int.tryParse(state.pathParameters['companyId'] ?? '0') ?? 0; return CompanyDetailScreen(companyId: id); }),
           GoRoute(path: '/contracts/templates', redirect: (_, __) => '/templates'),
-          GoRoute(path: '/contracts/create', name: 'contract-create', builder: (_, state) => CreateContractScreen(archiveContext: ArchiveEntryContext.fromQuery(state.uri.queryParameters))),
+          GoRoute(path: '/contracts/create', name: 'contract-create', builder: (_, state) => CreateContractWizard(archiveContext: ArchiveEntryContext.fromQuery(state.uri.queryParameters))),
           GoRoute(path: '/contracts/:contractId', name: 'contract-detail', builder: (_, state) { final id = int.tryParse(state.pathParameters['contractId'] ?? '0') ?? 0; return ContractDetailScreen(contractId: id); }),
           GoRoute(path: '/procedures/create', name: 'procedure-create', builder: (_, state) => CreateProcedureScreen(archiveContext: ArchiveEntryContext.fromQuery(state.uri.queryParameters))),
           GoRoute(path: '/procedures/:procedureId', name: 'procedure-detail', builder: (_, state) { final id = int.tryParse(state.pathParameters['procedureId'] ?? '0') ?? 0; return ProcedureDetailScreen(procedureId: id); }),
