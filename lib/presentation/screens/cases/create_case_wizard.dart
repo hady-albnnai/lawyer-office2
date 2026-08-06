@@ -829,24 +829,51 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
         // قائمة الوكالات
         _buildPoaList(),
         
-        // أو إضافة وكالة جديدة
+        // عرض الوكالة المختارة أو أزرار الإضافة
         const SizedBox(height: 16),
-        TextButton.icon(
-          onPressed: () => _showAddPoaDialog(context),
-          icon: const Icon(Icons.add),
-          label: const Text('إضافة وكالة جديدة'),
-        ),
-        
-        // أو تأجيل اختيار الوكالة
-        const SizedBox(height: 8),
-        TextButton.icon(
-          onPressed: () => _showPostponePoaDialog(context),
-          icon: const Icon(Icons.warning),
-          label: const Text('تأجيل اختيار الوكالة'),
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.warning,
+        if (_selectedPoaId != null) ...[
+          // الوكالة محددة — عرض ملخص + خيار التغيير
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.success.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle, color: AppColors.success, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'تم تحديد الوكالة بنجاح',
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.success, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _selectedPoaId = null),
+                  child: const Text('تغيير'),
+                ),
+              ],
+            ),
           ),
-        ),
+        ] else ...[
+          // لا وكالة محددة — أزرار الإضافة والتأجيل
+          TextButton.icon(
+            onPressed: () => _showAddPoaDialog(context),
+            icon: const Icon(Icons.add),
+            label: const Text('إضافة وكالة جديدة'),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: () => _showPostponePoaDialog(context),
+            icon: const Icon(Icons.warning),
+            label: const Text('تأجيل اختيار الوكالة'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.warning,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1125,12 +1152,15 @@ class _CreateCaseWizardState extends ConsumerState<CreateCaseWizard> {
       context: context,
       builder: (context) => AddPoaDialog(defaultClientId: _selectedClientId),
     ).then((poaId) {
-      // تحديث قائمة الوكالات + تحديد الوكالة المُنشأة
-      if (mounted) {
+      if (mounted && poaId != null) {
         ref.invalidate(allPoasProvider);
-        if (poaId != null) {
-          setState(() => _selectedPoaId = poaId);
-        }
+        setState(() {
+          _selectedPoaId = poaId;
+          // الانتقال تلقائياً للخطوة التالية (التصنيف)
+          if (_currentStep < _getLastStepIndex()) {
+            _currentStep++;
+          }
+        });
       }
     });
   }
