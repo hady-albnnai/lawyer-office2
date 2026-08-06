@@ -478,7 +478,7 @@ class AgendaScreen extends ConsumerWidget {
             onTap: () => ref.read(selectedAgendaDateProvider.notifier).state = date,
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primaryNavy : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
@@ -510,7 +510,7 @@ class AgendaScreen extends ConsumerWidget {
   }
 
   String _getWeekdayName(int weekday) {
-    const names = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+    const names = ['إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت', 'أحد'];
     return names[weekday - 1];
   }
 
@@ -706,7 +706,7 @@ class AgendaScreen extends ConsumerWidget {
                               ? (isDarkMode ? const Color(0xFF8899AA) : AppColors.textSecondary) 
                               : (isDarkMode ? Colors.white : AppColors.primaryNavy),
                           fontWeight: FontWeight.bold,
-                          decoration: isCompleted ? TextDecoration.lineThrough : null,
+                          fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                         ),
                       ),
                     ),
@@ -760,7 +760,7 @@ class AgendaScreen extends ConsumerWidget {
                                 color: isCompleted 
                                     ? (isDarkMode ? const Color(0xFF8899AA) : AppColors.textSecondary) 
                                     : (isDarkMode ? Colors.white : AppColors.textPrimary),
-                                decoration: isCompleted ? TextDecoration.lineThrough : null,
+                                fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                               ),
                             ),
                           ),
@@ -798,7 +798,7 @@ class AgendaScreen extends ConsumerWidget {
                               item.subtitle,
                               style: AppTextStyles.bodySmallSecondary.copyWith(
                                 color: isDarkMode ? const Color(0xFFAABBCC) : null,
-                                decoration: isCompleted ? TextDecoration.lineThrough : null,
+                                fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -829,8 +829,8 @@ class AgendaScreen extends ConsumerWidget {
                         ),
                       ),
                     const SizedBox(height: 8),
-                    // زر تسجيل النتيجة
-                    if (!isCompleted)
+                    // زر تسجيل النتيجة — يظهر فقط للمواعيد اليوم أو الماضية
+                    if (!isCompleted && !item.date.isAfter(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).add(const Duration(days: 1))))
                       Container(
                         decoration: BoxDecoration(
                           color: AppColors.success.withOpacity(0.1),

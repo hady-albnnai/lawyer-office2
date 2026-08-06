@@ -1092,7 +1092,13 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen>
                     IconButton(
                       tooltip: 'العودة',
                       icon: const Icon(Icons.arrow_forward),
-                      onPressed: () => Navigator.of(context).maybePop(),
+                      onPressed: () {
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else {
+                          context.go('/today');
+                        }
+                      },
                     ),
                   ],
                   bottom: PreferredSize(
