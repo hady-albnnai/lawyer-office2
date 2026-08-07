@@ -506,11 +506,366 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
   }
 
   Widget _buildDocumentsTab(int contractId) {
-    return const Center(child: Text('النسخ المصدقة والعقود المرفقة في الأرشيف'));
+    final documentsStream = ref.watch(documentsByEntityProvider((EntityType.contract, contractId)));
+    
+    return documentsStream.when(
+      data: (documents) {
+        if (documents.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.folder_open, size: 64, color: AppColors.textSecondary),
+                const SizedBox(height: 16),
+                const Text('لا توجد مستندات مرفقة لهذا العقد'),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _showAddDocumentDialog(contractId),
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('إرفاق مستند'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryNavy,
+                    foregroundColor: AppColors.secondaryGold,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showAddDocumentDialog(contractId),
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('إرفاق مستند جديد'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryNavy,
+                    foregroundColor: AppColors.secondaryGold,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: documents.length,
+                itemBuilder: (context, index) {
+                  final doc = documents[index];
+                  return GlassmorphicCard(
+                    child: ListTile(
+                      leading: Icon(
+                        _getDocumentIcon(doc.fileType ?? ''),
+                        color: AppColors.primaryNavy,
+                        size: 32,
+                      ),
+                      title: Text(doc.docName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('النوع: ${doc.docType ?? "---"}'),
+                          Text('تاريخ الرفع: ${doc.uploadDate.toString().substring(0, 10)}'),
+                          if (doc.summary != null && doc.summary!.isNotEmpty)
+                            Text('ملاحظة: ${doc.summary}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.open_in_new, color: AppColors.primaryNavy),
+                        onPressed: () => _openDocument(doc),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('خطأ في تحميل المستندات: $e')),
+    );
+  }
+  
+  IconData _getDocumentIcon(String fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+  
+  Future<void> _showAddDocumentDialog(int contractId) async {
+    final docNameController = TextEditingController();
+    final docTypeController = TextEditingController(text: 'مستند عقد');
+    final summaryController = TextEditingController();
+    File? selectedFile;
+    
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('إرفاق مستند جديد'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: docNameController,
+                  decoration: const InputDecoration(labelText: 'اسم المستند *'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: docTypeController,
+                  decoration: const InputDecoration(labelText: 'نوع المستند'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: summaryController,
+                  decoration: const InputDecoration(labelText: 'ملاحظة (اختياري)'),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () async {
+                    final result = await FilePicker.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      setState(() => selectedFile = File(result.files.single.path!));
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(labelText: 'الملف *'),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.attach_file),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            selectedFile == null ? 'اختر ملف' : selectedFile!.path.split('/').last,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+            ElevatedButton(
+              onPressed: () async {
+                if (docNameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('يرجى إدخال اسم المستند'), backgroundColor: AppColors.error),
+                  );
+                  return;
+                }
+                if (selectedFile == null) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('يرجى اختيار ملف'), backgroundColor: AppColors.error),
+                  );
+                  return;
+                }
+                
+                try {
+                  final docRepo = ref.read(documentRepositoryProvider);
+                  final userRef = ref.read(authControllerProvider).user?.fullName ?? 'المكتب';
+                  
+                  await docRepo.addDocument(
+                    docName: docNameController.text.trim(),
+                    docType: docTypeController.text.trim().isEmpty ? 'مستند عقد' : docTypeController.text.trim(),
+                    fileType: selectedFile!.path.split('.').last,
+                    summary: summaryController.text.trim().isEmpty ? null : summaryController.text.trim(),
+                    sourceFile: selectedFile!,
+                    entityType: EntityType.contract.index,
+                    entityId: contractId,
+                    userRef: userRef,
+                  );
+                  
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم إرفاق المستند بنجاح'), backgroundColor: AppColors.success),
+                    );
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text('خطأ: $e'), backgroundColor: AppColors.error),
+                    );
+                  }
+                }
+              },
+              child: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Future<void> _openDocument(Document doc) async {
+    try {
+      final result = await ref
+          .read(attachmentServiceProvider)
+          .openStoredAttachment(doc.filePath);
+      if (!mounted) return;
+      if (!result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message ?? 'تعذّر فتح الملف'), backgroundColor: AppColors.error),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطأ: $e'), backgroundColor: AppColors.error),
+      );
+    }
   }
 
   Widget _buildFinancesTab(int contractId) {
-    return const Center(child: Text('أتعاب تنظيم العقد والدفعات المستلمة من الأطراف'));
+    final db = ref.watch(databaseProvider);
+    
+    return FutureBuilder(
+      future: Future.wait([
+        db.customSelect(
+          'SELECT * FROM expenses WHERE entity_type = ? AND entity_id = ?',
+          variables: [Variable.withInt(EntityType.contract.index), Variable.withInt(contractId)],
+        ).get(),
+        db.customSelect(
+          'SELECT * FROM fee_payments WHERE entity_type = ? AND entity_id = ?',
+          variables: [Variable.withInt(EntityType.contract.index), Variable.withInt(contractId)],
+        ).get(),
+      ]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        final results = snapshot.data as List<List<TypedResult>>?;
+        final expenses = results?[0] ?? [];
+        final payments = results?[1] ?? [];
+        
+        if (expenses.isEmpty && payments.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.account_balance_wallet, size: 64, color: AppColors.textSecondary),
+                const SizedBox(height: 16),
+                const Text('لا توجد حركات مالية لهذا العقد'),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.push('/finance?entityType=contract&entityId=$contractId');
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('إضافة حركة مالية'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryNavy,
+                    foregroundColor: AppColors.secondaryGold,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    context.push('/finance?entityType=contract&entityId=$contractId');
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('إضافة حركة مالية'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryNavy,
+                    foregroundColor: AppColors.secondaryGold,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (payments.isNotEmpty) ...[
+                    const Text('سندات القبض', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
+                    const SizedBox(height: 8),
+                    ...payments.map((row) {
+                      final data = row.data;
+                      return GlassmorphicCard(
+                        color: AppColors.success.withOpacity(0.08),
+                        child: ListTile(
+                          leading: const Icon(Icons.receipt_long, color: AppColors.success, size: 32),
+                          title: Text('سند قبض #${data?['receipt_number'] ?? "---"}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('المبلغ: ${data?['amount'] ?? 0} ${data?['currency'] ?? "ل.س"}'),
+                              Text('التاريخ: ${data?['payment_date']?.toString().substring(0, 10) ?? "---"}'),
+                              if (data?['notes'] != null && data?['notes'].toString().isNotEmpty)
+                                Text('ملاحظة: ${data?['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                  if (expenses.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    const Text('المصاريف', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
+                    const SizedBox(height: 8),
+                    ...expenses.map((row) {
+                      final data = row.data;
+                      return GlassmorphicCard(
+                        color: AppColors.error.withOpacity(0.08),
+                        child: ListTile(
+                          leading: const Icon(Icons.money_off, color: AppColors.error, size: 32),
+                          title: Text(data?['description'] ?? 'مصروف', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('المبلغ: ${data?['amount'] ?? 0} ${data?['currency'] ?? "ل.س"}'),
+                              Text('التاريخ: ${data?['expense_date']?.toString().substring(0, 10) ?? "---"}'),
+                              if (data?['notes'] != null && data?['notes'].toString().isNotEmpty)
+                                Text('ملاحظة: ${data?['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildTimelineTab(int contractId) {
