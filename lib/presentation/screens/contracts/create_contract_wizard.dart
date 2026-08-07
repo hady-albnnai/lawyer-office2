@@ -1326,6 +1326,64 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         _buildSummaryCard(),
         const SizedBox(height: 24),
 
+        // رسالة توضيحية للملفات المستوردة
+        if (_creationMethod == 'uploaded' && _uploadedFile != null) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.success.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.upload_file, color: AppColors.success, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'تم رفع الملف بنجاح',
+                            style: AppTextStyles.labelLarge.copyWith(color: AppColors.success),
+                          ),
+                          Text(
+                            path.basename(_uploadedFile!.path),
+                            style: AppTextStyles.bodySmallSecondary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 18, color: AppColors.info),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'اضغط "فتح في Microsoft Word" لتحرير العقد مباشرة. بعد التعديل والحفظ في Word، سيتم استخدام الملف المعدّل عند حفظ العقد.',
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.info),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+
         // المتغيرات (إذا وُجدت)
         if (_creationMethod == 'from_template' && _selectedTemplate != null) ...[
           if (!_variablesDetected)
