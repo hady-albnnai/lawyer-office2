@@ -83,7 +83,7 @@ class AppDatabase extends _$AppDatabase {
   /// schema.dart يجب أن يرافقه رفع هذا الرقم وإضافة m.addColumn في
   /// onUpgrade. عدم الالتزام يُنتج خطأ SQLite رقم 1 على القواعد القائمة.
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -111,6 +111,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 7) {
         await _migrateToV7(m);
+      }
+      if (from < 8) {
+        await _migrateToV8(m);
       }
     },
     beforeOpen: (details) async {
@@ -398,6 +401,15 @@ class AppDatabase extends _$AppDatabase {
         created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
       )
     ''');
+  }
+
+  /// ترحيل الإصدار 8 — التأكد من وجود أعمدة contract_parties.
+  ///
+  /// بعض قواعد المستخدمين قد تكون ترحّلت إلى V7 بدون إضافة
+  /// أعمدة party_capacity و poa_id. هذا الترحيل يضمن وجودها.
+  Future<void> _migrateToV8(Migrator m) async {
+    await _ensureSqlColumn('contract_parties', 'party_capacity', 'TEXT');
+    await _ensureSqlColumn('contract_parties', 'poa_id', 'INTEGER');
   }
 
   /// إضافة عمود عبر Migrator مع تخطّيه إن كان موجوداً بالفعل.
