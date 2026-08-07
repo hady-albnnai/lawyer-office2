@@ -188,7 +188,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                 child: ConstrainedBox(
                   key: ValueKey<int>(_currentStep),
                   constraints: const BoxConstraints(maxWidth: 800),
-                  child: _buildCurrentStep(),
+                  child: _buildStepContent(),
                 ),
               ),
             ),
@@ -196,17 +196,6 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           _buildBottomNav(),
         ],
       ),
-    );
-  }
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: _buildStepContent(),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
