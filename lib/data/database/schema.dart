@@ -489,10 +489,14 @@ class ContractParties extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get contractId => integer().references(Contracts, #id, onDelete: KeyAction.cascade)();
   IntColumn get personId => integer().references(Persons, #id)();
-  /// اسم الطرف داخل العقد (البائع، المشتري، المؤجر، الكفيل...)
+  /// اسم الطرف داخل العقد (البائعون، المشتري، الكفيل...)
+  /// عدة صفوف بنفس partyRole + partyOrder = عدة أشخاص في نفس الطرف
   TextColumn get partyRole => text().nullable()();
   /// صفة الشخص داخل الطرف (أصيل، وكيل، ولي، وصي، ممثل شركة)
   TextColumn get partyCapacity => text().nullable()();
+  /// رقم الوكالة إذا كانت الصفة "وكيل"
+  IntColumn get poaId => integer().nullable().references(PowersOfAttorney, #id)();
+  /// ترتيب الطرف (1 = الطرف الأول، 2 = الطرف الثاني...)
   IntColumn get partyOrder => integer().withDefault(const Constant(1))();
 }
 

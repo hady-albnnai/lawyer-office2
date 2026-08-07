@@ -358,8 +358,9 @@ class AppDatabase extends _$AppDatabase {
     await _ensureSqlColumn('contracts', 'source_template_id', 'INTEGER');
     await _ensureSqlColumn('contracts', 'creation_method', 'TEXT');
 
-    // --- contract_parties: عمود الصفة ---
+    // --- contract_parties: عمود الصفة + عمود الوكالة ---
     await _ensureSqlColumn('contract_parties', 'party_capacity', 'TEXT');
+    await _ensureSqlColumn('contract_parties', 'poa_id', 'INTEGER');
 
     // --- جداول AI الجديدة ---
     await customStatement('''

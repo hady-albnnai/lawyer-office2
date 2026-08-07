@@ -483,6 +483,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // عنوان الطرف
           Row(
             children: [
               Container(
@@ -502,8 +503,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                 child: TextFormField(
                   initialValue: party.role,
                   decoration: InputDecoration(
-                    labelText: 'دور الطرف',
-                    hintText: 'مثال: البائع، المشتري، الكفيل',
+                    labelText: 'اسم الطرف',
+                    hintText: 'مثال: البائعون، المشتري، الكفيل',
                     isDense: true,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -518,68 +519,108 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Row(children: [
-                  Expanded(child: personsAsync.when(
-                    data: (persons) => SearchablePicker<PersonEntity>(
-                      label: 'اختر الشخص/الجهة *',
-                      hintText: 'ابحث بالاسم أو الهاتف',
-                      prefixIcon: const Icon(Icons.person_search),
-                      items: persons,
-                      labelOf: (p) => p.fullName,
-                      searchTermsOf: (p) => [p.phone1 ?? '', p.nationalId ?? ''],
-                      subtitleOf: (p) => p.phone1,
-                      value: party.personId == null ? null : persons.where((p) => p.id == party.personId).firstOrNull,
-                      onSelected: (p) {
-                        final isDuplicate = _parties.any((other) =>
-                            other != party && other.personId == p.id);
-                        if (isDuplicate) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${p.fullName} مُضاف بالفعل كطرف آخر'),
-                              backgroundColor: AppColors.error,
-                            ),
-                          );
-                          return;
-                        }
-                        setState(() => party.personId = p.id);
-                      },
-                    ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (_, __) => const Text('خطأ'),
-                  )),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.person_add, color: AppColors.primaryNavy, size: 20),
-                    tooltip: 'إضافة شخص جديد',
-                    onPressed: () => _showQuickAddPerson(context, party),
-                  ),
-                ]),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: party.capacity,
-                  decoration: InputDecoration(
-                    labelText: 'الصفة',
-                    isDense: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'أصيل', child: Text('أصيل')),
-                    DropdownMenuItem(value: 'وكيل', child: Text('وكيل')),
-                    DropdownMenuItem(value: 'ولي', child: Text('ولي')),
-                    DropdownMenuItem(value: 'وصي', child: Text('وصي')),
-                    DropdownMenuItem(value: 'ممثل شركة', child: Text('ممثل شركة')),
-                  ],
-                  onChanged: (v) => setState(() => party.capacity = v),
+
+          // الأشخاص داخل الطرف
+          ...party.persons.asMap().entries.map((entry) {
+            final pIndex = entry.key;
+            final person = entry.value;
+            return _buildPersonInPartyRow(personsAsync, party, person, pIndex);
+          }),
+
+          // زر إضافة شخص للطرف
+          if (party.persons.length >= 1)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: TextButton.icon(
+                onPressed: () => setState(() => party.persons.add(_PersonInParty())),
+                icon: const Icon(Icons.person_add, size: 18),
+                label: const Text('إضافة شخص لهذا الطرف'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primaryNavy,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
-            ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonInPartyRow(
+    AsyncValue<List<PersonEntity>> personsAsync,
+    _PartyEntry party,
+    _PersonInParty person,
+    int pIndex,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Row(children: [
+              Expanded(child: personsAsync.when(
+                data: (persons) => SearchablePicker<PersonEntity>(
+                  label: 'اختر الشخص/الجهة *',
+                  hintText: 'ابحث بالاسم أو الهاتف',
+                  prefixIcon: const Icon(Icons.person_search),
+                  items: persons,
+                  labelOf: (p) => p.fullName,
+                  searchTermsOf: (p) => [p.phone1 ?? '', p.nationalId ?? ''],
+                  subtitleOf: (p) => p.phone1,
+                  value: person.personId == null ? null : persons.where((p) => p.id == person.personId).firstOrNull,
+                  onSelected: (p) {
+                    // التحقق من عدم تكرار نفس الشخص في أطراف أخرى
+                    final isDuplicate = _parties.any((other) =>
+                        other.persons.any((op) => op != person && op.personId == p.id));
+                    if (isDuplicate) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${p.fullName} مُضاف بالفعل في طرف آخر'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                      return;
+                    }
+                    setState(() => person.personId = p.id);
+                  },
+                ),
+                loading: () => const LinearProgressIndicator(),
+                error: (_, __) => const Text('خطأ'),
+              )),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.person_add, color: AppColors.primaryNavy, size: 20),
+                tooltip: 'إضافة شخص جديد',
+                onPressed: () => _showQuickAddPerson(context, person),
+              ),
+            ]),
           ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: person.capacity,
+              decoration: InputDecoration(
+                labelText: 'الصفة',
+                isDense: true,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'أصيل', child: Text('أصيل')),
+                DropdownMenuItem(value: 'وكيل', child: Text('وكيل')),
+                DropdownMenuItem(value: 'ولي', child: Text('ولي')),
+                DropdownMenuItem(value: 'وصي', child: Text('وصي')),
+                DropdownMenuItem(value: 'ممثل شركة', child: Text('ممثل شركة')),
+              ],
+              onChanged: (v) => setState(() => person.capacity = v ?? 'أصيل'),
+            ),
+          ),
+          if (party.persons.length > 1)
+            IconButton(
+              icon: const Icon(Icons.remove_circle_outline, color: AppColors.error, size: 18),
+              tooltip: 'حذف هذا الشخص',
+              onPressed: () => setState(() => party.persons.removeAt(pIndex)),
+            ),
         ],
       ),
     );
@@ -594,7 +635,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   /// حوار سريع لإضافة شخص جديد من داخل الويزارد
-  void _showQuickAddPerson(BuildContext context, _PartyEntry party) {
+  void _showQuickAddPerson(BuildContext context, _PersonInParty person) {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final idCtrl = TextEditingController();
@@ -642,7 +683,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       ),
     ).then((personId) {
       if (personId != null && mounted) {
-        setState(() => party.personId = personId);
+        setState(() => person.personId = personId);
       }
     });
   }
@@ -1270,14 +1311,15 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         _detectedVariables = varService.detectVariables(fallbackText);
       }
 
-      // ملء تلقائي من بيانات الأطراف
+      // ملء تلقائي من بيانات الأطراف (أول شخص في كل طرف)
       for (final variable in _detectedVariables) {
         if (variable.autoFillFromParty && variable.partyOrder != null) {
           final targetIndex = variable.partyOrder! - 1;
           final party = targetIndex >= 0 && targetIndex < _parties.length ? _parties[targetIndex] : null;
-          if (party?.personId != null) {
+          final firstPerson = party?.persons.isNotEmpty == true ? party!.persons.first : null;
+          if (firstPerson?.personId != null) {
             final persons = ref.read(allPersonsProvider(null)).valueOrNull ?? [];
-            final person = persons.where((p) => p.id == party!.personId).firstOrNull;
+            final person = persons.where((p) => p.id == firstPerson!.personId).firstOrNull;
             if (person != null) {
               _variableControllers[variable.name] ??= TextEditingController();
               _variableControllers[variable.name]!.text = person.fullName;
@@ -1365,9 +1407,11 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           return false;
         }
         for (final party in _parties) {
-          if (party.personId == null) {
-            _showError('يرجى اختيار شخص لكل طرف');
-            return false;
+          for (final person in party.persons) {
+            if (person.personId == null) {
+              _showError('يرجى اختيار شخص لكل شخص في الطرف "${party.role}"');
+              return false;
+            }
           }
         }
         break;
@@ -1435,16 +1479,21 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         renewalType: Value(_isRenewable ? _renewalType : null),
       );
 
-      // 2. إعداد الأطراف
-      final parties = _parties.asMap().entries.map((entry) {
-        return ContractPartiesCompanion.insert(
-          contractId: 0,
-          personId: entry.value.personId!,
-          partyRole: Value(entry.value.role),
-          partyCapacity: Value(entry.value.capacity),
-          partyOrder: Value(entry.key + 1),
-        );
-      }).toList();
+      // 2. إعداد الأطراف (عدة أشخاص لكل طرف)
+      final parties = <ContractPartiesCompanion>[];
+      for (var i = 0; i < _parties.length; i++) {
+        final party = _parties[i];
+        for (final person in party.persons) {
+          parties.add(ContractPartiesCompanion.insert(
+            contractId: 0,
+            personId: person.personId!,
+            partyRole: Value(party.role),
+            partyCapacity: Value(person.capacity),
+            poaId: Value(person.poaId),
+            partyOrder: Value(i + 1),
+          ));
+        }
+      }
 
       // 3. حفظ العقد
       final contractId = await repo.createContract(
@@ -1532,10 +1581,18 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
 }
 
 /// بيانات طرف واحد في العقد
+class _PersonInParty {
+  int? personId;
+  String capacity;
+  int? poaId;
+
+  _PersonInParty({this.personId, this.capacity = 'أصيل', this.poaId});
+}
+
 class _PartyEntry {
   String role;
-  int? personId;
-  String? capacity;
+  final List<_PersonInParty> persons;
 
-  _PartyEntry({required this.role, this.personId, this.capacity = 'أصيل'});
+  _PartyEntry({required this.role, List<_PersonInParty>? persons})
+      : persons = persons ?? [_PersonInParty()];
 }
