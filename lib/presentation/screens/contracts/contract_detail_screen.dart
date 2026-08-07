@@ -278,19 +278,59 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
 
   Widget _buildPartiesTab(int contractId) {
     final stream = ref.watch(contractRepositoryProvider).watchContractParties(contractId);
+    final personsAsync = ref.watch(allPersonsProvider(null));
+    
     return StreamBuilder<List<ContractParty>>(
       stream: stream,
       builder: (context, snapshot) {
         final list = snapshot.data ?? [];
         if (list.isEmpty) return const Center(child: Text('لا يوجد أطراف مضافون'));
-        return ListView(
-          padding: const EdgeInsets.all(24),
-          children: list.map((p) => GlassmorphicCard(
+        
+        return personsAsync.when(
+          data: (persons) => ListView(
+            padding: const EdgeInsets.all(24),
+            children: list.map((p) {
+              final person = persons.where((per) => per.id == p.personId).firstOrNull;
+              final personName = person?.fullName ?? 'شخص غير معروف (ID: ${p.personId})';
+              final personPhone = person?.phone1 ?? '---';
+              
+              return GlassmorphicCard(
                 child: ListTile(
-                  leading: const CircleAvatar(backgroundColor: AppColors.primaryNavy, child: Icon(Icons.person, color: AppColors.secondaryGold)),
-                  title: Text('طرف رقم ID: ${p.personId} • الدور: ${p.partyRole}'),
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primaryNavy,
+                    child: Icon(Icons.person, color: AppColors.secondaryGold),
+                  ),
+                  title: Text(
+                    personName,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('الصفة: ${p.partyCapacity ?? p.partyRole ?? "---"}'),
+                      Text('الهاتف: $personPhone'),
+                      if (p.partyOrder != null) Text('الترتيب: الطرف ${p.partyOrder}'),
+                    ],
+                  ),
+                  trailing: p.poaId != null
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.info.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'وكالة #${p.poaId}',
+                            style: const TextStyle(fontSize: 11, color: AppColors.info),
+                          ),
+                        )
+                      : null,
                 ),
-              )).toList(),
+              );
+            }).toList(),
+          ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('خطأ في تحميل الأطراف: $e')),
         );
       },
     );
@@ -302,25 +342,166 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
       stream: stream,
       builder: (context, snapshot) {
         final list = snapshot.data ?? [];
-        if (list.isEmpty) return const Center(child: Text('لا توجد تذكيرات زمنية مضبوطة لهذا العقد'));
-        return ListView(
-          padding: const EdgeInsets.all(24),
-          children: list.map((r) => GlassmorphicCard(
-                color: AppColors.warning.withOpacity(0.08),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.warning)),
-                child: ListTile(
-                  leading: const Icon(Icons.alarm, size: 36, color: AppColors.warning),
-                  title: Text('تذكير مجدول في: ${r.reminderDate.toString().substring(0, 10)} • النوع: ${r.reminderType}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('هاتف التواصل: ${r.contactPhone ?? "---"} • الملاحظة: ${r.reminderNote ?? ""}'),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: AppColors.primaryNavy, borderRadius: BorderRadius.circular(16)),
-                    child: Text('مرتبط بمهمة يومية رقم [ID: ${r.autoTaskId ?? "-"}]', style: const TextStyle(color: AppColors.secondaryGold, fontSize: 12)),
+        
+        return Column(
+          children: [
+            // زر إضافة تذكير جديد
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showAddReminderDialog(contractId),
+                  icon: const Icon(Icons.add_alarm),
+                  label: const Text('إضافة تذكير جديد'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryNavy,
+                    foregroundColor: AppColors.secondaryGold,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
-              )).toList(),
+              ),
+            ),
+            
+            // قائمة التذكيرات
+            if (list.isEmpty)
+              const Expanded(child: Center(child: Text('لا توجد تذكيرات زمنية مضبوطة لهذا العقد')))
+            else
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(24),
+                  children: list.map((r) => GlassmorphicCard(
+                        color: AppColors.warning.withOpacity(0.08),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.warning)),
+                        child: ListTile(
+                          leading: const Icon(Icons.alarm, size: 36, color: AppColors.warning),
+                          title: Text('تذكير مجدول في: ${r.reminderDate.toString().substring(0, 10)} • النوع: ${r.reminderType}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text('هاتف التواصل: ${r.contactPhone ?? "---"} • الملاحظة: ${r.reminderNote ?? ""}'),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(color: AppColors.primaryNavy, borderRadius: BorderRadius.circular(16)),
+                            child: Text('مرتبط بمهمة يومية رقم [ID: ${r.autoTaskId ?? "-"}]', style: const TextStyle(color: AppColors.secondaryGold, fontSize: 12)),
+                          ),
+                        ),
+                      )).toList(),
+                ),
+              ),
+          ],
         );
       },
+    );
+  }
+  
+  Future<void> _showAddReminderDialog(int contractId) async {
+    final reminderTypeController = TextEditingController(text: 'expiry');
+    final reminderDateController = TextEditingController();
+    final contactPhoneController = TextEditingController();
+    final reminderNoteController = TextEditingController();
+    DateTime? selectedDate;
+    
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('إضافة تذكير جديد'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: reminderTypeController.text,
+                  decoration: const InputDecoration(labelText: 'نوع التذكير'),
+                  items: const [
+                    DropdownMenuItem(value: 'expiry', child: Text('تذكير انتهاء')),
+                    DropdownMenuItem(value: 'renewal', child: Text('تذكير تجديد')),
+                    DropdownMenuItem(value: 'followup', child: Text('متابعة عامة')),
+                  ],
+                  onChanged: (v) => setState(() => reminderTypeController.text = v ?? 'expiry'),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: ctx,
+                      initialDate: DateTime.now().add(const Duration(days: 30)),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        selectedDate = picked;
+                        reminderDateController.text = picked.toString().substring(0, 10);
+                      });
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(labelText: 'تاريخ التذكير'),
+                    child: Text(selectedDate == null ? 'اختر التاريخ' : selectedDate.toString().substring(0, 10)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: contactPhoneController,
+                  decoration: const InputDecoration(labelText: 'هاتف التواصل (اختياري)'),
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: reminderNoteController,
+                  decoration: const InputDecoration(labelText: 'ملاحظة (اختياري)'),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedDate == null) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('يرجى اختيار تاريخ التذكير'), backgroundColor: AppColors.error),
+                  );
+                  return;
+                }
+                
+                try {
+                  final db = ref.read(databaseProvider);
+                  final taskSyncService = ref.read(taskSyncServiceProvider);
+                  
+                  final reminder = ContractRemindersCompanion.insert(
+                    contractId: contractId,
+                    reminderType: reminderTypeController.text,
+                    reminderDate: selectedDate!,
+                    contactPhone: Value(contactPhoneController.text.trim().isEmpty ? null : contactPhoneController.text.trim()),
+                    reminderNote: Value(reminderNoteController.text.trim().isEmpty ? null : reminderNoteController.text.trim()),
+                  );
+                  
+                  await taskSyncService.syncContractReminder(
+                    reminder: reminder,
+                    contractTitle: 'عقد',
+                    contractId: contractId,
+                  );
+                  
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم إضافة التذكير بنجاح'), backgroundColor: AppColors.success),
+                    );
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text('خطأ: $e'), backgroundColor: AppColors.error),
+                    );
+                  }
+                }
+              },
+              child: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
