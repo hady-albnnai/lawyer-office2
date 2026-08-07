@@ -1834,6 +1834,28 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         userRef: userRef,
       );
 
+      // 4.1 حفظ النموذج المرفوع في مكتبة النماذج القانونية
+      if (_creationMethod == 'uploaded' && _uploadedFile != null) {
+        final db = ref.read(databaseProvider);
+        final storageService = ref.read(fileStorageServiceProvider);
+        
+        // حفظ الملف في مجلد النماذج
+        final templatePath = await storageService.saveTemplate(
+          _uploadedFile!,
+          _titleController.text.trim(),
+        );
+
+        // حفظ النموذج في قاعدة البيانات
+        await db.contractDao.insertContractTemplate(
+          ContractTemplatesCompanion.insert(
+            contractType: _legalSubcategory ?? _legalCategory ?? 'عقد',
+            templateName: _titleController.text.trim(),
+            filePath: templatePath,
+            isDefault: const Value(false),
+          ),
+        );
+      }
+
       // 4. حفظ قيم المتغيرات (AI Learning Data)
       if (_detectedVariables.isNotEmpty) {
         final varValues = <String, String>{};
