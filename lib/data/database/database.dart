@@ -83,7 +83,7 @@ class AppDatabase extends _$AppDatabase {
   /// schema.dart يجب أن يرافقه رفع هذا الرقم وإضافة m.addColumn في
   /// onUpgrade. عدم الالتزام يُنتج خطأ SQLite رقم 1 على القواعد القائمة.
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -108,6 +108,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await _migrateToV6(m);
+      }
+      if (from < 7) {
+        await _migrateToV7(m);
       }
     },
     beforeOpen: (details) async {
@@ -339,6 +342,61 @@ class AppDatabase extends _$AppDatabase {
       if (haystack.contains(normalize(gov))) return gov;
     }
     return null;
+  }
+
+  /// ترحيل الإصدار 7 — أعمدة العقود الجديدة + جداول AI.
+  ///
+  /// يُضيف أعمدة التصنيف القانوني وربط القالب بالعقود،
+  /// وينشئ الجداول الثلاثة للذكاء الاصطناعي:
+  ///   - contract_template_variables: متغيرات القوالب {{...}}
+  ///   - contract_instance_variables: قيم المتغيرات لكل عقد
+  ///   - contract_template_usage_log: سجل التفاعلات
+  Future<void> _migrateToV7(Migrator m) async {
+    // --- contracts: أعمدة جديدة ---
+    await _ensureSqlColumn('contracts', 'legal_category', 'TEXT');
+    await _ensureSqlColumn('contracts', 'legal_subcategory', 'TEXT');
+    await _ensureSqlColumn('contracts', 'source_template_id', 'INTEGER');
+    await _ensureSqlColumn('contracts', 'creation_method', 'TEXT');
+
+    // --- contract_parties: عمود الصفة ---
+    await _ensureSqlColumn('contract_parties', 'party_capacity', 'TEXT');
+
+    // --- جداول AI الجديدة ---
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS contract_template_variables (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        template_id INTEGER NOT NULL REFERENCES contract_templates(id) ON DELETE CASCADE,
+        variable_name TEXT NOT NULL,
+        variable_type TEXT,
+        auto_fill_from_party INTEGER NOT NULL DEFAULT 0,
+        usage_count INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+      )
+    ''');
+
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS contract_instance_variables (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        contract_id INTEGER NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+        template_variable_id INTEGER REFERENCES contract_template_variables(id),
+        variable_name TEXT NOT NULL,
+        variable_value TEXT,
+        fill_method TEXT NOT NULL DEFAULT 'manual',
+        was_corrected INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+      )
+    ''');
+
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS contract_template_usage_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        template_id INTEGER REFERENCES contract_templates(id),
+        contract_id INTEGER REFERENCES contracts(id),
+        event_type TEXT NOT NULL,
+        event_data TEXT,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+      )
+    ''');
   }
 
   /// إضافة عمود عبر Migrator مع تخطّيه إن كان موجوداً بالفعل.
