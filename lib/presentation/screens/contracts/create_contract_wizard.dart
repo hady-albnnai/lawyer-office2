@@ -82,6 +82,10 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       'كفالة شخصية', 'رهن عقاري', 'رهن منقول',
       'ضمان بنكي', 'تعهد تضامني',
     ],
+    'وكالات/تفويضات': [
+      'تفويض خاص', 'عقد وكالة مدنية', 'وكالة بيع',
+      'وكالة إدارة', 'وكالة غير قابلة للعزل مرتبطة بحق',
+    ],
     'عقود تجارية': [
       'توريد', 'توزيع', 'وكالة تجارية',
       'استثمار', 'تعاون تجاري', 'سمسرة/وساطة',
@@ -117,12 +121,16 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   final _notesController = TextEditingController();
   final _valueController = TextEditingController();
   final _locationController = TextEditingController();
+  final _notarizationNumberController = TextEditingController();
   String _currency = 'ل.س';
   DateTime? _dateSigned;
   DateTime? _dateStart;
   DateTime? _dateEnd;
   bool _isRenewable = false;
   String _renewalType = 'تلقائي';
+  String _contractStatus = 'active';
+  String _notarizationType = 'عرفي';
+  String _paymentMethod = 'نقدي';
 
   // =========================================================================
   // الخطوة 4: النموذج
@@ -146,6 +154,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     _notesController.dispose();
     _valueController.dispose();
     _locationController.dispose();
+    _notarizationNumberController.dispose();
     for (final controller in _variableControllers.values) {
       controller.dispose();
     }
@@ -803,6 +812,66 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           ]),
           const SizedBox(height: 16),
 
+          // حالة العقد + التوثيق
+          Text('الحالة والتوثيق', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _contractStatus,
+                decoration: inputDecoration.copyWith(labelText: 'حالة العقد'),
+                items: const [
+                  DropdownMenuItem(value: 'active', child: Text('ساري المفعول')),
+                  DropdownMenuItem(value: 'expired', child: Text('منتهٍ')),
+                  DropdownMenuItem(value: 'cancelled', child: Text('ملغى')),
+                  DropdownMenuItem(value: 'disputed', child: Text('متنازع عليه')),
+                ],
+                onChanged: (v) => setState(() => _contractStatus = v ?? 'active'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _notarizationType,
+                decoration: inputDecoration.copyWith(labelText: 'نوع التوثيق'),
+                items: const [
+                  DropdownMenuItem(value: 'عرفي', child: Text('عرفي')),
+                  DropdownMenuItem(value: 'notary', child: Text('كاتب العدل')),
+                  DropdownMenuItem(value: 'court', child: Text('المحكمة')),
+                  DropdownMenuItem(value: 'chamber', child: Text('غرفة التجارة')),
+                ],
+                onChanged: (v) => setState(() => _notarizationType = v ?? 'عرفي'),
+              ),
+            ),
+          ]),
+          if (_notarizationType != 'عرفي') ...[
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _notarizationNumberController,
+              decoration: inputDecoration.copyWith(
+                labelText: 'رقم التوثيق',
+                hintText: _notarizationType == 'notary' ? 'رقم سند كاتب العدل' : 'رقم التوثيق',
+                prefixIcon: const Icon(Icons.confirmation_number),
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+
+          // طريقة الدفع
+          Text('طريقة الدفع', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _paymentChip('نقدي', Icons.money),
+              _paymentChip('تقسيط', Icons.calendar_month),
+              _paymentChip('تحويل بنكي', Icons.account_balance),
+              _paymentChip('شيك', Icons.payments),
+            ],
+          ),
+          const SizedBox(height: 16),
+
           // ملاحظات
           TextFormField(
             controller: _notesController,
@@ -815,6 +884,30 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _paymentChip(String method, IconData icon) {
+    final isSelected = _paymentMethod == method;
+    return ChoiceChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: isSelected ? Colors.white : AppColors.textSecondary),
+          const SizedBox(width: 4),
+          Text(method, style: TextStyle(
+            color: isSelected ? Colors.white : AppColors.textPrimary,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          )),
+        ],
+      ),
+      selected: isSelected,
+      selectedColor: AppColors.primaryNavy,
+      backgroundColor: AppColors.cardBackground,
+      side: BorderSide(
+        color: isSelected ? AppColors.primaryNavy : AppColors.cardBorder,
+      ),
+      onSelected: (_) => setState(() => _paymentMethod = method),
     );
   }
 
@@ -1467,7 +1560,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         legalSubcategory: Value(_legalSubcategory),
         sourceTemplateId: Value(_selectedTemplate?.id),
         creationMethod: Value(_creationMethod),
-        status: Value(widget.archiveContext?.isClosed == true ? 'archived' : 'active'),
+        status: Value(widget.archiveContext?.isClosed == true ? 'archived' : _contractStatus),
         notes: Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
         dateSigned: Value(_dateSigned),
         dateStart: Value(_dateStart),
@@ -1477,6 +1570,9 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         location: Value(_locationController.text.trim().isEmpty ? null : _locationController.text.trim()),
         isRenewable: Value(_isRenewable),
         renewalType: Value(_isRenewable ? _renewalType : null),
+        notarizationType: Value(_notarizationType == 'عرفي' ? null : _notarizationType),
+        notarizationNumber: Value(_notarizationNumberController.text.trim().isEmpty ? null : _notarizationNumberController.text.trim()),
+        paymentMethod: Value(_paymentMethod),
       );
 
       // 2. إعداد الأطراف (عدة أشخاص لكل طرف)
