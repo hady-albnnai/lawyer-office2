@@ -115,6 +115,14 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   // =========================================================================
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
+  final _valueController = TextEditingController();
+  final _locationController = TextEditingController();
+  String _currency = 'ل.س';
+  DateTime? _dateSigned;
+  DateTime? _dateStart;
+  DateTime? _dateEnd;
+  bool _isRenewable = false;
+  String _renewalType = 'تلقائي';
 
   // =========================================================================
   // الخطوة 4: النموذج
@@ -136,6 +144,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   void dispose() {
     _titleController.dispose();
     _notesController.dispose();
+    _valueController.dispose();
+    _locationController.dispose();
     for (final controller in _variableControllers.values) {
       controller.dispose();
     }
@@ -512,35 +522,42 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             children: [
               Expanded(
                 flex: 2,
-                child: personsAsync.when(
-                  data: (persons) => SearchablePicker<PersonEntity>(
-                    label: 'اختر الشخص/الجهة *',
-                    hintText: 'ابحث بالاسم أو الهاتف',
-                    prefixIcon: const Icon(Icons.person_search),
-                    items: persons,
-                    labelOf: (p) => p.fullName,
-                    searchTermsOf: (p) => [p.phone1 ?? '', p.nationalId ?? ''],
-                    subtitleOf: (p) => p.phone1,
-                    value: party.personId == null ? null : persons.where((p) => p.id == party.personId).firstOrNull,
-                    onSelected: (p) {
-                      // التحقق من عدم تكرار نفس الشخص في أطراف أخرى
-                      final isDuplicate = _parties.any((other) =>
-                          other != party && other.personId == p.id);
-                      if (isDuplicate) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${p.fullName} مُضاف بالفعل كطرف آخر'),
-                            backgroundColor: AppColors.error,
-                          ),
-                        );
-                        return;
-                      }
-                      setState(() => party.personId = p.id);
-                    },
+                child: Row(children: [
+                  Expanded(child: personsAsync.when(
+                    data: (persons) => SearchablePicker<PersonEntity>(
+                      label: 'اختر الشخص/الجهة *',
+                      hintText: 'ابحث بالاسم أو الهاتف',
+                      prefixIcon: const Icon(Icons.person_search),
+                      items: persons,
+                      labelOf: (p) => p.fullName,
+                      searchTermsOf: (p) => [p.phone1 ?? '', p.nationalId ?? ''],
+                      subtitleOf: (p) => p.phone1,
+                      value: party.personId == null ? null : persons.where((p) => p.id == party.personId).firstOrNull,
+                      onSelected: (p) {
+                        final isDuplicate = _parties.any((other) =>
+                            other != party && other.personId == p.id);
+                        if (isDuplicate) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${p.fullName} مُضاف بالفعل كطرف آخر'),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                          return;
+                        }
+                        setState(() => party.personId = p.id);
+                      },
+                    ),
+                    loading: () => const LinearProgressIndicator(),
+                    error: (_, __) => const Text('خطأ'),
+                  )),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.person_add, color: AppColors.primaryNavy, size: 20),
+                    tooltip: 'إضافة شخص جديد',
+                    onPressed: () => _showQuickAddPerson(context, party),
                   ),
-                  loading: () => const LinearProgressIndicator(),
-                  error: (_, __) => const Text('خطأ'),
-                ),
+                ]),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -576,56 +593,211 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     });
   }
 
+  /// حوار سريع لإضافة شخص جديد من داخل الويزارد
+  void _showQuickAddPerson(BuildContext context, _PartyEntry party) {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final idCtrl = TextEditingController();
+
+    showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إضافة شخص جديد'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'الاسم الكامل *')),
+            const SizedBox(height: 8),
+            TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'الهاتف')),
+            const SizedBox(height: 8),
+            TextField(controller: idCtrl, decoration: const InputDecoration(labelText: 'رقم الهوية')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
+              try {
+                final personId = await ref.read(personRepositoryProvider).createPerson(
+                  person: db.PersonsCompanion.insert(
+                    fullName: nameCtrl.text.trim(),
+                    phone1: Value(phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim()),
+                    nationalId: Value(idCtrl.text.trim().isEmpty ? null : idCtrl.text.trim()),
+                  ),
+                );
+                ref.invalidate(allPersonsProvider);
+                if (ctx.mounted) Navigator.pop(ctx, personId);
+              } catch (e) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text('خطأ: $e'), backgroundColor: AppColors.error),
+                  );
+                }
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    ).then((personId) {
+      if (personId != null && mounted) {
+        setState(() => party.personId = personId);
+      }
+    });
+  }
+
   // =========================================================================
-  // الخطوة 3: موضوع العقد
+  // الخطوة 3: تفاصيل العقد
   // =========================================================================
   Widget _buildSubjectStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildStepHeader('موضوع العقد', 'عنوان مختصر يميز هذا العقد + ملاحظات حرة', Icons.subject),
+    final inputDecoration = InputDecoration(
+      filled: true,
+      fillColor: AppColors.cardBackground,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppColors.cardBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primaryNavy, width: 2),
+      ),
+    );
 
-        TextFormField(
-          controller: _titleController,
-          decoration: InputDecoration(
-            labelText: 'عنوان العقد *',
-            hintText: 'مثال: عقد بيع شقة في المزة - دمشق',
-            prefixIcon: const Icon(Icons.label_outline),
-            filled: true,
-            fillColor: AppColors.cardBackground,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.cardBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primaryNavy, width: 2),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildStepHeader('تفاصيل العقد', 'البيانات الأساسية للعقد — تُحفظ للفهرسة والذكاء الاصطناعي', Icons.subject),
+
+          // عنوان العقد
+          TextFormField(
+            controller: _titleController,
+            decoration: inputDecoration.copyWith(
+              labelText: 'عنوان العقد *',
+              hintText: 'مثال: عقد بيع شقة في المزة - دمشق',
+              prefixIcon: const Icon(Icons.label_outline),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _notesController,
-          maxLines: 4,
-          decoration: InputDecoration(
-            labelText: 'ملاحظات حرة (اختياري)',
-            hintText: 'أي ملاحظات تريد تسجيلها حول هذا العقد...',
-            prefixIcon: const Icon(Icons.notes),
-            filled: true,
-            fillColor: AppColors.cardBackground,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.cardBorder),
+          const SizedBox(height: 16),
+
+          // تاريخ الإبرام
+          Text('تواريخ العقد', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: _buildDateField('تاريخ الإبرام', _dateSigned, (d) => setState(() => _dateSigned = d), inputDecoration)),
+            const SizedBox(width: 12),
+            Expanded(child: _buildDateField('تاريخ البدء', _dateStart, (d) => setState(() => _dateStart = d), inputDecoration)),
+            const SizedBox(width: 12),
+            Expanded(child: _buildDateField('تاريخ الانتهاء', _dateEnd, (d) => setState(() => _dateEnd = d), inputDecoration)),
+          ]),
+          const SizedBox(height: 16),
+
+          // القيمة المالية
+          Text('القيمة المالية', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              flex: 3,
+              child: TextFormField(
+                controller: _valueController,
+                keyboardType: TextInputType.number,
+                decoration: inputDecoration.copyWith(
+                  labelText: 'القيمة المالية (اختياري)',
+                  hintText: 'مثال: 50000000',
+                  prefixIcon: const Icon(Icons.attach_money),
+                ),
+              ),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primaryNavy, width: 2),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _currency,
+                decoration: inputDecoration.copyWith(labelText: 'العملة'),
+                items: const [
+                  DropdownMenuItem(value: 'ل.س', child: Text('ل.س')),
+                  DropdownMenuItem(value: 'دولار', child: Text('دولار')),
+                  DropdownMenuItem(value: 'يورو', child: Text('يورو')),
+                ],
+                onChanged: (v) => setState(() => _currency = v ?? 'ل.س'),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 16),
+
+          // مكان الإبرام
+          TextFormField(
+            controller: _locationController,
+            decoration: inputDecoration.copyWith(
+              labelText: 'مكان الإبرام (اختياري)',
+              hintText: 'مثال: دمشق - كاتب العدل الأول',
+              prefixIcon: const Icon(Icons.location_on),
             ),
           ),
+          const SizedBox(height: 16),
+
+          // قابلية التجديد
+          Row(children: [
+            Checkbox(
+              value: _isRenewable,
+              onChanged: (v) => setState(() => _isRenewable = v ?? false),
+              activeColor: AppColors.primaryNavy,
+            ),
+            const Text('العقد قابل للتجديد'),
+            if (_isRenewable) ...[
+              const SizedBox(width: 16),
+              DropdownButtonFormField<String>(
+                value: _renewalType,
+                isDense: true,
+                decoration: inputDecoration.copyWith(labelText: 'نوع التجديد'),
+                items: const [
+                  DropdownMenuItem(value: 'تلقائي', child: Text('تلقائي')),
+                  DropdownMenuItem(value: 'اتفاق', child: Text('باتفاق الأطراف')),
+                  DropdownMenuItem(value: 'قرار', child: Text('بقرار')),
+                ],
+                onChanged: (v) => setState(() => _renewalType = v ?? 'تلقائي'),
+              ),
+            ],
+          ]),
+          const SizedBox(height: 16),
+
+          // ملاحظات
+          TextFormField(
+            controller: _notesController,
+            maxLines: 3,
+            decoration: inputDecoration.copyWith(
+              labelText: 'ملاحظات حرة (اختياري)',
+              hintText: 'أي ملاحظات تريد تسجيلها حول هذا العقد...',
+              prefixIcon: const Icon(Icons.notes),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateField(String label, DateTime? value, ValueChanged<DateTime> onChanged, InputDecoration baseDecoration) {
+    return InkWell(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value ?? DateTime.now(),
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+        );
+        if (picked != null) onChanged(picked);
+      },
+      child: InputDecorator(
+        decoration: baseDecoration.copyWith(
+          labelText: label,
+          prefixIcon: const Icon(Icons.calendar_today, size: 18),
         ),
-      ],
+        child: Text(
+          value == null ? 'اختر التاريخ' : '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
+          style: TextStyle(color: value == null ? AppColors.textSecondary : AppColors.textPrimary),
+        ),
+      ),
     );
   }
 
@@ -1141,21 +1313,28 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   Future<void> _openInWord() async {
-    if (_selectedTemplate == null) {
-      _showError('يرجى اختيار نموذج أولاً');
+    String? filePath;
+
+    if (_creationMethod == 'from_template' && _selectedTemplate != null) {
+      filePath = _selectedTemplate!.filePath;
+    } else if (_creationMethod == 'uploaded' && _uploadedFile != null) {
+      filePath = _uploadedFile!.path;
+    } else if (_creationMethod == 'blank') {
+      _showError('الورقة الفارغة — اكتب العقد مباشرة في Word واحفظه ثم استورده');
+      return;
+    } else {
+      _showError('يرجى اختيار نموذج أو استيراد ملف أولاً');
       return;
     }
 
-    final templatePath = _selectedTemplate!.filePath;
-    final file = File(templatePath);
-
+    final file = File(filePath);
     if (!await file.exists()) {
-      _showError('ملف النموذج غير موجود: $templatePath');
+      _showError('الملف غير موجود: $filePath');
       return;
     }
 
     try {
-      final result = await OpenFilex.open(templatePath);
+      final result = await OpenFilex.open(filePath);
       if (result.type != ResultType.done) {
         _showError('تعذّر فتح الملف: ${result.message}');
       }
@@ -1246,6 +1425,14 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         creationMethod: Value(_creationMethod),
         status: Value(widget.archiveContext?.isClosed == true ? 'archived' : 'active'),
         notes: Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
+        dateSigned: Value(_dateSigned),
+        dateStart: Value(_dateStart),
+        dateEnd: Value(_dateEnd),
+        financialValue: Value(double.tryParse(_valueController.text.trim())),
+        currency: Value(_currency),
+        location: Value(_locationController.text.trim().isEmpty ? null : _locationController.text.trim()),
+        isRenewable: Value(_isRenewable),
+        renewalType: Value(_isRenewable ? _renewalType : null),
       );
 
       // 2. إعداد الأطراف
