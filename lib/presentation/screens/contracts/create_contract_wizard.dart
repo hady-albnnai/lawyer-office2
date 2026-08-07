@@ -181,12 +181,12 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               child: ArchiveContextBanner(contextInfo: widget.archiveContext),
             ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: SingleChildScrollView(
+                key: ValueKey<int>(_currentStep),
+                padding: const EdgeInsets.all(24),
                 child: ConstrainedBox(
-                  key: ValueKey<int>(_currentStep),
                   constraints: const BoxConstraints(maxWidth: 800),
                   child: _buildStepContent(),
                 ),
