@@ -590,8 +590,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                 child: TextFormField(
                   initialValue: party.role,
                   decoration: InputDecoration(
-                    labelText: 'اسم الطرف',
-                    hintText: 'مثال: البائعون، المشتري، الكفيل',
+                    labelText: 'صفة الطرف',
+                    hintText: 'مثال: البائع، المشتري، الكفيل',
                     isDense: true,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -1703,6 +1703,13 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               return false;
             }
           }
+        }
+        // التحقق من عدم تكرار صفة الطرف
+        final roles = _parties.map((p) => p.role.trim()).where((r) => r.isNotEmpty).toList();
+        final duplicates = roles.where((r) => roles.where((x) => x == r).length > 1).toSet();
+        if (duplicates.isNotEmpty) {
+          _showError('صفة الطرف "${duplicates.first}" مكررة — لا يجوز أن يكون لنفس الصفة طرفان');
+          return false;
         }
         break;
       case 3:
