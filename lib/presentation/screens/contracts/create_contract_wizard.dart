@@ -1788,12 +1788,42 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         }
       }
 
-      // 3. حفظ العقد
+      // 3. توليد العقد النهائي (استبدال المتغيرات)
+      File? finalContractFile;
+      if (_creationMethod == 'from_template' && _selectedTemplate != null && _detectedVariables.isNotEmpty) {
+        // جمع قيم المتغيرات
+        final varValues = <String, String>{};
+        for (final variable in _detectedVariables) {
+          final controller = _variableControllers[variable.name];
+          if (controller != null && controller.text.trim().isNotEmpty) {
+            varValues[variable.name] = controller.text.trim();
+          }
+        }
+
+        // توليد العقد النهائي
+        if (varValues.isNotEmpty) {
+          final templateFile = File(_selectedTemplate!.filePath);
+          if (await templateFile.exists()) {
+            final outputDir = Directory.systemTemp.path;
+            final outputPath = '$outputDir/contract_${DateTime.now().millisecondsSinceEpoch}.docx';
+            finalContractFile = await varService.replaceVariablesInDocx(
+              templateFile,
+              varValues,
+              outputPath,
+            );
+          }
+        }
+      } else if (_creationMethod == 'uploaded' && _uploadedFile != null) {
+        // استخدام الملف المرفوع مباشرة
+        finalContractFile = _uploadedFile;
+      }
+
+      // 4. حفظ العقد
       final contractId = await repo.createContract(
         contract: contractCompanion,
         parties: parties,
         reminders: [],
-        wordFile: _uploadedFile,
+        wordFile: finalContractFile,
         userRef: userRef,
       );
 
