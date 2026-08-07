@@ -52,6 +52,11 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   bool _isSaving = false;
 
   // =========================================================================
+  // الخطوة 0: نوع ملف العقد
+  // =========================================================================
+  String _contractFileType = 'new'; // new, review, followup
+
+  // =========================================================================
   // الخطوة 1: التصنيف القانوني
   // =========================================================================
   String? _legalCategory;
@@ -201,9 +206,10 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   Widget _buildStepper() {
     return GlassmorphicStepper(
       currentStep: _currentStep,
-      totalSteps: 5,
-      stepLabels: const ['التصنيف', 'الأطراف', 'الموضوع', 'النموذج', 'التحرير'],
+      totalSteps: 6,
+      stepLabels: const ['النوع', 'التصنيف', 'الأطراف', 'التفاصيل', 'النموذج', 'التحرير'],
       stepIcons: const [
+        Icons.folder_open,
         Icons.category,
         Icons.people,
         Icons.subject,
@@ -294,11 +300,12 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   // =========================================================================
   Widget _buildStepContent() {
     switch (_currentStep) {
-      case 0: return _buildClassificationStep();
-      case 1: return _buildPartiesStep();
-      case 2: return _buildSubjectStep();
-      case 3: return _buildTemplateStep();
-      case 4: return _buildEditStep();
+      case 0: return _buildFileTypeStep();
+      case 1: return _buildClassificationStep();
+      case 2: return _buildPartiesStep();
+      case 3: return _buildSubjectStep();
+      case 4: return _buildTemplateStep();
+      case 5: return _buildEditStep();
       default: return const SizedBox();
     }
   }
@@ -339,6 +346,78 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // الخطوة 0: نوع ملف العقد
+  // =========================================================================
+  Widget _buildFileTypeStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildStepHeader('نوع ملف العقد', 'ماذا تريد أن تفعل؟', Icons.folder_open),
+        const SizedBox(height: 16),
+        _fileTypeCard('new', 'إنشاء عقد جديد',
+            'المكتب سيبدأ بصياغة عقد جديد من الصفر أو من نموذج جاهز',
+            Icons.add_circle_outline),
+        const SizedBox(height: 12),
+        _fileTypeCard('review', 'مراجعة / تعديل عقد جاهز',
+            'لديك عقد أو مسودة موجودة وتريد مراجعتها أو تعديلها',
+            Icons.edit_note),
+        const SizedBox(height: 12),
+        _fileTypeCard('followup', 'متابعة عقد موقع',
+            'العقد موقع بالفعل والمكتب سيتابع التزاماته أو إجراءاته',
+            Icons.follow_the_signs),
+      ],
+    );
+  }
+
+  Widget _fileTypeCard(String value, String title, String description, IconData icon) {
+    final isSelected = _contractFileType == value;
+    return InkWell(
+      onTap: () => setState(() => _contractFileType = value),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryNavy.withOpacity(0.08) : AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryNavy : AppColors.cardBorder,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48, height: 48,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primaryNavy.withOpacity(0.15) : AppColors.cardBackground,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: isSelected ? AppColors.primaryNavy : AppColors.textSecondary, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? AppColors.primaryNavy : AppColors.textPrimary,
+                  )),
+                  const SizedBox(height: 4),
+                  Text(description, style: AppTextStyles.bodySmallSecondary),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle, color: AppColors.primaryNavy, size: 24),
+          ],
+        ),
       ),
     );
   }
@@ -1489,12 +1568,15 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   bool _validateCurrentStep() {
     switch (_currentStep) {
       case 0:
+        // نوع ملف العقد — لا يحتاج تحقق (قيمة افتراضية موجودة)
+        break;
+      case 1:
         if (_legalCategory == null || _legalSubcategory == null) {
           _showError('يرجى اختيار التصنيف القانوني والفرعي');
           return false;
         }
         break;
-      case 1:
+      case 2:
         if (_parties.length < 2) {
           _showError('العقد يحتاج طرفين على الأقل');
           return false;
@@ -1508,13 +1590,13 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           }
         }
         break;
-      case 2:
+      case 3:
         if (_titleController.text.trim().isEmpty) {
           _showError('يرجى إدخال عنوان للعقد');
           return false;
         }
         break;
-      case 3:
+      case 4:
         if (_creationMethod == 'from_template' && _selectedTemplate == null) {
           _showError('يرجى اختيار نموذج أو تغيير طريقة الإنشاء');
           return false;
