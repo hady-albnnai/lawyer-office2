@@ -729,9 +729,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     final poasAsync = ref.watch(allPoasProvider);
     return poasAsync.when(
       data: (allPoas) {
-        // فلترة الوكالات حسب الموكل (الشخص المحدد)
-        final filteredPoas = allPoas.where((poa) => poa.principalId == person.personId).toList();
-        if (filteredPoas.isEmpty) {
+        if (allPoas.isEmpty) {
           return Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -745,7 +743,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'لا توجد وكالات مسجلة لهذا الشخص. أضف وكالة من شاشة الوكالات.',
+                    'لا توجد وكالات مسجلة. أضف وكالة من شاشة الوكالات.',
                     style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
                   ),
                 ),
@@ -762,7 +760,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             prefixIcon: const Icon(Icons.verified_user, size: 18),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          items: filteredPoas.map((poa) => DropdownMenuItem(
+          items: allPoas.map((poa) => DropdownMenuItem(
             value: poa.id,
             child: Text('${poa.poaNumber ?? poa.id.toString()} — ${poa.subType ?? 'عامة'}'),
           )).toList(),
@@ -809,7 +807,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               if (nameCtrl.text.trim().isEmpty) return;
               try {
                 final personId = await ref.read(personRepositoryProvider).createPerson(
-                  person: db.PersonsCompanion.insert(
+                  person: PersonsCompanion.insert(
                     fullName: nameCtrl.text.trim(),
                     phone1: Value(phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim()),
                     nationalId: Value(idCtrl.text.trim().isEmpty ? null : idCtrl.text.trim()),
