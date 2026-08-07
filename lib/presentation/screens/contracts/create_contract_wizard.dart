@@ -686,21 +686,31 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: DropdownButtonFormField<String>(
-              value: person.capacity,
-              decoration: InputDecoration(
-                labelText: 'الصفة',
-                isDense: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'أصيل', child: Text('أصيل')),
-                DropdownMenuItem(value: 'وكيل', child: Text('وكيل')),
-                DropdownMenuItem(value: 'ولي', child: Text('ولي')),
-                DropdownMenuItem(value: 'وصي', child: Text('وصي')),
-                DropdownMenuItem(value: 'ممثل شركة', child: Text('ممثل شركة')),
+            child: Column(
+              children: [
+                DropdownButtonFormField<String>(
+                  value: person.capacity,
+                  decoration: InputDecoration(
+                    labelText: 'الصفة',
+                    isDense: true,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'أصيل', child: Text('أصيل')),
+                    DropdownMenuItem(value: 'وكيل', child: Text('وكيل')),
+                    DropdownMenuItem(value: 'ولي', child: Text('ولي')),
+                    DropdownMenuItem(value: 'وصي', child: Text('وصي')),
+                    DropdownMenuItem(value: 'ممثل شركة', child: Text('ممثل شركة')),
+                  ],
+                  onChanged: (v) => setState(() => person.capacity = v ?? 'أصيل'),
+                ),
+                // إظهار اختيار الوكالة إذا كانت الصفة "وكيل"
+                if (person.capacity == 'وكيل' && person.personId != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: _buildPoaPicker(person),
+                  ),
               ],
-              onChanged: (v) => setState(() => person.capacity = v ?? 'أصيل'),
             ),
           ),
           if (party.persons.length > 1)
@@ -711,6 +721,56 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             ),
         ],
       ),
+    );
+  }
+
+  /// اختيار الوكالة المرتبطة بالشخص (عند صفة "وكيل")
+  Widget _buildPoaPicker(_PersonInParty person) {
+    final poasAsync = ref.watch(allPoasProvider);
+    return poasAsync.when(
+      data: (allPoas) {
+        // فلترة الوكالات حسب الموكل (الشخص المحدد)
+        final filteredPoas = allPoas.where((poa) => poa.principalId == person.personId).toList();
+        if (filteredPoas.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber, size: 16, color: AppColors.warning),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'لا توجد وكالات مسجلة لهذا الشخص. أضف وكالة من شاشة الوكالات.',
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return DropdownButtonFormField<int>(
+          value: person.poaId,
+          isDense: true,
+          decoration: InputDecoration(
+            labelText: 'رقم الوكالة *',
+            hintText: 'اختر الوكالة',
+            prefixIcon: const Icon(Icons.verified_user, size: 18),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          items: filteredPoas.map((poa) => DropdownMenuItem(
+            value: poa.id,
+            child: Text('${poa.poaNumber ?? poa.id.toString()} — ${poa.subType ?? 'عامة'}'),
+          )).toList(),
+          onChanged: (v) => setState(() => person.poaId = v),
+        );
+      },
+      loading: () => const LinearProgressIndicator(),
+      error: (_, __) => const Text('خطأ في تحميل الوكالات'),
     );
   }
 
