@@ -170,24 +170,34 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.archiveContext == null
-            ? 'إنشاء عقد جديد'
-            : 'إدخال عقد من الأرشيف'),
+        title: const Text('إنشاء عقد جديد'),
       ),
       body: Column(
         children: [
           _buildStepper(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: ArchiveContextBanner(contextInfo: widget.archiveContext),
-          ),
+          if (widget.archiveContext != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: ArchiveContextBanner(contextInfo: widget.archiveContext),
+            ),
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: SingleChildScrollView(
-                key: ValueKey<int>(_currentStep),
-                padding: const EdgeInsets.all(24),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
                 child: ConstrainedBox(
+                  key: ValueKey<int>(_currentStep),
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: _buildCurrentStep(),
+                ),
+              ),
+            ),
+          ),
+          _buildBottomNav(),
+        ],
+      ),
+    );
+  }
                   constraints: const BoxConstraints(maxWidth: 800),
                   child: _buildStepContent(),
                 ),
