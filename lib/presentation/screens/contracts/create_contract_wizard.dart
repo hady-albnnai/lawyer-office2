@@ -834,21 +834,27 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             ],
             onChanged: (v) => setLocalState(() => _installmentPeriod = v ?? 'شهري'),
           ),
-          if (_installmentPeriod == 'مخصص') ...[
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _customDaysController,
-              keyboardType: TextInputType.number,
-              decoration: baseDecoration.copyWith(
-                labelText: 'عدد الأيام بين الأقساط',
-                hintText: 'مثال: 45',
-              ),
-              onChanged: (v) {
-                _customDays = int.tryParse(v) ?? 30;
-                setLocalState(() {});
-              },
+          Visibility(
+            visible: _installmentPeriod == 'مخصص',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _customDaysController,
+                  keyboardType: TextInputType.number,
+                  decoration: baseDecoration.copyWith(
+                    labelText: 'عدد الأيام بين الأقساط',
+                    hintText: 'مثال: 45',
+                  ),
+                  onChanged: (v) {
+                    _customDays = int.tryParse(v) ?? 30;
+                    setLocalState(() {});
+                  },
+                ),
+              ],
             ),
-          ],
+          ),
           const SizedBox(height: 12),
           Row(children: [
             Expanded(
