@@ -1737,6 +1737,16 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         } else {
           await Process.start('xdg-open', [wordFile.path]);
         }
+
+        // الانتقال لتفاصيل العقد بعد فتح Word
+        if (mounted && contractId != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ContractDetailScreen(contractId: contractId),
+            ),
+          );
+        }
       }
 
       // 11. Audit log - TODO: Implement later
