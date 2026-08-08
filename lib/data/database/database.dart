@@ -119,7 +119,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(contractInstallments);
       }
       if (from < 10) {
-        await m.alterTable(TableMigration(contractTemplates));
+        // Add template_source column to contract_templates table
+        await customStatement(
+          'ALTER TABLE contract_templates ADD COLUMN template_source TEXT NOT NULL DEFAULT \'ready\''
+        );
       }
     },
     beforeOpen: (details) async {
