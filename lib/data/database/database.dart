@@ -83,7 +83,7 @@ class AppDatabase extends _$AppDatabase {
   /// schema.dart يجب أن يرافقه رفع هذا الرقم وإضافة m.addColumn في
   /// onUpgrade. عدم الالتزام يُنتج خطأ SQLite رقم 1 على القواعد القائمة.
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -117,6 +117,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 9) {
         await m.createTable(contractInstallments);
+      }
+      if (from < 10) {
+        await m.alterTable(TableMigration(contractTemplates));
       }
     },
     beforeOpen: (details) async {

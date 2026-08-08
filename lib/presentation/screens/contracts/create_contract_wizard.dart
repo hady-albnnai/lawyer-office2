@@ -64,6 +64,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
 
   // --- طريقة الدفع ---
   String _paymentMethod = 'نقدي';
+  File? _paymentProofFile;
   
   // --- الأقساط (عند اختيار تقسيط) ---
   final List<_InstallmentEntry> _installments = [];
@@ -479,16 +480,37 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           Expanded(
             flex: 3,
             child: personsAsync.when(
-              data: (persons) => DropdownButtonFormField<int>(
-                value: person.personId,
-                decoration: baseDecoration.copyWith(labelText: 'اختر الشخص *'),
-                isExpanded: true,
-                items: persons.map((p) => DropdownMenuItem(
-                  value: p.id,
-                  child: Text(p.fullName),
-                )).toList(),
-                onChanged: (v) => setState(() => person.personId = v),
-              ),
+              data: (persons) {
+                // Get all selected person IDs from other parties
+                final selectedIds = <int>{};
+                for (final party in _parties) {
+                  for (final p in party.persons) {
+                    if (p.personId != null && p != person) {
+                      selectedIds.add(p.personId!);
+                    }
+                  }
+                }
+                
+                return DropdownButtonFormField<int>(
+                  value: person.personId,
+                  decoration: baseDecoration.copyWith(labelText: 'اختر الشخص *'),
+                  isExpanded: true,
+                  items: persons.map((p) {
+                    final isDisabled = selectedIds.contains(p.id);
+                    return DropdownMenuItem(
+                      value: p.id,
+                      enabled: !isDisabled,
+                      child: Text(
+                        p.fullName + (isDisabled ? ' (مختار في طرف آخر)' : ''),
+                        style: TextStyle(
+                          color: isDisabled ? Colors.grey : null,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (v) => setState(() => person.personId = v),
+                );
+              },
               loading: () => const CircularProgressIndicator(),
               error: (e, _) => Text('خطأ: $e'),
             ),
@@ -667,7 +689,42 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           const SizedBox(height: 24),
           _buildInstallmentsSection(baseDecoration),
         ],
+        if (_paymentMethod == 'تحويل بنكي' || _paymentMethod == 'شيك') ...[
+          const SizedBox(height: 16),
+          _buildPaymentProofUpload(baseDecoration),
+        ],
       ],
+    );
+  }
+
+  Widget _buildPaymentProofUpload(InputDecoration baseDecoration) {
+    return GlassmorphicCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _paymentMethod == 'شيك' ? 'صورة الشيك' : 'إيصال التحويل البنكي',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final result = await file_picker.FilePicker.pickFiles(
+                type: file_picker.FileType.image,
+              );
+              if (result != null) {
+                setState(() {
+                  _paymentProofFile = File(result.files.single.path!);
+                });
+              }
+            },
+            icon: Icon(_paymentProofFile != null ? Icons.check_circle : Icons.upload_file),
+            label: Text(_paymentProofFile != null 
+                ? path.basename(_paymentProofFile!.path) 
+                : 'اختيار صورة'),
+          ),
+        ],
+      ),
     );
   }
 
