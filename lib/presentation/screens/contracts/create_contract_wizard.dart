@@ -449,7 +449,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     final query = db.select(db.contractTypesLookup)
       ..where((t) => t.isActive.equals(true));
     if (_legalCategory != null && _legalCategory!.isNotEmpty) {
-      query.where((t) => t.category.equals(_legalCategory));
+      query.where((t) => t.category.equals(_legalCategory!));
     } else {
       query.where((t) => t.category.isNull());
     }
