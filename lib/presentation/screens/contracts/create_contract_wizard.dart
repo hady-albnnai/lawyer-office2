@@ -78,6 +78,13 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   final _installmentValueController = TextEditingController();
   String _installmentPeriod = 'شهري'; // شهري، كل شهرين، كل 3 أشهر، كل 6 أشهر، سنوي، مخصص
   int _customDays = 30; // عدد الأيام المخصص
+  final _customDaysController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _customDaysController.text = _customDays.toString();
+  }
 
   // --- التذكيرات الزمنية ---
   final List<_ReminderEntry> _reminders = [];
@@ -110,6 +117,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     _installmentValueController.dispose();
     _feeAmountController.dispose();
     _templateNameController.dispose();
+    _customDaysController.dispose();
     for (final doc in _attachedDocuments) {
       doc.nameController.dispose();
     }
@@ -405,26 +413,49 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _legalSubcategory,
-            decoration: baseDecoration.copyWith(labelText: 'التصنيف الفرعي *'),
-            items: _getSubcategories(),
-            onChanged: (v) => setState(() => _legalSubcategory = v),
+          child: FutureBuilder<List<DropdownMenuItem<String>>>(
+            future: _getSubcategories(),
+            builder: (context, snapshot) {
+              final subItems = snapshot.data ?? [
+                const DropdownMenuItem(value: null, enabled: false, child: Text('جارٍ التحميل...')),
+              ];
+              return DropdownButtonFormField<String>(
+                value: _legalSubcategory,
+                decoration: baseDecoration.copyWith(labelText: 'التصنيف الفرعي *'),
+                items: subItems,
+                onChanged: (v) => setState(() => _legalSubcategory = v),
+              );
+            },
           ),
         ),
         const SizedBox(width: 8),
         IconButton(
+          icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryNavy),
+          onPressed: () => _showAddCategoryDialog(isMainCategory: true),
+          tooltip: 'إضافة تصنيف رئيسي جديد',
+        ),
+        const SizedBox(width: 4),
+        IconButton(
           icon: const Icon(Icons.add_circle, color: AppColors.primaryNavy),
-          onPressed: _showAddSubcategoryDialog,
+          onPressed: () => _showAddCategoryDialog(isMainCategory: false),
           tooltip: 'إضافة تصنيف فرعي جديد',
         ),
       ],
     );
   }
 
-  List<DropdownMenuItem<String>> _getSubcategories() {
-    // Default subcategories (fallback)
-    final Map<String, List<String>> defaultSubcats = {
+  Future<List<DropdownMenuItem<String>>> _getSubcategories() async {
+    final db = ref.read(databaseProvider);
+    final query = db.select(db.contractTypesLookup)
+      ..where((t) => t.isActive.equals(true));
+    if (_legalCategory != null && _legalCategory!.isNotEmpty) {
+      query.where((t) => t.category.equals(_legalCategory));
+    } else {
+      query.where((t) => t.category.isNull());
+    }
+    final rows = await query.get();
+
+    final defaultSubcats = {
       'عقود واردة على الملكية': ['بيع عقار', 'إيجار سكني', 'إيجار تجاري', 'هبة', 'مبادلة'],
       'عقود الاستثمار': ['استثمار عقاري', 'استثمار تجاري', 'مشاركة'],
       'عقود العمل والمقاولة': ['عقد عمل', 'مقاولة', 'خدمات'],
@@ -432,24 +463,13 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       'عقود الصلح': ['صلح إسقاط', 'صلح إقرار', 'صلح معاوضة'],
       'عقود أخرى': ['عقد وكالة', 'عقد كفالة', 'عقد ضمان'],
     };
-    
-    // Start with default subcategories
-    final list = defaultSubcats[_legalCategory] ?? [];
-    final items = list.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList();
-    
-    // Add custom subcategories from database (if any)
-    // Note: This is a simplified approach. For production, use a provider
-    // to watch database changes and rebuild the widget
-    if (_customSubcategories.isNotEmpty) {
-      for (final subcat in _customSubcategories) {
-        items.add(DropdownMenuItem(
-          value: subcat,
-          child: Text(subcat),
-        ));
-      }
-    }
-    
-    return items;
+    final defaultList = defaultSubcats[_legalCategory] ?? [];
+    final defaultItems = defaultList.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList();
+
+    final dbNames = rows.map((r) => r.name).toList();
+    final extraNames = dbNames.where((n) => !defaultList.contains(n)).toList();
+
+    return [...defaultItems, ...extraNames.map((s) => DropdownMenuItem(value: s, child: Text(s)))];
   }
 
   // -------------------------------------------------------------------------
@@ -547,6 +567,12 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               loading: () => const CircularProgressIndicator(),
               error: (e, _) => Text('خطأ: $e'),
             ),
+          ),
+          // زر إضافة شخص جديد بجانب اختيار الشخص
+          IconButton(
+            icon: const Icon(Icons.person_add, color: AppColors.primaryNavy, size: 22),
+            tooltip: 'إضافة شخص جديد',
+            onPressed: () => _showAddPersonDialog(person),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -810,13 +836,16 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           if (_installmentPeriod == 'مخصص') ...[
             const SizedBox(height: 12),
             TextFormField(
+              controller: _customDaysController,
               keyboardType: TextInputType.number,
               decoration: baseDecoration.copyWith(
                 labelText: 'عدد الأيام بين الأقساط',
                 hintText: 'مثال: 45',
               ),
-              initialValue: _customDays.toString(),
-              onChanged: (v) => setState(() => _customDays = int.tryParse(v) ?? 30),
+              onChanged: (v) {
+                _customDays = int.tryParse(v) ?? 30;
+                // تجنب setState المستمر لتفادي التجميد
+              },
             ),
           ],
           const SizedBox(height: 12),
@@ -1610,8 +1639,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         userRef: userRef,
       );
 
-      // 8. حفظ المستندات المرفقة
-      if (_attachedDocuments.isNotEmpty) {
+      // 8. حفظ المستندات المرفقة + حفظ مستند الدفع (شيك / تحويل)
+      if (_attachedDocuments.isNotEmpty || _paymentProofFile != null) {
         final db = ref.read(databaseProvider);
         final storageService = ref.read(fileStorageServiceProvider);
         
@@ -1640,6 +1669,32 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               entityType: EntityType.contract.index,
               entityId: contractId,
               linkType: const Value('general'),
+            ),
+          );
+        }
+
+        // حفظ مستند الدفع (شيك أو تحويل بنكي) إن وُجد
+        if (_paymentProofFile != null) {
+          final proofPath = await storageService.saveAttachment(
+            sourceFile: _paymentProofFile!,
+            folderType: 'documents',
+            entityId: contractId,
+          );
+          final proofDocName = _paymentMethod == 'شيك' ? 'صورة الشيك' : 'إيصال التحويل البنكي';
+          final proofDocId = await db.into(db.documents).insert(
+            DocumentsCompanion.insert(
+              docName: proofDocName,
+              docType: const Value('إثبات دفع'),
+              filePath: Value(proofPath),
+              fileType: Value(path.extension(_paymentProofFile!.path).substring(1)),
+            ),
+          );
+          await db.into(db.documentLinks).insert(
+            DocumentLinksCompanion.insert(
+              documentId: proofDocId,
+              entityType: EntityType.contract.index,
+              entityId: contractId,
+              linkType: const Value('payment_proof'),
             ),
           );
         }
