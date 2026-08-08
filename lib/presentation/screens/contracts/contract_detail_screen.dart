@@ -17,22 +17,29 @@ import '../../providers/auth_providers.dart';
 final documentsByEntityProvider = StreamProvider.family<List<Document>, (EntityType, int)>((ref, params) {
   final db = ref.watch(databaseProvider);
   return db.customSelect(
-    'SELECT * FROM documents WHERE entity_type = ? AND entity_id = ?',
+    '''
+    SELECT d.* FROM documents d
+    INNER JOIN document_links dl ON d.id = dl.document_id
+    WHERE dl.entity_type = ? AND dl.entity_id = ?
+    ORDER BY d.date_added DESC
+    ''',
     variables: [Variable.withInt(params.$1.index), Variable.withInt(params.$2)],
-  ).watch().map((rows) => rows.map((row) {
+  ).watch().map((rows) => rows.map<Document>((row) {
     final data = row.data;
     return Document(
       id: data['id'] as int,
       docName: data['doc_name'] as String,
       docType: data['doc_type'] as String?,
-      filePath: data['file_path'] as String,
-      entityType: data['entity_type'] as int?,
-      entityId: data['entity_id'] as int?,
-      summary: data['summary'] as String?,
-      uploadDate: data['upload_date'] as DateTime,
-      uploadedBy: data['uploaded_by'] as String?,
-      fileSize: data['file_size'] as int?,
+      dateIssued: data['date_issued'] as DateTime?,
+      dateAdded: data['date_added'] as DateTime,
+      issuer: data['issuer'] as String?,
+      filePath: data['file_path'] as String?,
       fileType: data['file_type'] as String?,
+      status: data['status'] as int,
+      physicalLocation: data['physical_location'] as int,
+      summary: data['summary'] as String?,
+      notes: data['notes'] as String?,
+      createdAt: data['created_at'] as DateTime,
     );
   }).toList());
 });
@@ -595,7 +602,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('النوع: ${doc.docType ?? "---"}'),
-                          Text('تاريخ الرفع: ${doc.uploadDate.toString().substring(0, 10)}'),
+                          Text('تاريخ الإضافة: ${doc.dateAdded.toString().substring(0, 10)}'),
                           if (doc.summary != null && doc.summary!.isNotEmpty)
                             Text('ملاحظة: ${doc.summary}', maxLines: 2, overflow: TextOverflow.ellipsis),
                         ],
@@ -748,10 +755,16 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
   }
   
   Future<void> _openDocument(Document doc) async {
+    if (doc.filePath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('لا يوجد ملف مرفق'), backgroundColor: AppColors.error),
+      );
+      return;
+    }
     try {
       final result = await ref
           .read(attachmentServiceProvider)
-          .openStoredAttachment(doc.filePath);
+          .openStoredAttachment(doc.filePath!);
       if (!mounted) return;
       if (!result.success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -785,7 +798,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
           return const Center(child: CircularProgressIndicator());
         }
         
-        final results = snapshot.data as List<List<TypedResult>>?;
+        final results = snapshot.data as List<List<QueryRow>>?;
         final expenses = results?[0] ?? [];
         final payments = results?[1] ?? [];
         
@@ -847,14 +860,14 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                         color: AppColors.success.withOpacity(0.08),
                         child: ListTile(
                           leading: const Icon(Icons.receipt_long, color: AppColors.success, size: 32),
-                          title: Text('سند قبض #${data?['receipt_number'] ?? "---"}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text('سند قبض #${data['receipt_number'] ?? "---"}', style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('المبلغ: ${data?['amount'] ?? 0} ${data?['currency'] ?? "ل.س"}'),
-                              Text('التاريخ: ${data?['payment_date']?.toString().substring(0, 10) ?? "---"}'),
-                              if ((data?['notes'] != null) == true && data?['notes'].toString().isNotEmpty)
-                                Text('ملاحظة: ${data?['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                              Text('المبلغ: ${data['amount'] ?? 0} ${data['currency'] ?? "ل.س"}'),
+                              Text('التاريخ: ${data['payment_date']?.toString().substring(0, 10) ?? "---"}'),
+                              if ((data['notes'] != null) == true && data['notes'].toString().isNotEmpty)
+                                Text('ملاحظة: ${data['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
                             ],
                           ),
                         ),
@@ -871,14 +884,14 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                         color: AppColors.error.withOpacity(0.08),
                         child: ListTile(
                           leading: const Icon(Icons.money_off, color: AppColors.error, size: 32),
-                          title: Text(data?['description'] ?? 'مصروف', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text(data['description'] ?? 'مصروف', style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('المبلغ: ${data?['amount'] ?? 0} ${data?['currency'] ?? "ل.س"}'),
-                              Text('التاريخ: ${data?['expense_date']?.toString().substring(0, 10) ?? "---"}'),
-                              if ((data?['notes'] != null) == true && data?['notes'].toString().isNotEmpty)
-                                Text('ملاحظة: ${data?['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                              Text('المبلغ: ${data['amount'] ?? 0} ${data['currency'] ?? "ل.س"}'),
+                              Text('التاريخ: ${data['expense_date']?.toString().substring(0, 10) ?? "---"}'),
+                              if ((data['notes'] != null) == true && data['notes'].toString().isNotEmpty)
+                                Text('ملاحظة: ${data['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
                             ],
                           ),
                         ),
