@@ -744,10 +744,16 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             _paymentChip('شيك', Icons.payments),
           ],
         ),
-        if (_paymentMethod == 'تقسيط') ...[
-          const SizedBox(height: 24),
-          _buildInstallmentsSection(baseDecoration),
-        ],
+        Visibility(
+          visible: _paymentMethod == 'تقسيط',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 24),
+              _buildInstallmentsSection(baseDecoration),
+            ],
+          ),
+        ),
         if (_paymentMethod == 'تحويل بنكي' || _paymentMethod == 'شيك') ...[
           const SizedBox(height: 16),
           _buildPaymentProofUpload(baseDecoration),
@@ -805,10 +811,10 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       selectedColor: AppColors.primaryNavy,
       backgroundColor: AppColors.cardBackground,
       side: BorderSide(color: isSelected ? AppColors.primaryNavy : AppColors.cardBorder),
-      onSelected: (_) => setState(() {
-        _paymentMethod = method;
-        if (method != 'تقسيط') _installments.clear();
-      }),
+          onSelected: (_) => setState(() {
+            _paymentMethod = method;
+            _installments.clear();
+          }),
     );
   }
 
