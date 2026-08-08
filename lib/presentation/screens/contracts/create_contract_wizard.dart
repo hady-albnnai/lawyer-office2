@@ -1,46 +1,34 @@
-/// معالج إنشاء عقد جديد — مبني على فلسفة "غلاف + نموذج + نسخة"
-///
-/// الهيكلية جاهزة للذكاء الاصطناعي:
-/// - كل خطوة تسجل بيانات منظمة
-/// - القالب يرتبط بالنسخة (template → instance)
-/// - المتغيرات تُكتشف وتُملأ وتُحفظ للتعلم
-/// - كل تفاعل يُسجل في ContractTemplateUsageLog
-///
-/// الخطوات الخمس:
-/// 1. التصنيف (قانوني + فرعي)
-/// 2. الأطراف (ديناميكية + صفة)
-/// 3. موضوع العقد (عنوان + ملاحظات)
-/// 4. اختيار النموذج (مكتبة / استيراد / فارغ)
-/// 5. التحرير (متغيرات داخلية + Word خارجي)
-///
-/// آخر تحديث: 2026-08-06
-library;
-
 import 'dart:io';
-import 'dart:ui';
-import 'package:file_picker/file_picker.dart' as file_picker;
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:drift/drift.dart' show Value;
-import 'package:open_filex/open_filex.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:path/path.dart' as path;
+import 'package:file_picker/file_picker.dart' as file_picker;
 
 import '../../../core/auth/permission_catalog.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/enums/app_enums.dart';
+import '../../../core/services/desktop_integration_service.dart';
 import '../../../data/database/database.dart';
+import '../../../data/database/daos/contract_dao.dart';
+import '../../../data/repositories/contract_repository.dart';
+import '../../../data/services/file_storage_service.dart';
 import '../../../data/services/template_variable_service.dart';
+import '../../navigation/auth_controller.dart';
+import '../../navigation/audit_service.dart';
 import '../../providers/app_providers.dart';
-import '../../providers/auth_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/glassmorphism_helpers.dart';
-import '../../widgets/archive_context_banner.dart';
-import '../../widgets/common/searchable_picker.dart';
 
+/// ويزارد إنشاء عقد جديد - نسخة مبسطة (خطوتين فقط)
+///
+/// الخطوة 1: المعلومات الأساسية (تصنيف + أطراف + تاريخ + قيمة + دفع + أقساط + تذكيرات + مستندات + أتعاب)
+/// الخطوة 2: اختيار النموذج + فتحه في Word مباشرة
 class CreateContractWizard extends ConsumerStatefulWidget {
-  final ArchiveEntryContext? archiveContext;
+  final OfficeFile? archiveContext;
   const CreateContractWizard({super.key, this.archiveContext});
 
   @override
@@ -52,81 +40,26 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   bool _isSaving = false;
 
   // =========================================================================
-  // الخطوة 0: نوع ملف العقد
+  // الخطوة 1: المعلومات الأساسية
   // =========================================================================
-  String _contractFileType = 'new'; // new, review, followup
-
-  // =========================================================================
-  // الخطوة 1: التصنيف القانوني
-  // =========================================================================
+  
+  // --- التصنيف القانوني ---
   String? _legalCategory;
   String? _legalSubcategory;
 
-  static const Map<String, List<String>> _categorySubcategories = {
-    'عقود واردة على الملكية': [
-      'بيع عقار', 'بيع منقول', 'بيع مركبة', 'بيع حصة/أسهم',
-      'مقايضة', 'هبة', 'قرض/دين',
-    ],
-    'عقود واردة على الانتفاع': [
-      'إيجار سكني', 'إيجار تجاري', 'إيجار مكتب/مهنة',
-      'إيجار أرض', 'عارية استعمال',
-    ],
-    'عقود واردة على العمل/الخدمة': [
-      'مقاولة', 'عقد عمل', 'عقد خدمات',
-      'عقد استشارة', 'توريد مع تنفيذ',
-    ],
-    'عقود صلح/تسوية': [
-      'صلح قضائي', 'صلح غير قضائي', 'تسوية نزاع',
-      'مخالصة/إبراء', 'إنهاء علاقة تعاقدية',
-    ],
-    'عقود شركات/شراكات': [
-      'اتفاق شركاء', 'عقد محاصة', 'عقد تأسيس شركة',
-      'ملحق عقد تأسيس', 'تنازل عن حصص',
-    ],
-    'عقود ضمان/كفالة/رهن': [
-      'كفالة شخصية', 'رهن عقاري', 'رهن منقول',
-      'ضمان بنكي', 'تعهد تضامني',
-    ],
-    'وكالات/تفويضات': [
-      'تفويض خاص', 'عقد وكالة مدنية', 'وكالة بيع',
-      'وكالة إدارة', 'وكالة غير قابلة للعزل مرتبطة بحق',
-    ],
-    'عقود تجارية': [
-      'توريد', 'توزيع', 'وكالة تجارية',
-      'استثمار', 'تعاون تجاري', 'سمسرة/وساطة',
-    ],
-    'عقود أخرى': ['عقد آخر', 'تصنيف مخصص'],
-  };
+  // --- الأطراف ---
+  final List<_PartyEntry> _parties = [
+    _PartyEntry(role: 'الطرف الأول'),
+    _PartyEntry(role: 'الطرف الثاني'),
+  ];
 
-  // =========================================================================
-  // الخطوة 2: الأطراف
-  // =========================================================================
-  final List<_PartyEntry> _parties = [];
-  // أسماء الأطراف النموذجية حسب التصنيف الفرعي
-  List<String> get _defaultPartyRoles {
-    final sub = _legalSubcategory ?? '';
-    if (sub.contains('بيع')) return ['البائع', 'المشتري'];
-    if (sub.contains('إيجار')) return ['المؤجر', 'المستأجر'];
-    if (sub.contains('مقاولة') || sub.contains('توريد')) return ['صاحب العمل', 'المقاول'];
-    if (sub.contains('عمل')) return ['صاحب العمل', 'العامل'];
-    if (sub.contains('شراكة') || sub.contains('محاصة') || sub.contains('تأسيس')) return ['الشريك الأول', 'الشريك الثاني'];
-    if (sub.contains('وكالة') || sub.contains('تفويض')) return ['الموكل', 'الوكيل'];
-    if (sub.contains('صلح') || sub.contains('تسوية') || sub.contains('مخالصة')) return ['الطرف الأول', 'الطرف الثاني'];
-    if (sub.contains('كفالة') || sub.contains('ضمان')) return ['المكفول له', 'الكفيل', 'الدائن'];
-    if (sub.contains('رهن')) return ['الراهن', 'المرتهن'];
-    if (sub.contains('هبة')) return ['الواهب', 'الموهوب له'];
-    if (sub.contains('قرض')) return ['المقرض', 'المقترض'];
-    return ['الطرف الأول', 'الطرف الثاني'];
-  }
-
-  // =========================================================================
-  // الخطوة 3: موضوع العقد
-  // =========================================================================
+  // --- بيانات العقد ---
   final _titleController = TextEditingController();
-  final _notesController = TextEditingController();
   final _valueController = TextEditingController();
   final _locationController = TextEditingController();
+  final _notesController = TextEditingController();
   final _notarizationNumberController = TextEditingController();
+  
   String _currency = 'ل.س';
   DateTime? _dateSigned;
   DateTime? _dateStart;
@@ -135,33 +68,46 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   String _renewalType = 'تلقائي';
   String _contractStatus = 'active';
   String _notarizationType = 'عرفي';
+
+  // --- طريقة الدفع ---
   String _paymentMethod = 'نقدي';
+  
+  // --- الأقساط (عند اختيار تقسيط) ---
+  final List<_InstallmentEntry> _installments = [];
+  int _installmentCount = 0;
+  final _installmentValueController = TextEditingController();
+
+  // --- التذكيرات الزمنية ---
+  final List<_ReminderEntry> _reminders = [];
+
+  // --- المستندات المرفقة ---
+  final List<_DocumentEntry> _attachedDocuments = [];
+
+  // --- أتعاب المكتب ---
+  String _feeAgreementType = 'fixed';
+  final _feeAmountController = TextEditingController();
+  int? _feePartyId;
 
   // =========================================================================
-  // الخطوة 4: النموذج
+  // الخطوة 2: اختيار النموذج
   // =========================================================================
-  /// من أين جاء العقد: from_template / uploaded / blank
   String _creationMethod = 'from_template';
   ContractTemplate? _selectedTemplate;
   File? _uploadedFile;
-
-  // =========================================================================
-  // الخطوة 5: التحرير والمتغيرات
-  // =========================================================================
-  List<TemplateVariable> _detectedVariables = [];
-  final Map<String, TextEditingController> _variableControllers = {};
-  final Map<String, String> _variableFillMethods = {};
-  bool _variablesDetected = false;
+  final _templateNameController = TextEditingController();
 
   @override
   void dispose() {
     _titleController.dispose();
-    _notesController.dispose();
     _valueController.dispose();
     _locationController.dispose();
+    _notesController.dispose();
     _notarizationNumberController.dispose();
-    for (final controller in _variableControllers.values) {
-      controller.dispose();
+    _installmentValueController.dispose();
+    _feeAmountController.dispose();
+    _templateNameController.dispose();
+    for (final doc in _attachedDocuments) {
+      doc.nameController.dispose();
     }
     super.dispose();
   }
@@ -169,27 +115,23 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundGradientStart,
       appBar: AppBar(
-        title: const Text('إنشاء عقد جديد'),
+        title: Text(_currentStep == 0 ? 'إنشاء عقد جديد - المعلومات الأساسية' : 'اختيار النموذج'),
+        backgroundColor: AppColors.primaryNavy,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Column(
         children: [
           _buildStepper(),
-          if (widget.archiveContext != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: ArchiveContextBanner(contextInfo: widget.archiveContext),
-            ),
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
-              child: SingleChildScrollView(
+              child: Container(
                 key: ValueKey<int>(_currentStep),
                 padding: const EdgeInsets.all(24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: _buildStepContent(),
-                ),
+                child: _currentStep == 0 ? _buildBasicInfoStep() : _buildTemplateStep(),
               ),
             ),
           ),
@@ -200,643 +142,119 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   // =========================================================================
-  // شريط التقدم
+  // Stepper & Navigation
   // =========================================================================
+  
   Widget _buildStepper() {
-    return GlassmorphicStepper(
-      currentStep: _currentStep,
-      totalSteps: 6,
-      stepLabels: const ['النوع', 'التصنيف', 'الأطراف', 'التفاصيل', 'النموذج', 'التحرير'],
-      stepIcons: const [
-        Icons.folder_open,
-        Icons.category,
-        Icons.people,
-        Icons.subject,
-        Icons.description,
-        Icons.edit_note,
-      ],
+    return Container(
+      color: AppColors.primaryNavy.withOpacity(0.05),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      child: GlassmorphicStepper(
+        currentStep: _currentStep,
+        steps: const [
+          'المعلومات الأساسية',
+          'اختيار النموذج',
+        ],
+      ),
     );
   }
 
-  // =========================================================================
-  // شريط التنقل السفلي
-  // =========================================================================
   Widget _buildBottomNav() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.primaryNavy.withOpacity(0.85),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryNavy.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (_currentStep > 0)
-                GlassmorphicButton(
-                  onPressed: _isSaving ? null : () => setState(() => _currentStep--),
-                  isPrimary: false,
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.arrow_back, color: AppColors.textOnLight),
-                      SizedBox(width: 8),
-                      Text('السابق', style: TextStyle(color: AppColors.textOnLight)),
-                    ],
-                  ),
-                )
-              else
-                const SizedBox(width: 120),
-              if (_currentStep < 4)
-                GlassmorphicButton(
-                  onPressed: _isSaving ? null : _nextStep,
-                  isPrimary: true,
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('التالي', style: TextStyle(color: AppColors.textOnLight)),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward, color: AppColors.textOnLight),
-                    ],
-                  ),
-                ),
-              if (_currentStep == 4)
-                GlassmorphicButton(
-                  onPressed: _isSaving ? null : _saveContract,
-                  isPrimary: true,
-                  backgroundColor: AppColors.success.withOpacity(0.85),
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20, height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.save, color: AppColors.textOnLight),
-                            SizedBox(width: 8),
-                            Text('حفظ العقد', style: TextStyle(color: AppColors.textOnLight)),
-                          ],
-                        ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // =========================================================================
-  // محتوى الخطوات
-  // =========================================================================
-  Widget _buildStepContent() {
-    switch (_currentStep) {
-      case 0: return _buildFileTypeStep();
-      case 1: return _buildClassificationStep();
-      case 2: return _buildPartiesStep();
-      case 3: return _buildSubjectStep();
-      case 4: return _buildTemplateStep();
-      case 5: return _buildEditStep();
-      default: return const SizedBox();
-    }
-  }
-
-  Widget _buildStepHeader(String title, String description, IconData icon) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primaryNavy.withOpacity(0.1), AppColors.cardBackground],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primaryNavy.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primaryNavy.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: AppColors.primaryNavy, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: AppTextStyles.headline4.copyWith(color: AppColors.primaryNavy)),
-                const SizedBox(height: 4),
-                Text(description, style: AppTextStyles.bodySmallSecondary),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // =========================================================================
-  // الخطوة 0: نوع ملف العقد
-  // =========================================================================
-  Widget _buildFileTypeStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildStepHeader('نوع ملف العقد', 'ماذا تريد أن تفعل؟', Icons.folder_open),
-        const SizedBox(height: 16),
-        _fileTypeCard('new', 'إنشاء عقد جديد',
-            'المكتب سيبدأ بصياغة عقد جديد من الصفر أو من نموذج جاهز',
-            Icons.add_circle_outline),
-        const SizedBox(height: 12),
-        _fileTypeCard('review', 'مراجعة / تعديل عقد جاهز',
-            'لديك عقد أو مسودة موجودة وتريد مراجعتها أو تعديلها',
-            Icons.edit_note),
-        const SizedBox(height: 12),
-        _fileTypeCard('followup', 'متابعة عقد موقع',
-            'العقد موقع بالفعل والمكتب سيتابع التزاماته أو إجراءاته',
-            Icons.follow_the_signs),
-      ],
-    );
-  }
-
-  Widget _fileTypeCard(String value, String title, String description, IconData icon) {
-    final isSelected = _contractFileType == value;
-    return InkWell(
-      onTap: () => setState(() => _contractFileType = value),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryNavy.withOpacity(0.08) : AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppColors.primaryNavy : AppColors.cardBorder,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48, height: 48,
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primaryNavy.withOpacity(0.15) : AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: isSelected ? AppColors.primaryNavy : AppColors.textSecondary, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? AppColors.primaryNavy : AppColors.textPrimary,
-                  )),
-                  const SizedBox(height: 4),
-                  Text(description, style: AppTextStyles.bodySmallSecondary),
-                ],
-              ),
-            ),
-            if (isSelected)
-              const Icon(Icons.check_circle, color: AppColors.primaryNavy, size: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // =========================================================================
-  // الخطوة 1: التصنيف القانوني
-  // =========================================================================
-  Widget _buildClassificationStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildStepHeader('التصنيف القانوني', 'حدد التصنيف الرئيسي والفرعي للعقد', Icons.category),
-
-        // التصنيف الرئيسي
-        Text('التصنيف القانوني الرئيسي *', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _categorySubcategories.keys.map((cat) {
-            final isSelected = _legalCategory == cat;
-            return ChoiceChip(
-              label: Text(cat, style: TextStyle(
-                color: isSelected ? AppColors.textOnLight : AppColors.textPrimary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
-              )),
-              selected: isSelected,
-              selectedColor: AppColors.primaryNavy,
-              backgroundColor: AppColors.cardBackground,
-              side: BorderSide(
-                color: isSelected ? AppColors.primaryNavy : AppColors.cardBorder,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              onSelected: (_) => setState(() {
-                _legalCategory = cat;
-                _legalSubcategory = null;
-              }),
-            );
-          }).toList(),
-        ),
-
-        // التصنيف الفرعي
-        if (_legalCategory != null) ...[
-          const SizedBox(height: 24),
-          Text('التصنيف الفرعي *', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: (_categorySubcategories[_legalCategory!] ?? []).map((sub) {
-              final isSelected = _legalSubcategory == sub;
-              return ChoiceChip(
-                label: Text(sub, style: TextStyle(
-                  color: isSelected ? AppColors.textOnLight : AppColors.textPrimary,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                )),
-                selected: isSelected,
-                selectedColor: AppColors.secondaryGold,
-                backgroundColor: AppColors.cardBackground,
-                side: BorderSide(
-                  color: isSelected ? AppColors.secondaryGold : AppColors.cardBorder,
-                ),
-                onSelected: (_) => setState(() => _legalSubcategory = sub),
-              );
-            }).toList(),
-          ),
-        ],
-
-        // عرض أطراف افتراضية متوقعة
-        if (_legalSubcategory != null) ...[
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.info.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.info.withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline, size: 18, color: AppColors.info),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'الأطراف المتوقعة لهذا النوع: ${_defaultPartyRoles.join(' + ')}',
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.info),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  // =========================================================================
-  // الخطوة 2: الأطراف
-  // =========================================================================
-  Widget _buildPartiesStep() {
-    final personsAsync = ref.watch(allPersonsProvider(null));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildStepHeader(
-          'الأطراف المتعاقدة',
-          'أضف أطراف العقد مع تحديد دور كل طرف وصفته',
-          Icons.people,
-        ),
-
-        // الأطراف المضافة
-        ..._parties.asMap().entries.map((entry) {
-          final index = entry.key;
-          final party = entry.value;
-          return _buildPartyCard(index, party, personsAsync);
-        }),
-
-        const SizedBox(height: 16),
-
-        // زر إضافة طرف
-        OutlinedButton.icon(
-          onPressed: () => _addParty(),
-          icon: const Icon(Icons.person_add),
-          label: Text(_parties.isEmpty
-              ? 'إضافة الأطراف'
-              : 'إضافة طرف آخر (كفيل/ضامن/شاهد)'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primaryNavy,
-            side: BorderSide(color: AppColors.primaryNavy.withOpacity(0.3)),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPartyCard(int index, _PartyEntry party, AsyncValue<List<PersonEntity>> personsAsync) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primaryNavy.withOpacity(0.15)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
+        border: Border(top: BorderSide(color: AppColors.cardBorder)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // عنوان الطرف
-          Row(
-            children: [
-              Container(
-                width: 32, height: 32,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryNavy,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Text('${index + 1}', style: const TextStyle(
-                    color: AppColors.secondaryGold, fontWeight: FontWeight.bold,
-                  )),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  initialValue: party.role,
-                  decoration: InputDecoration(
-                    labelText: 'صفة الطرف',
-                    hintText: 'مثال: البائع، المشتري، الكفيل',
-                    isDense: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onChanged: (v) => setState(() => party.role = v),
-                ),
-              ),
-              if (_parties.length > 2)
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                  onPressed: () => setState(() => _parties.removeAt(index)),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // الأشخاص داخل الطرف
-          ...party.persons.asMap().entries.map((entry) {
-            final pIndex = entry.key;
-            final person = entry.value;
-            return _buildPersonInPartyRow(personsAsync, party, person, pIndex);
-          }),
-
-          // زر إضافة شخص للطرف
-          if (party.persons.length >= 1)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: TextButton.icon(
-                onPressed: () => setState(() => party.persons.add(_PersonInParty())),
-                icon: const Icon(Icons.person_add, size: 18),
-                label: const Text('إضافة شخص لهذا الطرف'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primaryNavy,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPersonInPartyRow(
-    AsyncValue<List<PersonEntity>> personsAsync,
-    _PartyEntry party,
-    _PersonInParty person,
-    int pIndex,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            flex: 2,
-            child: Row(children: [
-              Expanded(child: personsAsync.when(
-                data: (persons) => SearchablePicker<PersonEntity>(
-                  label: 'اختر الشخص/الجهة *',
-                  hintText: 'ابحث بالاسم أو الهاتف',
-                  prefixIcon: const Icon(Icons.person_search),
-                  items: persons,
-                  labelOf: (p) => p.fullName,
-                  searchTermsOf: (p) => [p.phone1 ?? '', p.nationalId ?? ''],
-                  subtitleOf: (p) => p.phone1,
-                  value: person.personId == null ? null : persons.where((p) => p.id == person.personId).firstOrNull,
-                  onSelected: (p) {
-                    // التحقق من عدم تكرار نفس الشخص في أطراف أخرى
-                    final isDuplicate = _parties.any((other) =>
-                        other.persons.any((op) => op != person && op.personId == p.id));
-                    if (isDuplicate) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${p.fullName} مُضاف بالفعل في طرف آخر'),
-                          backgroundColor: AppColors.error,
-                        ),
-                      );
-                      return;
-                    }
-                    setState(() => person.personId = p.id);
-                  },
-                ),
-                loading: () => const LinearProgressIndicator(),
-                error: (_, __) => const Text('خطأ'),
-              )),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.person_add, color: AppColors.primaryNavy, size: 20),
-                tooltip: 'إضافة شخص جديد',
-                onPressed: () => _showQuickAddPerson(context, person),
+          if (_currentStep > 0)
+            ElevatedButton.icon(
+              onPressed: _isSaving ? null : () => setState(() => _currentStep--),
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('السابق'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.cardBackground,
+                foregroundColor: AppColors.textPrimary,
               ),
-            ]),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              children: [
-                DropdownButtonFormField<String>(
-                  value: person.capacity,
-                  decoration: InputDecoration(
-                    labelText: 'الصفة',
-                    isDense: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'أصيل', child: Text('أصيل')),
-                    DropdownMenuItem(value: 'وكيل', child: Text('وكيل')),
-                    DropdownMenuItem(value: 'ولي', child: Text('ولي')),
-                    DropdownMenuItem(value: 'وصي', child: Text('وصي')),
-                    DropdownMenuItem(value: 'ممثل شركة', child: Text('ممثل شركة')),
-                  ],
-                  onChanged: (v) => setState(() => person.capacity = v ?? 'أصيل'),
-                ),
-                // إظهار اختيار الوكالة إذا كانت الصفة "وكيل"
-                if (person.capacity == 'وكيل' && person.personId != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: _buildPoaPicker(person),
-                  ),
-              ],
-            ),
-          ),
-          if (party.persons.length > 1)
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline, color: AppColors.error, size: 18),
-              tooltip: 'حذف هذا الشخص',
-              onPressed: () => setState(() => party.persons.removeAt(pIndex)),
+            )
+          else
+            const SizedBox(),
+          
+          if (_currentStep == 0)
+            ElevatedButton.icon(
+              onPressed: _isSaving ? null : _goToNextStep,
+              icon: const Icon(Icons.arrow_forward),
+              label: const Text('التالي'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryNavy,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              ),
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: _isSaving ? null : _createAndOpenInWord,
+              icon: _isSaving
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.open_in_new),
+              label: Text(_isSaving ? 'جاري الإنشاء...' : 'إنشاء العقد وفتحه في Word 📝'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              ),
             ),
         ],
       ),
     );
   }
 
-  /// اختيار الوكالة المرتبطة بالشخص (عند صفة "وكيل")
-  Widget _buildPoaPicker(_PersonInParty person) {
-    final poasAsync = ref.watch(allPoasProvider);
-    return poasAsync.when(
-      data: (allPoas) {
-        if (allPoas.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.warning.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.warning_amber, size: 16, color: AppColors.warning),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'لا توجد وكالات مسجلة. أضف وكالة من شاشة الوكالات.',
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
-                  ),
-                ),
-              ],
-            ),
-          );
+  void _goToNextStep() {
+    if (!_validateBasicInfo()) return;
+    setState(() => _currentStep++);
+  }
+
+  bool _validateBasicInfo() {
+    if (_legalCategory == null || _legalSubcategory == null) {
+      _showError('يرجى اختيار التصنيف القانوني والفرعي');
+      return false;
+    }
+    if (_parties.length < 2) {
+      _showError('العقد يحتاج طرفين على الأقل');
+      return false;
+    }
+    for (final party in _parties) {
+      for (final person in party.persons) {
+        if (person.personId == null) {
+          _showError('يرجى اختيار شخص لكل شخص في الطرف "${party.role}"');
+          return false;
         }
-        return DropdownButtonFormField<int>(
-          value: person.poaId,
-          isDense: true,
-          decoration: InputDecoration(
-            labelText: 'رقم الوكالة *',
-            hintText: 'اختر الوكالة',
-            prefixIcon: const Icon(Icons.verified_user, size: 18),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          items: allPoas.map((poa) => DropdownMenuItem(
-            value: poa.id,
-            child: Text('${poa.poaNumber ?? poa.id.toString()} — ${poa.subType ?? 'عامة'}'),
-          )).toList(),
-          onChanged: (v) => setState(() => person.poaId = v),
-        );
-      },
-      loading: () => const LinearProgressIndicator(),
-      error: (_, __) => const Text('خطأ في تحميل الوكالات'),
+      }
+    }
+    if (_titleController.text.trim().isEmpty) {
+      _showError('يرجى إدخال عنوان للعقد');
+      return false;
+    }
+    if (_paymentMethod == 'تقسيط' && _installments.isEmpty) {
+      _showError('يرجى إضافة الأقساط عند اختيار التقسيط');
+      return false;
+    }
+    return true;
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: AppColors.error),
     );
   }
 
-  void _addParty() {
-    setState(() {
-      final roles = _defaultPartyRoles;
-      final role = _parties.length < roles.length ? roles[_parties.length] : 'طرف ${_parties.length + 1}';
-      _parties.add(_PartyEntry(role: role));
-    });
-  }
-
-  /// حوار سريع لإضافة شخص جديد من داخل الويزارد
-  void _showQuickAddPerson(BuildContext context, _PersonInParty person) {
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final idCtrl = TextEditingController();
-
-    showDialog<int>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('إضافة شخص جديد'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'الاسم الكامل *')),
-            const SizedBox(height: 8),
-            TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'الهاتف')),
-            const SizedBox(height: 8),
-            TextField(controller: idCtrl, decoration: const InputDecoration(labelText: 'رقم الهوية')),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameCtrl.text.trim().isEmpty) return;
-              try {
-                final personId = await ref.read(personRepositoryProvider).createPerson(
-                  person: PersonsCompanion.insert(
-                    fullName: nameCtrl.text.trim(),
-                    phone1: Value(phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim()),
-                    nationalId: Value(idCtrl.text.trim().isEmpty ? null : idCtrl.text.trim()),
-                  ),
-                );
-                ref.invalidate(allPersonsProvider);
-                if (ctx.mounted) Navigator.pop(ctx, personId);
-              } catch (e) {
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(content: Text('خطأ: $e'), backgroundColor: AppColors.error),
-                  );
-                }
-              }
-            },
-            child: const Text('حفظ'),
-          ),
-        ],
-      ),
-    ).then((personId) {
-      if (personId != null && mounted) {
-        setState(() => person.personId = personId);
-      }
-    });
-  }
-
   // =========================================================================
-  // الخطوة 3: تفاصيل العقد
+  // الخطوة 1: المعلومات الأساسية (صفحة واحدة شاملة)
   // =========================================================================
-  Widget _buildSubjectStep() {
+  
+  Widget _buildBasicInfoStep() {
     final inputDecoration = InputDecoration(
       filled: true,
       fillColor: AppColors.cardBackground,
@@ -855,171 +273,395 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildStepHeader('تفاصيل العقد', 'البيانات الأساسية للعقد — تُحفظ للفهرسة والذكاء الاصطناعي', Icons.subject),
+          // ═══════════════════════════════════════════════════════════════
+          // القسم 1: التصنيف القانوني
+          // ═══════════════════════════════════════════════════════════════
+          _buildSectionHeader('التصنيف القانوني', Icons.category, 'حدد التصنيف الرئيسي والفرعي للعقد'),
+          const SizedBox(height: 12),
+          _buildClassificationFields(inputDecoration),
+          const SizedBox(height: 32),
 
-          // عنوان العقد
-          TextFormField(
-            controller: _titleController,
-            decoration: inputDecoration.copyWith(
-              labelText: 'عنوان العقد *',
-              hintText: 'مثال: عقد بيع شقة في المزة - دمشق',
-              prefixIcon: const Icon(Icons.label_outline),
-            ),
-          ),
-          const SizedBox(height: 16),
+          // ═══════════════════════════════════════════════════════════════
+          // القسم 2: أطراف العقد
+          // ═══════════════════════════════════════════════════════════════
+          _buildSectionHeader('أطراف العقد', Icons.people, 'أضف أطراف العقد مع الصفة والدور'),
+          const SizedBox(height: 12),
+          _buildPartiesSection(inputDecoration),
+          const SizedBox(height: 32),
 
-          // تاريخ الإبرام
-          Text('تواريخ العقد', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(child: _buildDateField('تاريخ الإبرام', _dateSigned, (d) => setState(() => _dateSigned = d), inputDecoration)),
-            const SizedBox(width: 12),
-            Expanded(child: _buildDateField('تاريخ البدء', _dateStart, (d) => setState(() => _dateStart = d), inputDecoration)),
-            const SizedBox(width: 12),
-            Expanded(child: _buildDateField('تاريخ الانتهاء', _dateEnd, (d) => setState(() => _dateEnd = d), inputDecoration)),
-          ]),
-          const SizedBox(height: 16),
+          // ═══════════════════════════════════════════════════════════════
+          // القسم 3: بيانات العقد
+          // ═══════════════════════════════════════════════════════════════
+          _buildSectionHeader('بيانات العقد', Icons.subject, 'العنوان، التواريخ، القيمة، والملاحظات'),
+          const SizedBox(height: 12),
+          _buildContractDataFields(inputDecoration),
+          const SizedBox(height: 32),
 
-          // القيمة المالية
-          Text('القيمة المالية', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(
-              flex: 3,
-              child: TextFormField(
-                controller: _valueController,
-                keyboardType: TextInputType.number,
-                decoration: inputDecoration.copyWith(
-                  labelText: 'القيمة المالية (اختياري)',
-                  hintText: 'مثال: 50000000',
-                  prefixIcon: const Icon(Icons.attach_money),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: _currency,
-                decoration: inputDecoration.copyWith(labelText: 'العملة'),
-                items: const [
-                  DropdownMenuItem(value: 'ل.س', child: Text('ل.س')),
-                  DropdownMenuItem(value: 'دولار', child: Text('دولار')),
-                  DropdownMenuItem(value: 'يورو', child: Text('يورو')),
-                ],
-                onChanged: (v) => setState(() => _currency = v ?? 'ل.س'),
-              ),
-            ),
-          ]),
-          const SizedBox(height: 16),
+          // ═══════════════════════════════════════════════════════════════
+          // القسم 4: طريقة الدفع والأقساط
+          // ═══════════════════════════════════════════════════════════════
+          _buildSectionHeader('طريقة الدفع', Icons.payment, 'اختر طريقة الدفع المناسبة'),
+          const SizedBox(height: 12),
+          _buildPaymentSection(inputDecoration),
+          const SizedBox(height: 32),
 
-          // مكان الإبرام
-          TextFormField(
-            controller: _locationController,
-            decoration: inputDecoration.copyWith(
-              labelText: 'مكان الإبرام (اختياري)',
-              hintText: 'مثال: دمشق - كاتب العدل الأول',
-              prefixIcon: const Icon(Icons.location_on),
-            ),
-          ),
-          const SizedBox(height: 16),
+          // ═══════════════════════════════════════════════════════════════
+          // القسم 5: التذكيرات الزمنية (اختياري)
+          // ═══════════════════════════════════════════════════════════════
+          _buildSectionHeader('التذكيرات الزمنية', Icons.alarm, 'أضف تذكيرات للمواعيد المهمة (اختياري)'),
+          const SizedBox(height: 12),
+          _buildRemindersSection(inputDecoration),
+          const SizedBox(height: 32),
 
-          // قابلية التجديد
-          Row(children: [
-            Checkbox(
-              value: _isRenewable,
-              onChanged: (v) => setState(() => _isRenewable = v ?? false),
-              activeColor: AppColors.primaryNavy,
-            ),
-            const Text('العقد قابل للتجديد'),
-            if (_isRenewable) ...[
-              const SizedBox(width: 16),
-              DropdownButtonFormField<String>(
-                value: _renewalType,
-                isDense: true,
-                decoration: inputDecoration.copyWith(labelText: 'نوع التجديد'),
-                items: const [
-                  DropdownMenuItem(value: 'تلقائي', child: Text('تلقائي')),
-                  DropdownMenuItem(value: 'اتفاق', child: Text('باتفاق الأطراف')),
-                  DropdownMenuItem(value: 'قرار', child: Text('بقرار')),
-                ],
-                onChanged: (v) => setState(() => _renewalType = v ?? 'تلقائي'),
-              ),
-            ],
-          ]),
-          const SizedBox(height: 16),
+          // ═══════════════════════════════════════════════════════════════
+          // القسم 6: المستندات المرفقة (اختياري)
+          // ═══════════════════════════════════════════════════════════════
+          _buildSectionHeader('المستندات المرفقة', Icons.attach_file, 'أرفق مستندات مرتبطة بالعقد (اختياري)'),
+          const SizedBox(height: 12),
+          _buildDocumentsSection(inputDecoration),
+          const SizedBox(height: 32),
 
-          // حالة العقد + التوثيق
-          Text('الحالة والتوثيق', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: _contractStatus,
-                decoration: inputDecoration.copyWith(labelText: 'حالة العقد'),
-                items: const [
-                  DropdownMenuItem(value: 'active', child: Text('ساري المفعول')),
-                  DropdownMenuItem(value: 'expired', child: Text('منتهٍ')),
-                  DropdownMenuItem(value: 'cancelled', child: Text('ملغى')),
-                  DropdownMenuItem(value: 'disputed', child: Text('متنازع عليه')),
-                ],
-                onChanged: (v) => setState(() => _contractStatus = v ?? 'active'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: _notarizationType,
-                decoration: inputDecoration.copyWith(labelText: 'نوع التوثيق'),
-                items: const [
-                  DropdownMenuItem(value: 'عرفي', child: Text('عرفي')),
-                  DropdownMenuItem(value: 'notary', child: Text('كاتب العدل')),
-                  DropdownMenuItem(value: 'court', child: Text('المحكمة')),
-                  DropdownMenuItem(value: 'chamber', child: Text('غرفة التجارة')),
-                ],
-                onChanged: (v) => setState(() => _notarizationType = v ?? 'عرفي'),
-              ),
-            ),
-          ]),
-          if (_notarizationType != 'عرفي') ...[
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _notarizationNumberController,
-              decoration: inputDecoration.copyWith(
-                labelText: 'رقم التوثيق',
-                hintText: _notarizationType == 'notary' ? 'رقم سند كاتب العدل' : 'رقم التوثيق',
-                prefixIcon: const Icon(Icons.confirmation_number),
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
+          // ═══════════════════════════════════════════════════════════════
+          // القسم 7: أتعاب المكتب
+          // ═══════════════════════════════════════════════════════════════
+          _buildSectionHeader('أتعاب المكتب', Icons.account_balance, 'حدد أتعاب المكتب لتنظيم هذا العقد'),
+          const SizedBox(height: 12),
+          _buildFeeSection(inputDecoration),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
 
-          // طريقة الدفع
-          Text('طريقة الدفع', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _paymentChip('نقدي', Icons.money),
-              _paymentChip('تقسيط', Icons.calendar_month),
-              _paymentChip('تحويل بنكي', Icons.account_balance),
-              _paymentChip('شيك', Icons.payments),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ملاحظات
-          TextFormField(
-            controller: _notesController,
-            maxLines: 3,
-            decoration: inputDecoration.copyWith(
-              labelText: 'ملاحظات حرة (اختياري)',
-              hintText: 'أي ملاحظات تريد تسجيلها حول هذا العقد...',
-              prefixIcon: const Icon(Icons.notes),
+  Widget _buildSectionHeader(String title, IconData icon, String subtitle) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primaryNavy.withOpacity(0.1), AppColors.primaryNavy.withOpacity(0.05)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryNavy.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primaryNavy, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTextStyles.titleMedium.copyWith(color: AppColors.primaryNavy, fontWeight: FontWeight.bold)),
+                Text(subtitle, style: AppTextStyles.bodySmallSecondary),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // التصنيف القانوني
+  // -------------------------------------------------------------------------
+  Widget _buildClassificationFields(InputDecoration baseDecoration) {
+    return Row(
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            value: _legalCategory,
+            decoration: baseDecoration.copyWith(labelText: 'التصنيف الرئيسي *'),
+            items: const [
+              DropdownMenuItem(value: 'عقود واردة على الملكية', child: Text('عقود واردة على الملكية')),
+              DropdownMenuItem(value: 'عقود الاستثمار', child: Text('عقود الاستثمار')),
+              DropdownMenuItem(value: 'عقود العمل والمقاولة', child: Text('عقود العمل والمقاولة')),
+              DropdownMenuItem(value: 'عقود الشركات', child: Text('عقود الشركات')),
+              DropdownMenuItem(value: 'عقود الصلح', child: Text('عقود الصلح')),
+              DropdownMenuItem(value: 'عقود أخرى', child: Text('عقود أخرى')),
+            ],
+            onChanged: (v) => setState(() {
+              _legalCategory = v;
+              _legalSubcategory = null;
+            }),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            value: _legalSubcategory,
+            decoration: baseDecoration.copyWith(labelText: 'التصنيف الفرعي *'),
+            items: _getSubcategories(),
+            onChanged: (v) => setState(() => _legalSubcategory = v),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<DropdownMenuItem<String>> _getSubcategories() {
+    final Map<String, List<String>> subcats = {
+      'عقود واردة على الملكية': ['بيع عقار', 'إيجار سكني', 'إيجار تجاري', 'هبة', 'مبادلة'],
+      'عقود الاستثمار': ['استثمار عقاري', 'استثمار تجاري', 'مشاركة'],
+      'عقود العمل والمقاولة': ['عقد عمل', 'مقاولة', 'خدمات'],
+      'عقود الشركات': ['تأسيس شركة', 'شراكة', 'تعديل عقد شركة'],
+      'عقود الصلح': ['صلح إسقاط', 'صلح إقرار', 'صلح معاوضة'],
+      'عقود أخرى': ['عقد وكالة', 'عقد كفال
+ة', 'عقد ضمان'],
+    };
+    final list = subcats[_legalCategory] ?? [];
+    return list.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList();
+  }
+
+  // -------------------------------------------------------------------------
+  // أطراف العقد
+  // -------------------------------------------------------------------------
+  Widget _buildPartiesSection(InputDecoration baseDecoration) {
+    final personsAsync = ref.watch(allPersonsProvider);
+    return Column(
+      children: [
+        ...List.generate(_parties.length, (i) => _buildPartyCard(i, _parties[i], personsAsync, baseDecoration)),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => setState(() => _parties.add(_PartyEntry(role: 'طرف ${_parties.length + 1}'))),
+          icon: const Icon(Icons.person_add),
+          label: const Text('إضافة طرف'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPartyCard(int index, _PartyEntry party, AsyncValue<List<PersonEntity>> personsAsync, InputDecoration baseDecoration) {
+    return GlassmorphicCard(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  initialValue: party.role,
+                  decoration: baseDecoration.copyWith(labelText: 'صفة الطرف'),
+                  onChanged: (v) => party.role = v,
+                ),
+              ),
+              if (_parties.length > 2)
+                IconButton(
+                  icon: const Icon(Icons.delete, color: AppColors.error),
+                  onPressed: () => setState(() => _parties.removeAt(index)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...List.generate(party.persons.length, (j) => _buildPersonInPartyRow(party.persons[j], personsAsync, baseDecoration)),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: () => setState(() => party.persons.add(_PersonInParty())),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('إضافة شخص لهذا الطرف'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonInPartyRow(_PersonInParty person, AsyncValue<List<PersonEntity>> personsAsync, InputDecoration baseDecoration) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: personsAsync.when(
+              data: (persons) => DropdownButtonFormField<int>(
+                value: person.personId,
+                decoration: baseDecoration.copyWith(labelText: 'اختر الشخص *'),
+                isExpanded: true,
+                items: persons.map((p) => DropdownMenuItem(
+                  value: p.id,
+                  child: Text(p.fullName),
+                )).toList(),
+                onChanged: (v) => setState(() => person.personId = v),
+              ),
+              loading: () => const CircularProgressIndicator(),
+              error: (e, _) => Text('خطأ: $e'),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: person.capacity,
+              decoration: baseDecoration.copyWith(labelText: 'الصفة'),
+              items: const [
+                DropdownMenuItem(value: 'أصيل', child: Text('أصيل')),
+                DropdownMenuItem(value: 'وكيل', child: Text('وكيل')),
+                DropdownMenuItem(value: 'ولي', child: Text('ولي')),
+                DropdownMenuItem(value: 'وصي', child: Text('وصي')),
+                DropdownMenuItem(value: 'ممثل شركة', child: Text('ممثل شركة')),
+              ],
+              onChanged: (v) => setState(() => person.capacity = v ?? 'أصيل'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // بيانات العقد
+  // -------------------------------------------------------------------------
+  Widget _buildContractDataFields(InputDecoration baseDecoration) {
+    return Column(
+      children: [
+        TextFormField(
+          controller: _titleController,
+          decoration: baseDecoration.copyWith(
+            labelText: 'عنوان العقد *',
+            hintText: 'مثال: عقد بيع شقة في المزة',
+            prefixIcon: const Icon(Icons.label_outline),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text('تواريخ العقد', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: _buildDateField('تاريخ الإبرام', _dateSigned, (d) => setState(() => _dateSigned = d), baseDecoration)),
+          const SizedBox(width: 12),
+          Expanded(child: _buildDateField('تاريخ البدء', _dateStart, (d) => setState(() => _dateStart = d), baseDecoration)),
+          const SizedBox(width: 12),
+          Expanded(child: _buildDateField('تاريخ الانتهاء', _dateEnd, (d) => setState(() => _dateEnd = d), baseDecoration)),
+        ]),
+        const SizedBox(height: 16),
+        Text('القيمة المالية', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(
+            flex: 3,
+            child: TextFormField(
+              controller: _valueController,
+              keyboardType: TextInputType.number,
+              decoration: baseDecoration.copyWith(
+                labelText: 'القيمة المالية (اختياري)',
+                prefixIcon: const Icon(Icons.attach_money),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _currency,
+              decoration: baseDecoration.copyWith(labelText: 'العملة'),
+              items: const [
+                DropdownMenuItem(value: 'ل.س', child: Text('ل.س')),
+                DropdownMenuItem(value: 'دولار', child: Text('دولار')),
+                DropdownMenuItem(value: 'يورو', child: Text('يورو')),
+              ],
+              onChanged: (v) => setState(() => _currency = v ?? 'ل.س'),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _locationController,
+          decoration: baseDecoration.copyWith(
+            labelText: 'مكان الإبرام (اختياري)',
+            prefixIcon: const Icon(Icons.location_on),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _contractStatus,
+              decoration: baseDecoration.copyWith(labelText: 'حالة العقد'),
+              items: const [
+                DropdownMenuItem(value: 'active', child: Text('ساري المفعول')),
+                DropdownMenuItem(value: 'expired', child: Text('منتهٍ')),
+                DropdownMenuItem(value: 'cancelled', child: Text('ملغى')),
+              ],
+              onChanged: (v) => setState(() => _contractStatus = v ?? 'active'),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _notarizationType,
+              decoration: baseDecoration.copyWith(labelText: 'نوع التوثيق'),
+              items: const [
+                DropdownMenuItem(value: 'عرفي', child: Text('عرفي')),
+                DropdownMenuItem(value: 'notary', child: Text('كاتب العدل')),
+                DropdownMenuItem(value: 'court', child: Text('المحكمة')),
+              ],
+              onChanged: (v) => setState(() => _notarizationType = v ?? 'عرفي'),
+            ),
+          ),
+        ]),
+        if (_notarizationType != 'عرفي') ...[
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _notarizationNumberController,
+            decoration: baseDecoration.copyWith(labelText: 'رقم التوثيق'),
+          ),
+        ],
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _notesController,
+          maxLines: 3,
+          decoration: baseDecoration.copyWith(
+            labelText: 'ملاحظات حرة (اختياري)',
+            prefixIcon: const Icon(Icons.notes),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateField(String label, DateTime? value, ValueChanged<DateTime> onChanged, InputDecoration baseDecoration) {
+    return InkWell(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value ?? DateTime.now(),
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+        );
+        if (picked != null) onChanged(picked);
+      },
+      child: InputDecorator(
+        decoration: baseDecoration.copyWith(
+          labelText: label,
+          prefixIcon: const Icon(Icons.calendar_today),
+        ),
+        child: Text(
+          value != null ? DateFormat('yyyy-MM-dd').format(value) : 'اختر التاريخ',
+          style: TextStyle(color: value != null ? AppColors.textPrimary : AppColors.textSecondary),
+        ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // طريقة الدفع والأقساط
+  // -------------------------------------------------------------------------
+  Widget _buildPaymentSection(InputDecoration baseDecoration) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _paymentChip('نقدي', Icons.money),
+            _paymentChip('تقسيط', Icons.calendar_month),
+            _paymentChip('تحويل بنكي', Icons.account_balance),
+            _paymentChip('شيك', Icons.payments),
+          ],
+        ),
+        if (_paymentMethod == 'تقسيط') ...[
+          const SizedBox(height: 24),
+          _buildInstallmentsSection(baseDecoration),
+        ],
+      ],
     );
   }
 
@@ -1040,40 +682,400 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       selected: isSelected,
       selectedColor: AppColors.primaryNavy,
       backgroundColor: AppColors.cardBackground,
-      side: BorderSide(
-        color: isSelected ? AppColors.primaryNavy : AppColors.cardBorder,
-      ),
-      onSelected: (_) => setState(() => _paymentMethod = method),
+      side: BorderSide(color: isSelected ? AppColors.primaryNavy : AppColors.cardBorder),
+      onSelected: (_) => setState(() {
+        _paymentMethod = method;
+        if (method != 'تقسيط') _installments.clear();
+      }),
     );
   }
 
-  Widget _buildDateField(String label, DateTime? value, ValueChanged<DateTime> onChanged, InputDecoration baseDecoration) {
-    return InkWell(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: value ?? DateTime.now(),
-          firstDate: DateTime(2000),
-          lastDate: DateTime(2100),
-        );
-        if (picked != null) onChanged(picked);
-      },
-      child: InputDecorator(
-        decoration: baseDecoration.copyWith(
-          labelText: label,
-          prefixIcon: const Icon(Icons.calendar_today, size: 18),
-        ),
-        child: Text(
-          value == null ? 'اختر التاريخ' : '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
-          style: TextStyle(color: value == null ? AppColors.textSecondary : AppColors.textPrimary),
-        ),
+  Widget _buildInstallmentsSection(InputDecoration baseDecoration) {
+    return GlassmorphicCard(
+      color: AppColors.primaryNavy.withOpacity(0.05),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('الأقساط', style: AppTextStyles.titleMedium.copyWith(color: AppColors.primaryNavy, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: TextFormField(
+                keyboardType: TextInputType.number,
+                decoration: baseDecoration.copyWith(labelText: 'عدد الأقساط'),
+                onChanged: (v) => setState(() => _installmentCount = int.tryParse(v) ?? 0),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: _installmentValueController,
+                keyboardType: TextInputType.number,
+                decoration: baseDecoration.copyWith(labelText: 'قيمة القسط'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            ElevatedButton.icon(
+              onPressed: _generateInstallments,
+              icon: const Icon(Icons.add),
+              label: const Text('توليد'),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryNavy),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          if (_installments.isNotEmpty) ...[
+            const Divider(),
+            const SizedBox(height: 8),
+            ..._installments.asMap().entries.map((entry) => _buildInstallmentRow(entry.key, entry.value, baseDecoration)),
+          ],
+        ],
       ),
+    );
+  }
+
+  Widget _buildInstallmentRow(int index, _InstallmentEntry installment, InputDecoration baseDecoration) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: AppColors.primaryNavy,
+            child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text('${installment.amount} $_currency', style: const TextStyle(fontWeight: FontWeight.bold))),
+          Expanded(
+            child: InkWell(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: installment.dueDate,
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) setState(() => installment.dueDate = picked);
+              },
+              child: Text(
+                DateFormat('yyyy-MM-dd').format(installment.dueDate),
+                style: const TextStyle(decoration: TextDecoration.underline),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: AppColors.error, size: 20),
+            onPressed: () => setState(() => _installments.removeAt(index)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _generateInstallments() {
+    final amount = double.tryParse(_installmentValueController.text);
+    if (_installmentCount <= 0 || amount == null) {
+      _showError('يرجى إدخال عدد الأقساط وقيمة القسط');
+      return;
+    }
+    setState(() {
+      _installments.clear();
+      final startDate = _dateStart ?? DateTime.now();
+      for (int i = 0; i < _installmentCount; i++) {
+        _installments.add(_InstallmentEntry(
+          amount: amount,
+          dueDate: DateTime(startDate.year, startDate.month + i + 1, startDate.day),
+        ));
+      }
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // التذكيرات الزمنية
+  // -------------------------------------------------------------------------
+  Widget _buildRemindersSection(InputDecoration baseDecoration) {
+    return Column(
+      children: [
+        ..._reminders.asMap().entries.map((entry) => _buildReminderCard(entry.key, entry.value, baseDecoration)),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => _showAddReminderDialog(baseDecoration),
+          icon: const Icon(Icons.add_alarm),
+          label: const Text('إضافة تذكير'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReminderCard(int index, _ReminderEntry reminder, InputDecoration baseDecoration) {
+    return GlassmorphicCard(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(Icons.alarm, color: AppColors.primaryNavy),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(reminder.type == 'expiry' ? 'تذكير انتهاء' : reminder.type == 'renewal' ? 'تذكير تجديد' : 'تذكير يدوي',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(reminder.date)}'),
+                if (reminder.note.isNotEmpty) Text('ملاحظة: ${reminder.note}', style: AppTextStyles.bodySmallSecondary),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: AppColors.error),
+            onPressed: () => setState(() => _reminders.removeAt(index)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddReminderDialog(InputDecoration baseDecoration) {
+    String type = 'expiry';
+    DateTime? date;
+    final noteController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إضافة تذكير جديد'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<String>(
+              value: type,
+              decoration: baseDecoration.copyWith(labelText: 'نوع التذكير'),
+              items: const [
+                DropdownMenuItem(value: 'expiry', child: Text('تذكير انتهاء')),
+                DropdownMenuItem(value: 'renewal', child: Text('تذكير تجديد')),
+                DropdownMenuItem(value: 'manual', child: Text('تذكير يدوي')),
+              ],
+              onChanged: (v) => type = v ?? 'expiry',
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: ctx,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) date = picked;
+              },
+              child: InputDecorator(
+                decoration: baseDecoration.copyWith(labelText: 'تاريخ التذكير'),
+                child: Text(date != null ? DateFormat('yyyy-MM-dd').format(date!) : 'اختر التاريخ'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: noteController,
+              decoration: baseDecoration.copyWith(labelText: 'ملاحظة (اختياري)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          ElevatedButton(
+            onPressed: () {
+              if (date == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('يرجى اختيار تاريخ التذكير'), backgroundColor: AppColors.error),
+                );
+                return;
+              }
+              setState(() {
+                _reminders.add(_ReminderEntry(type: type, date: date!, note: noteController.text.trim()));
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('إضافة'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // المستندات المرفقة
+  // -------------------------------------------------------------------------
+  Widget _buildDocumentsSection(InputDecoration baseDecoration) {
+    return Column(
+      children: [
+        ..._attachedDocuments.asMap().entries.map((entry) => _buildDocumentCard(entry.key, entry.value, baseDecoration)),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => _showAttachDocumentDialog(baseDecoration),
+          icon: const Icon(Icons.attach_file),
+          label: const Text('إرفاق مستند'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDocumentCard(int index, _DocumentEntry doc, InputDecoration baseDecoration) {
+    return GlassmorphicCard(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(Icons.description, color: AppColors.primaryNavy),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(doc.nameController.text, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(doc.type, style: AppTextStyles.bodySmallSecondary),
+                if (doc.file != null) Text(path.basename(doc.file!.path), style: AppTextStyles.bodySmallSecondary),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: AppColors.error),
+            onPressed: () => setState(() {
+              doc.nameController.dispose();
+              _attachedDocuments.removeAt(index);
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAttachDocumentDialog(InputDecoration baseDecoration) {
+    final nameController = TextEditingController();
+    String docType = 'مستند عقد';
+    File? selectedFile;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إرفاق مستند جديد'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: nameController,
+              decoration: baseDecoration.copyWith(labelText: 'اسم المستند *'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: docType,
+              decoration: baseDecoration.copyWith(labelText: 'نوع المستند'),
+              items: const [
+                DropdownMenuItem(value: 'مستند عقد', child: Text('مستند عقد')),
+                DropdownMenuItem(value: 'هوية', child: Text('هوية')),
+                DropdownMenuItem(value: 'سند توكيل', child: Text('سند توكيل')),
+                DropdownMenuItem(value: 'إخراج قيد', child: Text('إخراج قيد')),
+                DropdownMenuItem(value: 'أخرى', child: Text('أخرى')),
+              ],
+              onChanged: (v) => docType = v ?? 'مستند عقد',
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final result = await file_picker.FilePicker.platform.pickFiles();
+                if (result != null) {
+                  selectedFile = File(result.files.single.path!);
+                  Navigator.pop(ctx);
+                  _showAttachDocumentDialog(baseDecoration);
+                }
+              },
+              icon: const Icon(Icons.upload_file),
+              label: Text(selectedFile != null ? path.basename(selectedFile!.path) : 'اختيار ملف'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('يرجى إدخال اسم المستند'), backgroundColor: AppColors.error),
+                );
+                return;
+              }
+              setState(() {
+                _attachedDocuments.add(_DocumentEntry(
+                  nameController: nameController,
+                  type: docType,
+                  file: selectedFile,
+                ));
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('إضافة'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // أتعاب المكتب
+  // -------------------------------------------------------------------------
+  Widget _buildFeeSection(InputDecoration baseDecoration) {
+    return GlassmorphicCard(
+      child: Column(
+        children: [
+          DropdownButtonFormField<String>(
+            value: _feeAgreementType,
+            decoration: baseDecoration.copyWith(labelText: 'نوع الأتعاب'),
+            items: const [
+              DropdownMenuItem(value: 'fixed', child: Text('مبلغ مقطوع')),
+              DropdownMenuItem(value: 'percentage', child: Text('نسبة مئوية')),
+              DropdownMenuItem(value: 'free', child: Text('مجاني / بدون أتعاب')),
+            ],
+            onChanged: (v) => setState(() => _feeAgreementType = v ?? 'fixed'),
+          ),
+          if (_feeAgreementType != 'free') ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _feeAmountController,
+              keyboardType: TextInputType.number,
+              decoration: baseDecoration.copyWith(
+                labelText: _feeAgreementType == 'percentage' ? 'النسبة المئوية' : 'المبلغ',
+                suffixText: _feeAgreementType == 'percentage' ? '%' : _currency,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildFeePartyPicker(baseDecoration),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeePartyPicker(InputDecoration baseDecoration) {
+    final clientParties = <DropdownMenuItem<int>>[];
+    for (final party in _parties) {
+      for (final person in party.persons) {
+        if (person.personId != null) {
+          clientParties.add(DropdownMenuItem(
+            value: person.personId,
+            child: Text('${party.role} (ID: ${person.personId})'),
+          ));
+        }
+      }
+    }
+    
+    return DropdownButtonFormField<int>(
+      value: _feePartyId,
+      decoration: baseDecoration.copyWith(labelText: 'الموكل (دافع الأتعاب)'),
+      items: clientParties,
+      onChanged: (v) => setState(() => _feePartyId = v),
     );
   }
 
   // =========================================================================
-  // الخطوة 4: اختيار النموذج
+  // الخطوة 2: اختيار النموذج
   // =========================================================================
+  
   Widget _buildTemplateStep() {
     final templatesAsync = ref.watch(contractRepositoryProvider)
         .watchContractTemplates(type: _legalSubcategory);
@@ -1081,13 +1083,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildStepHeader(
-          'اختيار نموذج العقد',
-          'اختر نموذجاً جاهزاً، أو استورد نموذجك الخاص، أو ابدأ من ورقة فارغة',
-          Icons.description,
-        ),
-
-        // الخيارات الثلاثة
+        _buildSectionHeader('اختيار نموذج العقد', Icons.description, 'اختر نموذجاً جاهزاً، أو استورد نموذجك الخاص، أو ابدأ من ورقة فارغة'),
+        const SizedBox(height: 24),
         Row(
           children: [
             _methodChip('📚 من المكتبة', 'from_template', Icons.library_books),
@@ -1098,11 +1095,17 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           ],
         ),
         const SizedBox(height: 24),
-
-        // حسب الخيار المختار
-        if (_creationMethod == 'from_template') _buildTemplateLibrary(templatesAsync),
-        if (_creationMethod == 'uploaded') _buildUploadSection(),
-        if (_creationMethod == 'blank') _buildBlankInfo(),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                if (_creationMethod == 'from_template') _buildTemplateLibrary(templatesAsync),
+                if (_creationMethod == 'uploaded') _buildUploadSection(),
+                if (_creationMethod == 'blank') _buildBlankInfo(),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1159,17 +1162,9 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               children: [
                 const Icon(Icons.library_books_outlined, size: 48, color: AppColors.textSecondary),
                 const SizedBox(height: 12),
-                Text(
-                  'لا توجد قوالب متاحة لتصنيف "${_legalSubcategory ?? ""}"',
-                  style: AppTextStyles.bodyMediumSecondary,
-                  textAlign: TextAlign.center,
-                ),
+                Text('لا توجد قوالب متاحة لتصنيف "${_legalSubcategory ?? ""}"', style: AppTextStyles.bodyMediumSecondary, textAlign: TextAlign.center),
                 const SizedBox(height: 8),
-                Text(
-                  'يمكنك استيراد نموذج من جهازك أو البدء من ورقة فارغة',
-                  style: AppTextStyles.bodySmallSecondary,
-                  textAlign: TextAlign.center,
-                ),
+                Text('يمكنك استيراد نموذج من جهازك أو البدء من ورقة فارغة', style: AppTextStyles.bodySmallSecondary, textAlign: TextAlign.center),
               ],
             ),
           );
@@ -1193,8 +1188,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.description,
-                      color: isSelected ? AppColors.primaryNavy : AppColors.textSecondary),
+                    Icon(Icons.description, color: isSelected ? AppColors.primaryNavy : AppColors.textSecondary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -1208,16 +1202,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                         ],
                       ),
                     ),
-                    if (t.isDefault) Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondaryGold.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Text('افتراضي ⭐', style: TextStyle(fontSize: 10)),
-                    ),
-                    if (isSelected)
-                      const Icon(Icons.check_circle, color: AppColors.success),
+                    if (isSelected) const Icon(Icons.check_circle, color: AppColors.success),
                   ],
                 ),
               ),
@@ -1229,15 +1214,26 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   Widget _buildUploadSection() {
+    final inputDecoration = InputDecoration(
+      filled: true,
+      fillColor: AppColors.cardBackground,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppColors.cardBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primaryNavy, width: 2),
+      ),
+    );
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _uploadedFile != null ? AppColors.success : AppColors.cardBorder,
-          style: _uploadedFile != null ? BorderStyle.solid : BorderStyle.solid,
-        ),
+        border: Border.all(color: _uploadedFile != null ? AppColors.success : AppColors.cardBorder),
       ),
       child: Column(
         children: [
@@ -1248,9 +1244,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           ),
           const SizedBox(height: 12),
           Text(
-            _uploadedFile != null
-                ? 'تم اختيار: ${path.basename(_uploadedFile!.path)}'
-                : 'استورد نموذجك الخاص (Word/PDF)',
+            _uploadedFile != null ? 'تم اختيار: ${path.basename(_uploadedFile!.path)}' : 'استورد نموذجك الخاص (Word/PDF)',
             style: AppTextStyles.bodyLarge,
             textAlign: TextAlign.center,
           ),
@@ -1259,6 +1253,15 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             onPressed: _pickUploadFile,
             icon: const Icon(Icons.folder_open),
             label: const Text('اختيار ملف من جهازي'),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _templateNameController,
+            decoration: inputDecoration.copyWith(
+              labelText: 'اسم النموذج (للاستخدام المستقبلي) *',
+              hintText: 'مثال: عقد بيع شقة سكنية',
+              prefixIcon: const Icon(Icons.label),
+            ),
           ),
           const SizedBox(height: 12),
           const Text(
@@ -1283,24 +1286,16 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         children: [
           const Icon(Icons.note_add, size: 48, color: AppColors.primaryNavy),
           const SizedBox(height: 12),
-          Text(
-            'سيُنشأ ملف عقد فارغ يمكنك تحريره في Microsoft Word',
-            style: AppTextStyles.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
+          Text('سيُنشأ ملف عقد فارغ يمكنك تحريره في Microsoft Word', style: AppTextStyles.bodyLarge, textAlign: TextAlign.center),
           const SizedBox(height: 8),
-          Text(
-            'اكتب العقد بنفسك خارج التطبيق ثم اربطه بملف العقد',
-            style: AppTextStyles.bodySmallSecondary,
-            textAlign: TextAlign.center,
-          ),
+          Text('اكتب العقد بنفسك خارج التطبيق ثم اربطه بملف العقد', style: AppTextStyles.bodySmallSecondary, textAlign: TextAlign.center),
         ],
       ),
     );
   }
 
   Future<void> _pickUploadFile() async {
-    final result = await file_picker.FilePicker.pickFiles(
+    final result = await file_picker.FilePicker.platform.pickFiles(
       type: file_picker.FileType.custom,
       allowedExtensions: const ['docx', 'doc', 'pdf', 'rtf'],
     );
@@ -1310,441 +1305,26 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   // =========================================================================
-  // الخطوة 5: التحرير والمتغيرات
+  // الحفظ النهائي وفتح Word
   // =========================================================================
-  Widget _buildEditStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildStepHeader(
-          'تحرير العقد',
-          'املأ المتغيرات داخلياً أو افتح الملف بـ Word للتحرير الكامل',
-          Icons.edit_note,
-        ),
-
-        // ملخص ما تم
-        _buildSummaryCard(),
-        const SizedBox(height: 24),
-
-        // رسالة توضيحية للملفات المستوردة
-        if (_creationMethod == 'uploaded' && _uploadedFile != null) ...[
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.success.withOpacity(0.3)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.upload_file, color: AppColors.success, size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'تم رفع الملف بنجاح',
-                            style: AppTextStyles.labelLarge.copyWith(color: AppColors.success),
-                          ),
-                          Text(
-                            path.basename(_uploadedFile!.path),
-                            style: AppTextStyles.bodySmallSecondary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline, size: 18, color: AppColors.info),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'اضغط "فتح في Microsoft Word" لتحرير العقد مباشرة. بعد التعديل والحفظ في Word، سيتم استخدام الملف المعدّل عند حفظ العقد.',
-                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.info),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-
-        // المتغيرات (إذا وُجدت)
-        if (_creationMethod == 'from_template' && _selectedTemplate != null) ...[
-          if (!_variablesDetected)
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: _detectVariables,
-                icon: const Icon(Icons.auto_fix_high),
-                label: const Text('اكتشاف متغيرات النموذج'),
-              ),
-            ),
-          if (_variablesDetected && _detectedVariables.isNotEmpty) ...[
-            Text('المتغيرات المكتشفة في النموذج:', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.info.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.info.withOpacity(0.2)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.auto_awesome, size: 16, color: AppColors.info),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '🤖 هذه المتغيرات سيملؤها الذكاء الاصطناعي تلقائياً لاحقاً من بيانات الأطراف',
-                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.info),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ..._detectedVariables.map(_buildVariableField),
-          ],
-          if (_variablesDetected && _detectedVariables.isEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: AppColors.warning),
-                  SizedBox(width: 8),
-                  Expanded(child: Text('لم يُعثر على متغيرات {{...}} في هذا القالب.\nيمكنك تحريره مباشرة بـ Word.')),
-                ],
-              ),
-            ),
-          ],
-        ],
-
-        const SizedBox(height: 24),
-
-        // أزرار التحرير
-        _buildEditButtons(),
-      ],
-    );
-  }
-
-  Widget _buildSummaryCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primaryNavy.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primaryNavy.withOpacity(0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('ملخص العقد', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryNavy)),
-          const SizedBox(height: 8),
-          _summaryRow('التصنيف', '${_legalCategory ?? "---"} > ${_legalSubcategory ?? "---"}'),
-          _summaryRow('الأطراف', _parties.map((p) => p.role).join(' + ')),
-          _summaryRow('العنوان', _titleController.text.isEmpty ? '---' : _titleController.text),
-          _summaryRow('النموذج', _creationMethod == 'from_template'
-              ? (_selectedTemplate?.templateName ?? '---')
-              : _creationMethod == 'uploaded'
-                  ? (_uploadedFile != null ? path.basename(_uploadedFile!.path) : '---')
-                  : 'ورقة فارغة'),
-        ],
-      ),
-    );
-  }
-
-  Widget _summaryRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(width: 80, child: Text(label, style: const TextStyle(
-            fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textSecondary,
-          ))),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVariableField(TemplateVariable variable) {
-    final controller = _variableControllers[variable.name] ??= TextEditingController();
-
-    // تلوين حسب النوع
-    Color typeColor;
-    String typeIcon;
-    switch (variable.type) {
-      case 'person': typeColor = AppColors.primaryNavy; typeIcon = '👤'; break;
-      case 'money': typeColor = AppColors.success; typeIcon = '💰'; break;
-      case 'date': typeColor = AppColors.info; typeIcon = '📅'; break;
-      case 'property': typeColor = AppColors.secondaryGold; typeIcon = '🏠'; break;
-      case 'number': typeColor = AppColors.warning; typeIcon = '🔢'; break;
-      default: typeColor = AppColors.textSecondary; typeIcon = '📝'; break;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: '$typeIcon ${variable.name}',
-          hintText: variable.autoFillFromParty ? 'يُملأ تلقائياً من الأطراف' : 'أدخل القيمة',
-          prefixIcon: Icon(
-            variable.type == 'person' ? Icons.person :
-            variable.type == 'money' ? Icons.attach_money :
-            variable.type == 'date' ? Icons.calendar_today :
-            variable.type == 'property' ? Icons.location_city :
-            Icons.text_fields,
-            color: typeColor,
-          ),
-          suffixIcon: variable.autoFillFromParty
-              ? Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text('تلقائي', style: TextStyle(fontSize: 10, color: AppColors.success)),
-                )
-              : null,
-          filled: true,
-          fillColor: AppColors.cardBackground,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: typeColor.withOpacity(0.3)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: typeColor, width: 2),
-          ),
-        ),
-        onChanged: (value) {
-          _variableFillMethods[variable.name] = 'manual';
-        },
-      ),
-    );
-  }
-
-  Widget _buildEditButtons() {
-    return Column(
-      children: [
-        // فتح بـ Word
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _openInWord,
-            icon: const Icon(Icons.open_in_new),
-            label: const Text('📄 فتح في Microsoft Word'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryNavy,
-              foregroundColor: AppColors.textOnLight,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          '🔀 يمكنك ملء المتغيرات هنا ثم فتح Word لتعديل البنود — الاثنان يعملان معاً',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  // =========================================================================
-  // اكتشاف المتغيرات
-  // =========================================================================
-  Future<void> _detectVariables() async {
-    if (_selectedTemplate == null) return;
-
-    setState(() => _variablesDetected = true);
-
-    try {
-      final varService = TemplateVariableService(ref.read(databaseProvider));
-      
-      // محاولة قراءة المتغيرات من ملف .docx الحقيقي
-      final templatePath = _selectedTemplate!.filePath;
-      final templateFile = File(templatePath);
-      
-      if (await templateFile.exists()) {
-        _detectedVariables = await varService.detectVariablesFromDocx(templateFile);
-      }
-      
-      // إذا فشل القراءة أو لم يجد متغيرات — استخدام نص تجريبي للعرض
-      if (_detectedVariables.isEmpty) {
-        final fallbackText = '{{البائع}} يبيع {{المشتري}} العقار رقم {{رقم_العقار}} بثمن {{الثمن}} بتاريخ {{التاريخ}} في {{مكان_الإبرام}}';
-        _detectedVariables = varService.detectVariables(fallbackText);
-      }
-
-      // ملء تلقائي من بيانات الأطراف (أول شخص في كل طرف)
-      for (final variable in _detectedVariables) {
-        if (variable.autoFillFromParty && variable.partyOrder != null) {
-          final targetIndex = variable.partyOrder! - 1;
-          final party = targetIndex >= 0 && targetIndex < _parties.length ? _parties[targetIndex] : null;
-          final firstPerson = party?.persons.isNotEmpty == true ? party!.persons.first : null;
-          if (firstPerson?.personId != null) {
-            final persons = ref.read(allPersonsProvider(null)).valueOrNull ?? [];
-            final person = persons.where((p) => p.id == firstPerson!.personId).firstOrNull;
-            if (person != null) {
-              _variableControllers[variable.name] ??= TextEditingController();
-              _variableControllers[variable.name]!.text = person.fullName;
-              _variableFillMethods[variable.name] = 'auto';
-            }
-          }
-        } else if (variable.type == 'date') {
-          _variableControllers[variable.name] ??= TextEditingController();
-          _variableControllers[variable.name]!.text = DateTime.now().toString().substring(0, 10);
-          _variableFillMethods[variable.name] = 'auto';
-        }
-      }
-
-      // تسجيل الاكتشاف (AI Learning)
-      await varService.logTemplateUsage(
-        templateId: _selectedTemplate!.id,
-        contractId: null,
-        eventType: 'variables_detected',
-        eventData: {
-          'variables': _detectedVariables.map((v) => v.toJson()).toList(),
-          'count': _detectedVariables.length,
-        },
-      );
-
-      setState(() {});
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر اكتشاف المتغيرات: $e'), backgroundColor: AppColors.error),
-        );
-      }
-    }
-  }
-
-  Future<void> _openInWord() async {
-    String? filePath;
-
-    if (_creationMethod == 'from_template' && _selectedTemplate != null) {
-      filePath = _selectedTemplate!.filePath;
-    } else if (_creationMethod == 'uploaded' && _uploadedFile != null) {
-      filePath = _uploadedFile!.path;
-    } else if (_creationMethod == 'blank') {
-      _showError('الورقة الفارغة — اكتب العقد مباشرة في Word واحفظه ثم استورده');
-      return;
-    } else {
-      _showError('يرجى اختيار نموذج أو استيراد ملف أولاً');
-      return;
-    }
-
-    final file = File(filePath);
-    if (!await file.exists()) {
-      _showError('الملف غير موجود: $filePath');
-      return;
-    }
-
-    try {
-      final result = await OpenFilex.open(filePath);
-      if (result.type != ResultType.done) {
-        _showError('تعذّر فتح الملف: ${result.message}');
-      }
-    } catch (e) {
-      _showError('خطأ في فتح الملف: $e');
-    }
-  }
-
-  // =========================================================================
-  // التنقل والتحقق
-  // =========================================================================
-  void _nextStep() {
-    if (!_validateCurrentStep()) return;
-    setState(() => _currentStep++);
-  }
-
-  bool _validateCurrentStep() {
-    switch (_currentStep) {
-      case 0:
-        // نوع ملف العقد — لا يحتاج تحقق (قيمة افتراضية موجودة)
-        break;
-      case 1:
-        if (_legalCategory == null || _legalSubcategory == null) {
-          _showError('يرجى اختيار التصنيف القانوني والفرعي');
-          return false;
-        }
-        break;
-      case 2:
-        if (_parties.length < 2) {
-          _showError('العقد يحتاج طرفين على الأقل');
-          return false;
-        }
-        for (final party in _parties) {
-          for (final person in party.persons) {
-            if (person.personId == null) {
-              _showError('يرجى اختيار شخص لكل شخص في الطرف "${party.role}"');
-              return false;
-            }
-          }
-        }
-        // التحقق من عدم تكرار صفة الطرف
-        final roles = _parties.map((p) => p.role.trim()).where((r) => r.isNotEmpty).toList();
-        final duplicates = roles.where((r) => roles.where((x) => x == r).length > 1).toSet();
-        if (duplicates.isNotEmpty) {
-          _showError('صفة الطرف "${duplicates.first}" مكررة — لا يجوز أن يكون لنفس الصفة طرفان');
-          return false;
-        }
-        break;
-      case 3:
-        if (_titleController.text.trim().isEmpty) {
-          _showError('يرجى إدخال عنوان للعقد');
-          return false;
-        }
-        break;
-      case 4:
-        if (_creationMethod == 'from_template' && _selectedTemplate == null) {
-          _showError('يرجى اختيار نموذج أو تغيير طريقة الإنشاء');
-          return false;
-        }
-        if (_creationMethod == 'uploaded' && _uploadedFile == null) {
-          _showError('يرجى اختيار ملف للاستيراد');
-          return false;
-        }
-        break;
-    }
-    return true;
-  }
-
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: AppColors.error),
-    );
-  }
-
-  // =========================================================================
-  // الحفظ النهائي
-  // =========================================================================
-  Future<void> _saveContract() async {
+  
+  Future<void> _createAndOpenInWord() async {
     final permissions = ref.read(permissionServiceProvider);
     if (!permissions.can(PermissionKeys.contractsCreate)) {
       _showError('لا تملك صلاحية إنشاء عقد');
+      return;
+    }
+
+    if (_creationMethod == 'from_template' && _selectedTemplate == null) {
+      _showError('يرجى اختيار نموذج أو تغيير طريقة الإنشاء');
+      return;
+    }
+    if (_creationMethod == 'uploaded' && _uploadedFile == null) {
+      _showError('يرجى اختيار ملف للاستيراد');
+      return;
+    }
+    if (_creationMethod == 'uploaded' && _templateNameController.text.trim().isEmpty) {
+      _showError('يرجى إدخال اسم النموذج');
       return;
     }
 
@@ -1752,10 +1332,9 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
 
     try {
       final repo = ref.read(contractRepositoryProvider);
-      final varService = TemplateVariableService(ref.read(databaseProvider));
       final userRef = ref.read(authControllerProvider).user?.fullName ?? AppConstants.defaultLawyerName;
 
-      // 1. إنشاء العقد
+      // 1. إعداد بيانات العقد
       final contractCompanion = ContractsCompanion.insert(
         internalNumber: 'TEMP-${DateTime.now().microsecondsSinceEpoch}',
         title: _titleController.text.trim(),
@@ -1779,7 +1358,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         paymentMethod: Value(_paymentMethod),
       );
 
-      // 2. إعداد الأطراف (عدة أشخاص لكل طرف)
+      // 2. إعداد الأطراف
       final parties = <ContractPartiesCompanion>[];
       for (var i = 0; i < _parties.length; i++) {
         final party = _parties[i];
@@ -1789,107 +1368,122 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             personId: person.personId!,
             partyRole: Value(party.role),
             partyCapacity: Value(person.capacity),
-            poaId: Value(person.poaId),
             partyOrder: Value(i + 1),
           ));
         }
       }
 
-      // 3. توليد العقد النهائي (استبدال المتغيرات)
-      File? finalContractFile;
-      if (_creationMethod == 'from_template' && _selectedTemplate != null && _detectedVariables.isNotEmpty) {
-        // جمع قيم المتغيرات
-        final varValues = <String, String>{};
-        for (final variable in _detectedVariables) {
-          final controller = _variableControllers[variable.name];
-          if (controller != null && controller.text.trim().isNotEmpty) {
-            varValues[variable.name] = controller.text.trim();
-          }
-        }
+      // 3. إعداد التذكيرات
+      final reminders = _reminders.map((r) => ContractRemindersCompanion.insert(
+        contractId: 0,
+        reminderType: r.type,
+        reminderDate: r.date,
+        reminderNote: Value(r.note.isEmpty ? null : r.note),
+      )).toList();
 
-        // توليد العقد النهائي
-        if (varValues.isNotEmpty) {
-          final templateFile = File(_selectedTemplate!.filePath);
-          if (await templateFile.exists()) {
-            final outputDir = Directory.systemTemp.path;
-            final outputPath = '$outputDir/contract_${DateTime.now().millisecondsSinceEpoch}.docx';
-            finalContractFile = await varService.replaceVariablesInDocx(
-              templateFile,
-              varValues,
-              outputPath,
-            );
-          }
-        }
-      } else if (_creationMethod == 'uploaded' && _uploadedFile != null) {
-        // استخدام الملف المرفوع مباشرة
-        finalContractFile = _uploadedFile;
+      // 4. إعداد الأقساط
+      final installments = _installments.asMap().entries.map((entry) => ContractInstallmentsCompanion.insert(
+        contractId: 0,
+        installmentNumber: entry.key + 1,
+        amount: entry.value.amount,
+        dueDate: entry.value.dueDate,
+      )).toList();
+
+      // 5. إعداد اتفاقية الأتعاب
+      FeeAgreementsCompanion? feeAgreement;
+      if (_feeAgreementType != 'free' && _feePartyId != null) {
+        final amount = double.tryParse(_feeAmountController.text.trim()) ?? 0;
+        feeAgreement = FeeAgreementsCompanion.insert(
+          entityType: const Value.absent(),
+          entityId: const Value.absent(),
+          partyId: _feePartyId!,
+          agreementType: Value(_feeAgreementType),
+          totalAmount: Value(amount),
+          currency: Value(_currency),
+        );
       }
 
-      // 4. حفظ العقد
+      // 6. إعداد ملف Word
+      File? wordFile;
+      if (_creationMethod == 'from_template' && _selectedTemplate != null) {
+        wordFile = File(_selectedTemplate!.filePath);
+      } else if (_creationMethod == 'uploaded' && _uploadedFile != null) {
+        wordFile = _uploadedFile;
+      }
+
+      // 7. حفظ العقد
       final contractId = await repo.createContract(
         contract: contractCompanion,
         parties: parties,
-        reminders: [],
-        wordFile: finalContractFile,
+        reminders: reminders,
+        installments: installments,
+        feeAgreement: feeAgreement,
+        wordFile: wordFile,
         userRef: userRef,
       );
 
-      // 4.1 حفظ النموذج المرفوع في مكتبة النماذج القانونية
+      // 8. حفظ المستندات المرفقة
+      if (_attachedDocuments.isNotEmpty) {
+        final db = ref.read(databaseProvider);
+        final storageService = ref.read(fileStorageServiceProvider);
+        
+        for (final doc in _attachedDocuments) {
+          String? filePath;
+          if (doc.file != null) {
+            filePath = await storageService.saveAttachment(
+              sourceFile: doc.file!,
+              folderType: 'documents',
+              entityId: contractId,
+            );
+          }
+          
+          final docId = await db.into(db.documents).insert(
+            DocumentsCompanion.insert(
+              docName: doc.nameController.text.trim(),
+              docType: Value(doc.type),
+              filePath: Value(filePath),
+              fileType: Value(doc.file != null ? path.extension(doc.file!.path).substring(1) : null),
+            ),
+          );
+          
+          await db.into(db.documentLinks).insert(
+            DocumentLinksCompanion.insert(
+              documentId: docId,
+              entityType: EntityType.contract.index,
+              entityId: contractId,
+              linkType: const Value('general'),
+            ),
+          );
+        }
+      }
+
+      // 9. حفظ النموذج المستورد في المكتبة
       if (_creationMethod == 'uploaded' && _uploadedFile != null) {
         final db = ref.read(databaseProvider);
         final storageService = ref.read(fileStorageServiceProvider);
         
-        // حفظ الملف في مجلد النماذج
         final templatePath = await storageService.saveTemplate(
           _uploadedFile!,
-          _titleController.text.trim(),
+          _templateNameController.text.trim(),
         );
 
-        // حفظ النموذج في قاعدة البيانات
         await db.contractDao.insertContractTemplate(
           ContractTemplatesCompanion.insert(
             contractType: _legalSubcategory ?? _legalCategory ?? 'عقد',
-            templateName: _titleController.text.trim(),
+            templateName: _templateNameController.text.trim(),
             filePath: templatePath,
             isDefault: const Value(false),
+            templateSource: const Value('imported'),
           ),
         );
       }
 
-      // 4. حفظ قيم المتغيرات (AI Learning Data)
-      if (_detectedVariables.isNotEmpty) {
-        final varValues = <String, String>{};
-        for (final variable in _detectedVariables) {
-          final controller = _variableControllers[variable.name];
-          if (controller != null && controller.text.trim().isNotEmpty) {
-            varValues[variable.name] = controller.text.trim();
-          }
-        }
-        await varService.saveInstanceVariables(contractId, varValues, _variableFillMethods);
-
-        // حفظ متغيرات القالب
-        if (_selectedTemplate != null) {
-          await varService.saveTemplateVariables(_selectedTemplate!.id, _detectedVariables);
-        }
+      // 10. فتح Word مباشرة!
+      if (wordFile != null && await wordFile.exists()) {
+        await DesktopIntegrationService.openInWord(wordFile.path);
       }
 
-      // 5. تسجيل الحفظ (AI Learning)
-      await varService.logTemplateUsage(
-        templateId: _selectedTemplate?.id,
-        contractId: contractId,
-        eventType: 'contract_created',
-        eventData: {
-          'creationMethod': _creationMethod,
-          'legalCategory': _legalCategory,
-          'legalSubcategory': _legalSubcategory,
-          'partiesCount': _parties.length,
-          'variablesCount': _detectedVariables.length,
-          'autoFillCount': _variableFillMethods.values.where((m) => m == 'auto').length,
-          'manualFillCount': _variableFillMethods.values.where((m) => m == 'manual').length,
-        },
-      );
-
-      // 6. Audit log
+      // 11. Audit log
       await ref.read(auditServiceProvider).log(
         action: 'create',
         category: 'contracts',
@@ -1904,6 +1498,10 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           'creationMethod': _creationMethod,
           'templateId': _selectedTemplate?.id,
           'partiesCount': _parties.length,
+          'remindersCount': _reminders.length,
+          'installmentsCount': _installments.length,
+          'documentsCount': _attachedDocuments.length,
+          'feeAgreementType': _feeAgreementType,
         },
         severity: 'info',
       );
@@ -1912,7 +1510,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         ref.invalidate(allContractsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم إنشاء العقد بنجاح!'),
+            content: Text('تم إنشاء العقد بنجاح! وفُتح في Word'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -1932,13 +1530,15 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 }
 
-/// بيانات طرف واحد في العقد
+// =============================================================================
+// Helper Classes
+// =============================================================================
+
 class _PersonInParty {
   int? personId;
   String capacity;
-  int? poaId;
 
-  _PersonInParty({this.personId, this.capacity = 'أصيل', this.poaId});
+  _PersonInParty({this.personId, this.capacity = 'أصيل'});
 }
 
 class _PartyEntry {
@@ -1947,4 +1547,27 @@ class _PartyEntry {
 
   _PartyEntry({required this.role, List<_PersonInParty>? persons})
       : persons = persons ?? [_PersonInParty()];
+}
+
+class _InstallmentEntry {
+  double amount;
+  DateTime dueDate;
+
+  _InstallmentEntry({required this.amount, required this.dueDate});
+}
+
+class _ReminderEntry {
+  String type;
+  DateTime date;
+  String note;
+
+  _ReminderEntry({required this.type, required this.date, this.note = ''});
+}
+
+class _DocumentEntry {
+  TextEditingController nameController;
+  String type;
+  File? file;
+
+  _DocumentEntry({required this.nameController, required this.type, this.file});
 }

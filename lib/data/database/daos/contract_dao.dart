@@ -9,6 +9,7 @@ part 'contract_dao.g.dart';
   Contracts,
   ContractParties,
   ContractReminders,
+  ContractInstallments,
   ContractTemplates,
   ContractVersions,
   Persons,
@@ -143,4 +144,47 @@ class ContractDao extends DatabaseAccessor<AppDatabase> with _$ContractDaoMixin 
   Future<int> insertContractVersion(ContractVersionsCompanion companion) {
     return into(contractVersions).insert(companion);
   }
+
+  // ---------------------------------------------------------------------------
+  // إدارة أقساط العقد (ContractInstallments)
+  // ---------------------------------------------------------------------------
+
+  /// مراقبة أقساط عقد معين
+  Stream<List<ContractInstallment>> watchContractInstallments(int contractId) {
+    return (select(contractInstallments)
+          ..where((t) => t.contractId.equals(contractId))
+          ..orderBy([(t) => OrderingTerm(expression: t.installmentNumber)]))
+        .watch();
+  }
+
+  /// جلب أقساط عقد معين
+  Future<List<ContractInstallment>> getContractInstallments(int contractId) {
+    return (select(contractInstallments)
+          ..where((t) => t.contractId.equals(contractId))
+          ..orderBy([(t) => OrderingTerm(expression: t.installmentNumber)]))
+        .get();
+  }
+
+  /// إضافة قسط جديد
+  Future<int> insertContractInstallment(ContractInstallmentsCompanion companion) {
+    return into(contractInstallments).insert(companion);
+  }
+
+  /// تحديث قسط (عند تسجيل تسديد)
+  Future<bool> updateContractInstallment(ContractInstallmentsCompanion companion) {
+    return update(contractInstallments).replace(companion);
+  }
+
+  /// حذف قسط
+  Future<int> deleteContractInstallment(int id) {
+    return (delete(contractInstallments)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// حذف جميع أقساط عقد معين
+  Future<int> deleteContractInstallmentsByContractId(int contractId) {
+    return (delete(contractInstallments)
+          ..where((t) => t.contractId.equals(contractId)))
+        .go();
+  }
+
 }

@@ -38,7 +38,7 @@ part 'database.g.dart';
     // 6. الشركات
     Companies, CompanyPhases, CompanyManagement, CompanyPartners, CompanyDirectors,
     // 7. العقود
-    Contracts, ContractParties, ContractReminders, ContractTemplates, ContractVersions,
+    Contracts, ContractParties, ContractReminders, ContractInstallments, ContractTemplates, ContractVersions,
     // 7b. جداول الذكاء الاصطناعي للعقود
     ContractTemplateVariables, ContractInstanceVariables, ContractTemplateUsageLog,
     // 8. الإجراءات الإدارية
@@ -83,7 +83,7 @@ class AppDatabase extends _$AppDatabase {
   /// schema.dart يجب أن يرافقه رفع هذا الرقم وإضافة m.addColumn في
   /// onUpgrade. عدم الالتزام يُنتج خطأ SQLite رقم 1 على القواعد القائمة.
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -114,6 +114,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 8) {
         await _migrateToV8(m);
+      }
+      if (from < 9) {
+        await m.createTable(contractInstallments);
       }
     },
     beforeOpen: (details) async {

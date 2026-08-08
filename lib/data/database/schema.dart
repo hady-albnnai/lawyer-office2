@@ -513,6 +513,30 @@ class ContractReminders extends Table {
   IntColumn get autoTaskId => integer().nullable()(); // ربط بمهمة جدول الأعمال اليومية
 }
 
+/// جدول أقساط العقد (عند اختيار طريقة الدفع بالتقسيط)
+class ContractInstallments extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get contractId => integer().references(Contracts, #id, onDelete: KeyAction.cascade)();
+  /// رقم القسط (1، 2، 3...)
+  IntColumn get installmentNumber => integer()();
+  /// قيمة القسط
+  RealColumn get amount => real()();
+  /// تاريخ الاستحقاق
+  DateTimeColumn get dueDate => dateTime()();
+  /// تاريخ التسديد الفعلي (NULL = لم يُسدد بعد)
+  DateTimeColumn get paidDate => dateTime().nullable()();
+  /// المبلغ المسدد فعلياً (قد يكون مختلف عن قيمة القسط)
+  RealColumn get paidAmount => real().nullable()();
+  /// طريقة الدفع (نقد، تحويل، شيك)
+  TextColumn get paymentMethod => text().nullable()();
+  /// ملاحظات
+  TextColumn get notes => text().nullable()();
+  /// رقم سند القبض المرتبط (إن وُجد)
+  IntColumn get receiptId => integer().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 /// جدول قوالب نماذج Word للعقود
 class ContractTemplates extends Table {
   IntColumn get id => integer().autoIncrement()();

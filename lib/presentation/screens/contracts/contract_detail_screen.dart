@@ -59,7 +59,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -98,12 +98,9 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
               labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               tabs: const [
                 Tab(text: '1️⃣ الملخص'),
-                Tab(text: '2️⃣ العقد ومحرر Word'),
-                Tab(text: '3️⃣ الأطراف'),
-                Tab(text: '4️⃣ التذكيرات الزمنية ⏰'),
-                Tab(text: '5️⃣ المستندات والنسخ'),
-                Tab(text: '6️⃣ المالية'),
-                Tab(text: '7️⃣ الخط الزمني'),
+                Tab(text: '2️⃣ الأطراف والتذكيرات'),
+                Tab(text: '3️⃣ المستندات والمالية'),
+                Tab(text: '4️⃣ التحرير'),
               ],
             ),
           ),
@@ -115,12 +112,9 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                   controller: _tabController,
                   children: [
                     _buildSummaryTab(c),
+                    _buildPartiesAndRemindersTab(c.id),
+                    _buildDocumentsAndFinancesTab(c.id),
                     _buildWordEditorTab(c.id),
-                    _buildPartiesTab(c.id),
-                    _buildRemindersTab(c.id),
-                    _buildDocumentsTab(c.id),
-                    _buildFinancesTab(c.id),
-                    _buildTimelineTab(c.id),
                   ],
                 ),
               ),
@@ -989,3 +983,168 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
   }
 
 }
+
+  // ---------------------------------------------------------------------------
+  // تبويب 2: الأطراف والتذكيرات (مدمج)
+  // ---------------------------------------------------------------------------
+  Widget _buildPartiesAndRemindersTab(int contractId) {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          Container(
+            color: AppColors.primaryNavy.withOpacity(0.05),
+            child: const TabBar(
+              tabs: [
+                Tab(text: 'الأطراف', icon: Icon(Icons.people)),
+                Tab(text: 'التذكيرات الزمنية', icon: Icon(Icons.alarm)),
+              ],
+              labelColor: AppColors.primaryNavy,
+              unselectedLabelColor: AppColors.textSecondary,
+              indicatorColor: AppColors.secondaryGold,
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildPartiesTab(contractId),
+                _buildRemindersTab(contractId),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // تبويب 3: المستندات والمالية (مدمج)
+  // ---------------------------------------------------------------------------
+  Widget _buildDocumentsAndFinancesTab(int contractId) {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          Container(
+            color: AppColors.primaryNavy.withOpacity(0.05),
+            child: const TabBar(
+              tabs: [
+                Tab(text: 'المستندات', icon: Icon(Icons.attach_file)),
+                Tab(text: 'المالية والأقساط', icon: Icon(Icons.account_balance)),
+              ],
+              labelColor: AppColors.primaryNavy,
+              unselectedLabelColor: AppColors.textSecondary,
+              indicatorColor: AppColors.secondaryGold,
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildDocumentsTab(contractId),
+                _buildFinancesWithInstallmentsTab(contractId),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // المالية مع الأقساط (متابعة التنفيذ)
+  // ---------------------------------------------------------------------------
+  Widget _buildFinancesWithInstallmentsTab(int contractId) {
+    final repo = ref.watch(contractRepositoryProvider);
+    final installmentsStream = repo.watchContractInstallments(contractId);
+    
+    return StreamBuilder<List<ContractInstallment>>(
+      stream: installmentsStream,
+      builder: (context, snapshot) {
+        final installments = snapshot.data ?? [];
+        
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // قسم الأقساط
+              if (installments.isNotEmpty) ...[
+                Text('متابعة الأقساط', style: AppTextStyles.titleMedium.copyWith(color: AppColors.primaryNavy, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                ...installments.map((inst) => _buildInstallmentCard(inst, contractId)),
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 24),
+              ],
+              
+              // قسم المالية الأصلي
+              _buildFinancesTab(contractId),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInstallmentCard(ContractInstallment inst, int contractId) {
+    final isPaid = inst.paidDate != null;
+    final isOverdue = !isPaid && inst.dueDate.isBefore(DateTime.now());
+    
+    return GlassmorphicCard(
+      margin: const EdgeInsets.only(bottom: 12),
+      color: isPaid ? AppColors.success.withOpacity(0.1) : isOverdue ? AppColors.error.withOpacity(0.1) : null,
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: isPaid ? AppColors.success : isOverdue ? AppColors.error : AppColors.primaryNavy,
+            child: Text('${inst.installmentNumber}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('القسط ${inst.installmentNumber}: ${inst.amount} ل.س', style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text('الاستحقاق: ${inst.dueDate.toString().substring(0, 10)}'),
+                if (isPaid)
+                  Text('✅ تم التسديد في: ${inst.paidDate!.toString().substring(0, 10)}', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
+                if (isOverdue)
+                  Text('⚠️ متأخر', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          if (!isPaid)
+            ElevatedButton.icon(
+              onPressed: () => _markInstallmentAsPaid(inst),
+              icon: const Icon(Icons.check),
+              label: const Text('تسجيل تسديد'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _markInstallmentAsPaid(ContractInstallment inst) async {
+    final db = ref.read(databaseProvider);
+    await db.contractDao.updateContractInstallment(
+      ContractInstallmentsCompanion(
+        id: Value(inst.id),
+        contractId: Value(inst.contractId),
+        installmentNumber: Value(inst.installmentNumber),
+        amount: Value(inst.amount),
+        dueDate: Value(inst.dueDate),
+        paidDate: Value(DateTime.now()),
+        paidAmount: Value(inst.amount),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم تسجيل التسديد بنجاح'), backgroundColor: AppColors.success),
+      );
+    }
+  }

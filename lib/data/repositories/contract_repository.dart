@@ -27,12 +27,19 @@ class ContractRepository {
   Stream<List<ContractReminder>> watchContractReminders(int contractId) => _contractDao.watchContractReminders(contractId);
   Stream<List<ContractTemplate>> watchContractTemplates({String? type}) => _contractDao.watchContractTemplates(contractType: type);
   Stream<List<ContractVersion>> watchContractVersions(int contractId) => _contractDao.watchContractVersions(contractId);
+  Stream<List<ContractInstallment>> watchContractInstallments(int contractId) => _contractDao.watchContractInstallments(contractId);
+  Future<List<ContractInstallment>> getContractInstallments(int contractId) => _contractDao.getContractInstallments(contractId);
 
   /// تنظيم عقد جديد وربط التنبيهات بجدول الأعمال اليومية مع رفع ملف Word
+  /// 
+  /// يدعم حفظ: الأطراف، التذكيرات، الأقساط، المستندات، واتفاقيات الأتعاب
   Future<int> createContract({
     required ContractsCompanion contract,
     required List<ContractPartiesCompanion> parties,
     List<ContractRemindersCompanion>? reminders,
+    List<ContractInstallmentsCompanion>? installments,
+    List<int>? documentIds,
+    FeeAgreementsCompanion? feeAgreement,
     File? wordFile,
     required String userRef,
   }) async {
@@ -81,6 +88,7 @@ class ContractRepository {
         );
       }
 
+      // حفظ التذكيرات الزمنية
       if (reminders != null) {
         for (final r in reminders) {
           final companion = r.copyWith(contractId: Value(contractId));
@@ -90,6 +98,39 @@ class ContractRepository {
             contractId: contractId,
           );
         }
+      }
+
+      // حفظ الأقساط (إذا كانت طريقة الدفع بالتقسيط)
+      if (installments != null && installments.isNotEmpty) {
+        for (final installment in installments) {
+          await _contractDao.insertContractInstallment(
+            installment.copyWith(contractId: Value(contractId)),
+          );
+        }
+      }
+
+      // ربط المستندات المرفقة بالعقد
+      if (documentIds != null && documentIds.isNotEmpty) {
+        for (final docId in documentIds) {
+          await _contractDao.into(_contractDao.db.documentLinks).insert(
+            DocumentLinksCompanion.insert(
+              documentId: docId,
+              entityType: EntityType.contract.index,
+              entityId: contractId,
+              linkType: const Value('general'),
+            ),
+          );
+        }
+      }
+
+      // حفظ اتفاقية الأتعاب
+      if (feeAgreement != null) {
+        await _contractDao.into(_contractDao.db.feeAgreements).insert(
+          feeAgreement.copyWith(
+            entityType: Value(EntityType.contract.index),
+            entityId: Value(contractId),
+          ),
+        );
       }
 
       await _contractDao.into(_contractDao.db.timelineEvents).insert(
