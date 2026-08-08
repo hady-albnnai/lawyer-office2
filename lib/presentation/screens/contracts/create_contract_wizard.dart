@@ -417,7 +417,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   List<DropdownMenuItem<String>> _getSubcategories() {
-    final Map<String, List<String>> subcats = {
+    // Default subcategories (fallback)
+    final Map<String, List<String>> defaultSubcats = {
       'عقود واردة على الملكية': ['بيع عقار', 'إيجار سكني', 'إيجار تجاري', 'هبة', 'مبادلة'],
       'عقود الاستثمار': ['استثمار عقاري', 'استثمار تجاري', 'مشاركة'],
       'عقود العمل والمقاولة': ['عقد عمل', 'مقاولة', 'خدمات'],
@@ -425,7 +426,29 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       'عقود الصلح': ['صلح إسقاط', 'صلح إقرار', 'صلح معاوضة'],
       'عقود أخرى': ['عقد وكالة', 'عقد كفالة', 'عقد ضمان'],
     };
-    final list = subcats[_legalCategory] ?? [];
+    
+    // Try to get from database
+    try {
+      final db = ref.read(databaseProvider);
+      final query = db.select(db.contractTypesLookup)
+        ..where((t) => t.category.equals(_legalCategory ?? ''))
+        ..where((t) => t.isActive.equals(true));
+      
+      // Use synchronous get (this is not ideal but works for now)
+      final dbSubcats = query.get();
+      
+      if (dbSubcats.isNotEmpty) {
+        return dbSubcats.map((s) => DropdownMenuItem(
+          value: s.name,
+          child: Text(s.name),
+        )).toList();
+      }
+    } catch (e) {
+      // Fallback to default
+    }
+    
+    // Fallback to default subcategories
+    final list = defaultSubcats[_legalCategory] ?? [];
     return list.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList();
   }
 
@@ -771,6 +794,32 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         children: [
           Text('الأقساط', style: TextStyle(fontSize: 18, color: AppColors.primaryNavy, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _installmentPeriod,
+            decoration: baseDecoration.copyWith(labelText: 'الفترة بين الأقساط'),
+            items: const [
+              DropdownMenuItem(value: 'شهري', child: Text('شهري (30 يوم)')),
+              DropdownMenuItem(value: 'كل شهرين', child: Text('كل شهرين (60 يوم)')),
+              DropdownMenuItem(value: 'كل 3 أشهر', child: Text('كل 3 أشهر (90 يوم)')),
+              DropdownMenuItem(value: 'كل 6 أشهر', child: Text('كل 6 أشهر (180 يوم)')),
+              DropdownMenuItem(value: 'سنوي', child: Text('سنوي (365 يوم)')),
+              DropdownMenuItem(value: 'مخصص', child: Text('مخصص (بالأيام)')),
+            ],
+            onChanged: (v) => setState(() => _installmentPeriod = v ?? 'شهري'),
+          ),
+          if (_installmentPeriod == 'مخصص') ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              keyboardType: TextInputType.number,
+              decoration: baseDecoration.copyWith(
+                labelText: 'عدد الأيام بين الأقساط',
+                hintText: 'مثال: 45',
+              ),
+              initialValue: _customDays.toString(),
+              onChanged: (v) => setState(() => _customDays = int.tryParse(v) ?? 30),
+            ),
+          ],
+          const SizedBox(height: 12),
           Row(children: [
             Expanded(
               child: TextFormField(
@@ -1775,6 +1824,72 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
 }
+
+
+  Future<void> _showAddCategoryDialog({required bool isMainCategory}) async {
+    final nameController = TextEditingController();
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isMainCategory ? 'إضافة تصنيف رئيسي جديد' : 'إضافة تصنيف فرعي جديد'),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            labelText: isMainCategory ? 'اسم التصنيف الرئيسي *' : 'اسم التصنيف الفرعي *',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('يرجى إدخال اسم التصنيف'), backgroundColor: AppColors.error),
+                );
+                return;
+              }
+              Navigator.pop(ctx, nameController.text.trim());
+            },
+            child: const Text('إضافة'),
+          ),
+        ],
+      ),
+    );
+    
+    if (result != null && result.isNotEmpty) {
+      // Save to database
+      final db = ref.read(databaseProvider);
+      await db.into(db.contractTypesLookup).insert(
+        ContractTypesLookupCompanion.insert(
+          name: result,
+          category: Value(isMainCategory ? null : _legalCategory),
+        ),
+      );
+      
+      setState(() {
+        if (isMainCategory) {
+          _legalCategory = result;
+          _legalSubcategory = null;
+        } else {
+          _legalSubcategory = result;
+        }
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم إضافة التصنيف: $result'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    }
+  }
 
 // =============================================================================
 // Helper Classes
