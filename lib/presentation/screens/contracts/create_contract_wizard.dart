@@ -1823,9 +1823,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         final name = nameController.text.trim();
 
         // ===== منع التكرار =====
-        final existing = await db.select(db.persons)
-          .where((p) => p.fullName.equals(name))
-          .getSingleOrNull();
+        final query = db.select(db.persons)..where((p) => p.fullName.equals(name));
+        final existing = await query.getSingleOrNull();
         if (existing != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('هذا الاسم موجود مسبقاً')),
