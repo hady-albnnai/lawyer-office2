@@ -545,7 +545,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                 }
                 
                 return DropdownButtonFormField<int>(
-                  value: person.personId,
+                  value: (personsAsync.hasData && personsAsync.value != null && personsAsync.value!.any((p) => p.id == person.personId)) ? person.personId : null,
                   decoration: baseDecoration.copyWith(labelText: 'اختر الشخص *'),
                   isExpanded: true,
                   items: persons.map((p) {
@@ -813,7 +813,6 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   Widget _buildInstallmentsSection(InputDecoration baseDecoration) {
-    return StatefulBuilder(builder: (context, setLocalState) {
     return GlassmorphicCard(
       color: AppColors.primaryNavy.withOpacity(0.05),
       child: Column(
@@ -832,7 +831,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               DropdownMenuItem(value: 'سنوي', child: Text('سنوي (365 يوم)')),
               DropdownMenuItem(value: 'مخصص', child: Text('مخصص (بالأيام)')),
             ],
-            onChanged: (v) => setLocalState(() => _installmentPeriod = v ?? 'شهري'),
+            onChanged: (v) => setState(() => _installmentPeriod = v ?? 'شهري'),
           ),
           Visibility(
             visible: _installmentPeriod == 'مخصص',
@@ -849,7 +848,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                   ),
                   onChanged: (v) {
                     _customDays = int.tryParse(v) ?? 30;
-                    setLocalState(() {});
+                    setState(() {});
                   },
                 ),
               ],
@@ -861,7 +860,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               child: TextFormField(
                 keyboardType: TextInputType.number,
                 decoration: baseDecoration.copyWith(labelText: 'عدد الأقساط'),
-                onChanged: (v) => setLocalState(() => _installmentCount = int.tryParse(v) ?? 0),
+                onChanged: (v) => setState(() => _installmentCount = int.tryParse(v) ?? 0),
               ),
             ),
             const SizedBox(width: 12),
@@ -885,7 +884,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             children: [
               Checkbox(
                 value: _autoGenerateInstallmentReminders,
-                onChanged: (v) => setLocalState(() => _autoGenerateInstallmentReminders = v ?? false),
+                onChanged: (v) => setState(() => _autoGenerateInstallmentReminders = v ?? false),
                 activeColor: AppColors.primaryNavy,
               ),
               const Text('إنشاء تذكيرات تلقائية للأقساط'),
@@ -900,7 +899,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                     DropdownMenuItem(value: 3, child: Text('3 أيام')),
                     DropdownMenuItem(value: 7, child: Text('أسبوع')),
                   ],
-                  onChanged: (v) => setLocalState(() => _reminderDaysBefore = v ?? 3),
+                  onChanged: (v) => setState(() => _reminderDaysBefore = v ?? 3),
                 ),
             ],
           ),
@@ -913,8 +912,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         ],
       ),
     );
-  });
-}
+  }
 
   Widget _buildInstallmentRow(int index, _InstallmentEntry installment, InputDecoration baseDecoration) {
     return Padding(
