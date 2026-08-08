@@ -1623,16 +1623,32 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
 
       // 5. إعداد اتفاقية الأتعاب
       FeeAgreementsCompanion? feeAgreement;
-      if (_feeAgreementType != 'free' && _feePartyId != null) {
+      if (_feeAgreementType != 'free') {
+        // إذا لم يحدّد المستخدم دافع الأتعاب صراحةً، نعتمد أول طرف في العقد
+        // كي لا تضيع الأتعاب (كان الشرط _feePartyId != null يمنع الحفظ تماماً).
+        var feePartyId = _feePartyId;
+        if (feePartyId == null) {
+          outer:
+          for (final party in _parties) {
+            for (final person in party.persons) {
+              if (person.personId != null) {
+                feePartyId = person.personId;
+                break outer;
+              }
+            }
+          }
+        }
         final amount = double.tryParse(_feeAmountController.text.trim()) ?? 0;
-        feeAgreement = FeeAgreementsCompanion.insert(
-          entityType: EntityType.contract.index,
-          entityId: 0,
-          partyId: _feePartyId!,
-          agreementType: Value(_feeAgreementType),
-          totalAmount: Value(amount),
-          currency: Value(_currency),
-        );
+        if (feePartyId != null) {
+          feeAgreement = FeeAgreementsCompanion.insert(
+            entityType: EntityType.contract.index,
+            entityId: 0,
+            partyId: feePartyId!,
+            agreementType: Value(_feeAgreementType),
+            totalAmount: Value(amount),
+            currency: Value(_currency),
+          );
+        }
       }
 
       // 6. إعداد ملف Word
