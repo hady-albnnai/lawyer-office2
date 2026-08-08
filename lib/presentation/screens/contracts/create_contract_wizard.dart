@@ -1195,7 +1195,10 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: () async {
-                  final result = await file_picker.FilePicker.pickFiles();
+                  final result = await file_picker.FilePicker.pickFiles(
+                type: file_picker.FileType.custom,
+                allowedExtensions: const ['pdf', 'doc', 'docx', 'rtf', 'txt', 'jpg', 'png', 'jpeg'],
+              );
                   if (result != null) {
                     selectedFile = File(result.files.single.path!);
                     setState(() {});  // Update dialog without closing
