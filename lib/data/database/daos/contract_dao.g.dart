@@ -9,9 +9,14 @@ mixin _$ContractDaoMixin on DatabaseAccessor<AppDatabase> {
   $CourtsTable get courts => attachedDatabase.courts;
   $CasesTable get cases => attachedDatabase.cases;
   $ContractsTable get contracts => attachedDatabase.contracts;
+  $NotariesTable get notaries => attachedDatabase.notaries;
+  $PowersOfAttorneyTable get powersOfAttorney =>
+      attachedDatabase.powersOfAttorney;
   $ContractPartiesTable get contractParties => attachedDatabase.contractParties;
   $ContractRemindersTable get contractReminders =>
       attachedDatabase.contractReminders;
+  $ContractInstallmentsTable get contractInstallments =>
+      attachedDatabase.contractInstallments;
   $ContractTemplatesTable get contractTemplates =>
       attachedDatabase.contractTemplates;
   $ContractVersionsTable get contractVersions =>
@@ -32,6 +37,13 @@ class ContractDaoManager {
       $$CasesTableTableManager(_db.attachedDatabase, _db.cases);
   $$ContractsTableTableManager get contracts =>
       $$ContractsTableTableManager(_db.attachedDatabase, _db.contracts);
+  $$NotariesTableTableManager get notaries =>
+      $$NotariesTableTableManager(_db.attachedDatabase, _db.notaries);
+  $$PowersOfAttorneyTableTableManager get powersOfAttorney =>
+      $$PowersOfAttorneyTableTableManager(
+        _db.attachedDatabase,
+        _db.powersOfAttorney,
+      );
   $$ContractPartiesTableTableManager get contractParties =>
       $$ContractPartiesTableTableManager(
         _db.attachedDatabase,
@@ -41,6 +53,11 @@ class ContractDaoManager {
       $$ContractRemindersTableTableManager(
         _db.attachedDatabase,
         _db.contractReminders,
+      );
+  $$ContractInstallmentsTableTableManager get contractInstallments =>
+      $$ContractInstallmentsTableTableManager(
+        _db.attachedDatabase,
+        _db.contractInstallments,
       );
   $$ContractTemplatesTableTableManager get contractTemplates =>
       $$ContractTemplatesTableTableManager(
