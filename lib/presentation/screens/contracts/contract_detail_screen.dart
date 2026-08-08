@@ -982,9 +982,6 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
     }
   }
 
-}
-
-  // ---------------------------------------------------------------------------
   // تبويب 2: الأطراف والتذكيرات (مدمج)
   // ---------------------------------------------------------------------------
   Widget _buildPartiesAndRemindersTab(int contractId) {
@@ -1148,3 +1145,4 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
       );
     }
   }
+}

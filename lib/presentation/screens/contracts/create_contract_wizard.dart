@@ -969,7 +969,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: () async {
-                final result = await file_picker.FilePicker.platform.pickFiles();
+                final result = await FilePicker.platform.pickFiles();
                 if (result != null) {
                   selectedFile = File(result.files.single.path!);
                   Navigator.pop(ctx);
@@ -1286,7 +1286,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   Future<void> _pickUploadFile() async {
-    final result = await file_picker.FilePicker.platform.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       type: file_picker.FileType.custom,
       allowedExtensions: const ['docx', 'doc', 'pdf', 'rtf'],
     );
@@ -1470,29 +1470,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         // TODO: Open in Word - DesktopIntegrationService.openInWord(wordFile.path);
       }
 
-      // 11. Audit log
-      // TODO: Audit log
-      // await ref.read(auditServiceProvider).log(
-        action: 'create',
-        category: 'contracts',
-        entityType: 'contract',
-        entityId: '$contractId',
-        entityTitle: _titleController.text.trim(),
-        description: 'إنشاء عقد جديد عبر الويزارد',
-        after: {
-          'title': _titleController.text.trim(),
-          'category': _legalCategory,
-          'subcategory': _legalSubcategory,
-          'creationMethod': _creationMethod,
-          'templateId': _selectedTemplate?.id,
-          'partiesCount': _parties.length,
-          'remindersCount': _reminders.length,
-          'installmentsCount': _installments.length,
-          'documentsCount': _attachedDocuments.length,
-          'feeAgreementType': _feeAgreementType,
-        },
-        severity: 'info',
-      );
+      // 11. Audit log - TODO: Implement later
+      // await auditService.log(...)
 
       if (mounted) {
         ref.invalidate(allContractsProvider);
