@@ -36,6 +36,12 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   // الخطوة 1: المعلومات الأساسية
   // =========================================================================
   
+  // --- التصنيفات المخصصة ---
+  final List<String> _customSubcategories = [];
+  final List<String> _customMainCategories = [];
+  
+  // =========================================================================
+  
   // --- التصنيف القانوني ---
   String? _legalCategory;
   String? _legalSubcategory;
@@ -427,29 +433,23 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       'عقود أخرى': ['عقد وكالة', 'عقد كفالة', 'عقد ضمان'],
     };
     
-    // Try to get from database
-    try {
-      final db = ref.read(databaseProvider);
-      final query = db.select(db.contractTypesLookup)
-        ..where((t) => t.category.equals(_legalCategory ?? ''))
-        ..where((t) => t.isActive.equals(true));
-      
-      // Use synchronous get (this is not ideal but works for now)
-      final dbSubcats = query.get();
-      
-      if (dbSubcats.isNotEmpty) {
-        return dbSubcats.map((s) => DropdownMenuItem(
-          value: s.name,
-          child: Text(s.name),
-        )).toList();
+    // Start with default subcategories
+    final list = defaultSubcats[_legalCategory] ?? [];
+    final items = list.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList();
+    
+    // Add custom subcategories from database (if any)
+    // Note: This is a simplified approach. For production, use a provider
+    // to watch database changes and rebuild the widget
+    if (_customSubcategories.isNotEmpty) {
+      for (final subcat in _customSubcategories) {
+        items.add(DropdownMenuItem(
+          value: subcat,
+          child: Text(subcat),
+        ));
       }
-    } catch (e) {
-      // Fallback to default
     }
     
-    // Fallback to default subcategories
-    final list = defaultSubcats[_legalCategory] ?? [];
-    return list.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList();
+    return items;
   }
 
   // -------------------------------------------------------------------------
@@ -1823,7 +1823,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     }
   }
 
-}
+
 
 
   Future<void> _showAddCategoryDialog({required bool isMainCategory}) async {
@@ -1873,9 +1873,11 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       
       setState(() {
         if (isMainCategory) {
+          _customMainCategories.add(result);
           _legalCategory = result;
           _legalSubcategory = null;
         } else {
+          _customSubcategories.add(result);
           _legalSubcategory = result;
         }
       });
@@ -1890,6 +1892,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       }
     }
   }
+
+}
 
 // =============================================================================
 // Helper Classes
