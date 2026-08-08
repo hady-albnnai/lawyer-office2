@@ -79,7 +79,7 @@ class _TemplatesManagementScreenState extends ConsumerState<TemplatesManagementS
                     crossAxisCount: 3,
                     crossAxisSpacing: 20,
                     mainAxisSpacing: 20,
-                    childAspectRatio: 1.5,
+                    childAspectRatio: 1.15,
                   ),
                   itemCount: list.length,
                   itemBuilder: (context, index) {

@@ -321,6 +321,14 @@ class NavSidebar extends ConsumerWidget {
         initiallyExpanded: hasSelectedChild,
         tilePadding: const EdgeInsets.symmetric(horizontal: 8),
         childrenPadding: const EdgeInsets.only(right: 8),
+        // النقر على العنوان ينقل مباشرة إلى صفحة الأب (مثلاً "النماذج
+        // القانونية")، فلا يحتاج المستخدم للضغط مرتين للدخول، بينما يبقى
+        // سهم التوسيع يمكّن فتح/طيّ الفروع.
+        onTap: () {
+          if (parent.route.isNotEmpty) {
+            _navigate(ref, ref.read(sidebarStateProvider), context, parent);
+          }
+        },
         leading: Icon(
           parent.icon,
           color: parent.accentColor ??

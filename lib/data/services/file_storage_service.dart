@@ -79,6 +79,43 @@ class FileStorageService {
     return tempFile;
   }
 
+  /// المسار الثابت لنسخة العمل (قابلة للتحرير في Word) لعقد معيّن.
+  ///
+  /// على عكس الكاش المؤقت الذي يُحذف، هذه النسخة تُخزَّن في مجلد
+  /// `working/` داخل مخزن التطبيق لتبقى بين الجلسات حتى يستوردها
+  /// المستخدم بعد تعديلها في Word.
+  Future<String> getWorkingCopyPath(int contractId, String relativeSource) async {
+    final rootDir = await getRootStorageDir();
+    final dir = Directory(p.join(rootDir.path, 'contracts', 'working', contractId.toString()));
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    // المسار المصدر بصيغة `contracts/<id>/<stamp>_name.docx.enc`.
+    // نزيل `.enc` ثم نستخرج الامتداد الحقيقي (docx/pdf/...).
+    final stripped = relativeSource.endsWith('.enc')
+        ? relativeSource.substring(0, relativeSource.length - 4)
+        : relativeSource;
+    final ext = p.extension(stripped);
+    final base = p.basenameWithoutExtension(stripped);
+    final fileName = '${base}_working$ext';
+    return p.join(dir.path, fileName);
+  }
+
+  /// ينشئ/يحدّث نسخة العمل (المفك تشفيرها) في مسارها الثابت، ويعيد مسارها.
+  ///
+  /// تُستخدم عند فتح النسخة في Word: تُنسخ النسخة المشفرة إلى مسار عمل
+  /// ثابت يحرّره المستخدم، وعند إعادة الحفظ تُقرأ منه وتُخزَّن مشفّرة.
+  Future<String> ensureWorkingCopy(int contractId, String relativeSource) async {
+    final decrypted = await getFileFromRelativePath(relativeSource);
+    if (decrypted == null) {
+      throw StateError('تعذّر فك تشفير النسخة المصدرية: $relativeSource');
+    }
+    final workingPath = await getWorkingCopyPath(contractId, relativeSource);
+    final workingFile = File(workingPath);
+    await decrypted.copy(workingPath);
+    return workingPath;
+  }
+
   /// جلب المسار الكامل لنص نسبي
   Future<String> getAbsolutePath(String relativePath) async {
     final rootDir = await getRootStorageDir();

@@ -13,35 +13,16 @@ import '../../../data/database/database.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
 
-/// Provider لجلب المستندات المرتبطة بكيان معين
+/// Provider لجلب المستندات المرتبطة بكيان معين.
+///
+/// يستخدم DAO نوعياً (watchDocumentsByEntity) بدل customSelect الذي يعيد
+/// قيماً خاماً من SQLite. أعمدة `dateTime` في Drift تُخزَّن كأرقام
+/// (unix timestamp) افتراضياً، فالتحويل اليدوي `as DateTime` كان يفشل
+/// بخطأ «int is not a subtype of DateTime». readTable يحوّل الأنواع
+/// تلقائياً، فلا يعود ذلك الخطأ.
 final documentsByEntityProvider = StreamProvider.family<List<Document>, (EntityType, int)>((ref, params) {
   final db = ref.watch(databaseProvider);
-  return db.customSelect(
-    '''
-    SELECT d.* FROM documents d
-    INNER JOIN document_links dl ON d.id = dl.document_id
-    WHERE dl.entity_type = ? AND dl.entity_id = ?
-    ORDER BY d.date_added DESC
-    ''',
-    variables: [Variable.withInt(params.$1.index), Variable.withInt(params.$2)],
-  ).watch().map((rows) => rows.map<Document>((row) {
-    final data = row.data;
-    return Document(
-      id: data['id'] as int,
-      docName: data['doc_name'] as String,
-      docType: data['doc_type'] as String?,
-      dateIssued: data['date_issued'] as DateTime?,
-      dateAdded: data['date_added'] as DateTime,
-      issuer: data['issuer'] as String?,
-      filePath: data['file_path'] as String?,
-      fileType: data['file_type'] as String?,
-      status: data['status'] as int,
-      physicalLocation: data['physical_location'] as int,
-      summary: data['summary'] as String?,
-      notes: data['notes'] as String?,
-      createdAt: data['created_at'] as DateTime,
-    );
-  }).toList());
+  return db.documentDao.watchDocumentsByEntity(params.$1.index, params.$2);
 });
 
 /// شاشة تفاصيل العقد الموحد بتبويباته السبعة ومحرر Word (ContractDetailScreen V6.2)
@@ -248,18 +229,31 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                             ),
                             const SizedBox(height: 6),
                             const Text(
-                              'يمكنك فتح الملف مباشرة في برنامج Microsoft Word على Windows، وسيتم حفظ أي تعديلات تقوم بها تلقائياً في المكتب.',
+                              'افتح الملف في Word، عدّل، احفظه داخل Word، ثم اضغط "استيراد النسخة المعدّلة" ليُحفظ تعديلك في مكتب العقد كنسخة جديدة.',
                               style: TextStyle(color: Colors.white70, fontSize: 13),
                             ),
                           ],
                         ),
                       ),
                       if (latest?.filePath != null)
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryGold, foregroundColor: AppColors.primaryNavy, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14)),
-                          icon: const Icon(Icons.open_in_new),
-                          label: const Text('فتح وتحرير في Word 📝', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                          onPressed: () => _openVersionFile(latest!.filePath!),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryGold, foregroundColor: AppColors.primaryNavy, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14)),
+                              icon: const Icon(Icons.open_in_new),
+                              label: const Text('فتح وتحرير في Word 📝', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                              onPressed: () => _openVersionFile(latest!.filePath!),
+                            ),
+                            const SizedBox(height: 8),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.primaryNavy, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+                              icon: const Icon(Icons.save_alt),
+                              label: const Text('استيراد النسخة المعدّلة من Word', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              onPressed: () => _importWorkingCopy(contractId, latest!.filePath!),
+                            ),
+                          ],
                         )
                       else
                         ElevatedButton.icon(
@@ -776,14 +770,27 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
   Widget _buildFinancesTab(int contractId) {
     final db = ref.watch(databaseProvider);
     
+    // يقرأ المالية من الجداول الصحيحة:
+    //  - fee_agreements  → الأتعاب المتفق عليها لهذا العقد
+    //  - fee_payments    → سندات القبض (عبر JOIN مع fee_agreements للعقد)
+    //  - expenses        → المصاريف
+    // (كان يقرأ fee_payments بأعمدة entity_type/entity_id غير الموجودة فيه،
+    //  فيظهر التبويب فارغاً دائماً و"الأتعاب غير مسجلة" رغم حفظها فعلاً.)
     return FutureBuilder(
       future: Future.wait([
         db.customSelect(
-          'SELECT * FROM expenses WHERE entity_type = ? AND entity_id = ?',
+          'SELECT * FROM fee_agreements WHERE entity_type = ? AND entity_id = ?',
           variables: [Variable.withInt(EntityType.contract.index), Variable.withInt(contractId)],
         ).get(),
         db.customSelect(
-          'SELECT * FROM fee_payments WHERE entity_type = ? AND entity_id = ?',
+          'SELECT fp.* FROM fee_payments fp '
+          'INNER JOIN fee_agreements fa ON fp.agreement_id = fa.id '
+          'WHERE fa.entity_type = ? AND fa.entity_id = ? '
+          'ORDER BY fp.payment_date DESC',
+          variables: [Variable.withInt(EntityType.contract.index), Variable.withInt(contractId)],
+        ).get(),
+        db.customSelect(
+          'SELECT * FROM expenses WHERE entity_type = ? AND entity_id = ?',
           variables: [Variable.withInt(EntityType.contract.index), Variable.withInt(contractId)],
         ).get(),
       ]),
@@ -793,10 +800,11 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
         }
         
         final results = snapshot.data as List<List<QueryRow>>?;
-        final expenses = results?[0] ?? [];
+        final feeAgreements = results?[0] ?? [];
         final payments = results?[1] ?? [];
+        final expenses = results?[2] ?? [];
         
-        if (expenses.isEmpty && payments.isEmpty) {
+        if (feeAgreements.isEmpty && expenses.isEmpty && payments.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -821,84 +829,109 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
           );
         }
         
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    context.push('/finance?entityType=contract&entityId=$contractId');
-                  },
-                  icon: const Icon(Icons.add),
-                  label: const Text('إضافة حركة مالية'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryNavy,
-                    foregroundColor: AppColors.secondaryGold,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  if (payments.isNotEmpty) ...[
-                    const Text('سندات القبض', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
-                    const SizedBox(height: 8),
-                    ...payments.map((row) {
-                      final data = row.data;
-                      return GlassmorphicCard(
-                        color: AppColors.success.withOpacity(0.08),
-                        child: ListTile(
-                          leading: const Icon(Icons.receipt_long, color: AppColors.success, size: 32),
-                          title: Text('سند قبض #${data['receipt_number'] ?? "---"}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('المبلغ: ${data['amount'] ?? 0} ${data['currency'] ?? "ل.س"}'),
-                              Text('التاريخ: ${data['payment_date']?.toString().substring(0, 10) ?? "---"}'),
-                              if ((data['notes'] != null) == true && data['notes'].toString().isNotEmpty)
-                                Text('ملاحظة: ${data['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                  if (expenses.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    const Text('المصاريف', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
-                    const SizedBox(height: 8),
-                    ...expenses.map((row) {
-                      final data = row.data;
-                      return GlassmorphicCard(
-                        color: AppColors.error.withOpacity(0.08),
-                        child: ListTile(
-                          leading: const Icon(Icons.money_off, color: AppColors.error, size: 32),
-                          title: Text(data['description'] ?? 'مصروف', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('المبلغ: ${data['amount'] ?? 0} ${data['currency'] ?? "ل.س"}'),
-                              Text('التاريخ: ${data['expense_date']?.toString().substring(0, 10) ?? "---"}'),
-                              if ((data['notes'] != null) == true && data['notes'].toString().isNotEmpty)
-                                Text('ملاحظة: ${data['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ],
-              ),
-            ),
-          ],
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (feeAgreements.isNotEmpty) ...[
+                const Text('اتفاقية الأتعاب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
+                const SizedBox(height: 8),
+                ...feeAgreements.map((row) {
+                  final data = row.data;
+                  final total = (data['total_amount'] ?? 0).toString();
+                  final currency = data['currency'] ?? 'ل.س';
+                  final type = data['agreement_type'] ?? 'fixed';
+                  final typeLabel = type == 'percentage' ? 'نسبة مئوية' : type == 'free' ? 'مجاني' : 'مبلغ مقطوع';
+                  return GlassmorphicCard(
+                    color: AppColors.primaryNavy.withOpacity(0.06),
+                    child: ListTile(
+                      leading: const Icon(Icons.gavel, color: AppColors.primaryNavy, size: 32),
+                      title: Text('أتعاب المكتب ($typeLabel)', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('المبلغ: $total $currency'),
+                          if (data['notes'] != null && data['notes'].toString().isNotEmpty)
+                            Text('ملاحظة: ${data['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
+              ],
+              if (payments.isNotEmpty) ...[
+                const Text('سندات القبض', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
+                const SizedBox(height: 8),
+                ...payments.map((row) {
+                  final data = row.data;
+                  return GlassmorphicCard(
+                    color: AppColors.success.withOpacity(0.08),
+                    child: ListTile(
+                      leading: const Icon(Icons.receipt_long, color: AppColors.success, size: 32),
+                      title: Text('سند قبض — ${data['method'] ?? "نقد"}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('المبلغ: ${data['amount'] ?? 0}'),
+                          Text('التاريخ: ${_safeDate(data['payment_date'])}'),
+                          if (data['notes'] != null && data['notes'].toString().isNotEmpty)
+                            Text('ملاحظة: ${data['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
+              ],
+              if (expenses.isNotEmpty) ...[
+                const Text('المصاريف', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
+                const SizedBox(height: 8),
+                ...expenses.map((row) {
+                  final data = row.data;
+                  return GlassmorphicCard(
+                    color: AppColors.error.withOpacity(0.08),
+                    child: ListTile(
+                      leading: const Icon(Icons.money_off, color: AppColors.error, size: 32),
+                      title: Text(data['expense_type'] ?? 'مصروف', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('المبلغ: ${data['amount'] ?? 0}'),
+                          Text('التاريخ: ${_safeDate(data['expense_date'])}'),
+                          if (data['notes'] != null && data['notes'].toString().isNotEmpty)
+                            Text('ملاحظة: ${data['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ],
+          ),
         );
       },
     );
+  }
+
+  /// تحويل قيمة تاريخ (قد تكون int unix / String / DateTime من SQLite)
+  /// إلى نص "yyyy-MM-dd" بشكل آمن دون انهيار.
+  static String _safeDate(Object? raw) {
+    if (raw == null) return '---';
+    try {
+      if (raw is DateTime) return raw.toString().substring(0, 10);
+      if (raw is int) {
+        // Drift يخزّن DateTime افتراضياً كـ unix بالثواني.
+        final dt = DateTime.fromMillisecondsSinceEpoch(raw * 1000);
+        return dt.toString().substring(0, 10);
+      }
+      final s = raw.toString();
+      if (s.isEmpty) return '---';
+      return s.substring(0, s.length >= 10 ? 10 : s.length);
+    } catch (_) {
+      return raw.toString();
+    }
   }
 
   Widget _buildTimelineTab(int contractId) {
@@ -967,15 +1000,84 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
   /// المرفقات تُخزَّن مشفّرة (AES) بلاحقة .enc عبر saveAttachment، لذا
   /// تسليم المسار الخام إلى OpenFilex كان يفتح ملفاً مشفّراً لا يقرأه
   /// Word. AttachmentService تفكّ التشفير إلى ملف مؤقت أولاً.
+  /// فتح نسخة العقد في Word للتعديل مع حفظ التعديلات فعلياً.
+  ///
+  /// بدل فكّ التشفير إلى كاش مؤقت يُحذف (فكانت التعديلات تضيع)، ننسخ
+  /// النسخة المشفرة إلى نسخة عمل دائمة في `contracts/working/<id>/` يحرّره
+  /// المستخدم في Word. عند إعادة الحفظ يقرأ التطبيق تلك النسخة العاملة
+  /// ويخزّنها مشفّرة كنسخة جديدة في سجل النسخ.
   Future<void> _openVersionFile(String relativePath) async {
-    final result = await ref
-        .read(attachmentServiceProvider)
-        .openStoredAttachment(relativePath);
-    if (!mounted) return;
-    if (!result.success) {
+    final storage = ref.read(fileStorageServiceProvider);
+    final contractId = widget.contractId;
+    try {
+      final workingPath = await storage.ensureWorkingCopy(contractId, relativePath);
+      if (!mounted) return;
+      final result = await ref
+          .read(attachmentServiceProvider)
+          .openLocalFile(workingPath);
+      if (!mounted) return;
+      if (!result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'تعذّر فتح الملف'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('فُتح الملف في Word. بعد إنهاء التعديل وحفظه اضغط "استيراد النسخة المعدّلة من Word".'),
+          backgroundColor: AppColors.info,
+          duration: Duration(seconds: 6),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.message ?? 'تعذّر فتح الملف'),
+          content: Text('تعذّر فتح الملف: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  /// استيراد نسخة العمل التي عدّلها المستخدم في Word وحفظها مشفّرة
+  /// كنسخة جديدة في سجل النسخ.
+  Future<void> _importWorkingCopy(int contractId, String relativeSource) async {
+    final storage = ref.read(fileStorageServiceProvider);
+    try {
+      final workingPath = await storage.getWorkingCopyPath(contractId, relativeSource);
+      final workingFile = File(workingPath);
+      if (!await workingFile.exists()) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لم يُعثر على النسخة المعدّلة. افتح الملف في Word أولاً واحفظه.'),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+        return;
+      }
+      await ref.read(contractRepositoryProvider).addContractVersion(
+        contractId: contractId,
+        wordFile: workingFile,
+        userRef: AppConstants.defaultLawyerName,
+        notes: 'نسخة معدّلة في Word بعد التحرير',
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم حفظ النسخة المعدّلة في سجل نسخ العقد بنجاح.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر حفظ النسخة المعدّلة: $e'),
           backgroundColor: AppColors.error,
         ),
       );

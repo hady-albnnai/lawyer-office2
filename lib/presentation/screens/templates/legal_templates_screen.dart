@@ -119,7 +119,9 @@ class _LegalTemplatesScreenState extends ConsumerState<LegalTemplatesScreen> {
                       maxCrossAxisExtent: 360,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
-                      childAspectRatio: 1.55,
+                      // ارتفاع أكبر (نسبة عرض/ارتفاع أصغر) كي تظهر كل محتويات
+                      // البطاقة (الاسم + النوع + المصدر + الملف + الأزرار) دون overflow.
+                      childAspectRatio: 1.18,
                     ),
                     itemCount: list.length,
                     itemBuilder: (context, index) => _templateCard(list[index], permissions),
