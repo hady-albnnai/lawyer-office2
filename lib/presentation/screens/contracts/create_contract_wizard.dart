@@ -70,9 +70,12 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   final List<_InstallmentEntry> _installments = [];
   int _installmentCount = 0;
   final _installmentValueController = TextEditingController();
+  String _installmentPeriod = 'شهري'; // شهري، كل شهرين، كل 3 أشهر، كل 6 أشهر، سنوي
 
   // --- التذكيرات الزمنية ---
   final List<_ReminderEntry> _reminders = [];
+  bool _autoGenerateInstallmentReminders = true;
+  int _reminderDaysBefore = 3;
 
   // --- المستندات المرفقة ---
   final List<_DocumentEntry> _attachedDocuments = [];
@@ -401,6 +404,12 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             items: _getSubcategories(),
             onChanged: (v) => setState(() => _legalSubcategory = v),
           ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(Icons.add_circle, color: AppColors.primaryNavy),
+          onPressed: _showAddSubcategoryDialog,
+          tooltip: 'إضافة تصنيف فرعي جديد',
         ),
       ],
     );
@@ -786,6 +795,30 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             ),
           ]),
           const SizedBox(height: 16),
+          Row(
+            children: [
+              Checkbox(
+                value: _autoGenerateInstallmentReminders,
+                onChanged: (v) => setState(() => _autoGenerateInstallmentReminders = v ?? false),
+                activeColor: AppColors.primaryNavy,
+              ),
+              const Text('إنشاء تذكيرات تلقائية للأقساط'),
+              const SizedBox(width: 12),
+              if (_autoGenerateInstallmentReminders)
+                DropdownButtonFormField<int>(
+                  value: _reminderDaysBefore,
+                  decoration: baseDecoration.copyWith(labelText: 'قبل'),
+                  isDense: true,
+                  items: const [
+                    DropdownMenuItem(value: 1, child: Text('يوم')),
+                    DropdownMenuItem(value: 3, child: Text('3 أيام')),
+                    DropdownMenuItem(value: 7, child: Text('أسبوع')),
+                  ],
+                  onChanged: (v) => setState(() => _reminderDaysBefore = v ?? 3),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
           if (_installments.isNotEmpty) ...[
             const Divider(),
             const SizedBox(height: 8),
@@ -843,11 +876,42 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     setState(() {
       _installments.clear();
       final startDate = _dateStart ?? DateTime.now();
+      
+      // Calculate months to add based on period
+      int monthsToAdd = 1;
+      switch (_installmentPeriod) {
+        case 'شهري':
+          monthsToAdd = 1;
+          break;
+        case 'كل شهرين':
+          monthsToAdd = 2;
+          break;
+        case 'كل 3 أشهر':
+          monthsToAdd = 3;
+          break;
+        case 'كل 6 أشهر':
+          monthsToAdd = 6;
+          break;
+        case 'سنوي':
+          monthsToAdd = 12;
+          break;
+      }
+      
       for (int i = 0; i < _installmentCount; i++) {
+        final dueDate = DateTime(startDate.year, startDate.month + (i * monthsToAdd) + monthsToAdd, startDate.day);
         _installments.add(_InstallmentEntry(
           amount: amount,
-          dueDate: DateTime(startDate.year, startDate.month + i + 1, startDate.day),
+          dueDate: dueDate,
         ));
+        
+        // Auto-generate reminder for this installment
+        if (_autoGenerateInstallmentReminders) {
+          _reminders.add(_ReminderEntry(
+            type: 'manual',
+            date: dueDate.subtract(Duration(days: _reminderDaysBefore)),
+            note: 'تذكير: القسط ${i + 1} بقيمة $amount $_currency يستحق في ${dueDate.day}/${dueDate.month}/${dueDate.year}',
+          ));
+        }
       }
     });
   }
@@ -1585,6 +1649,126 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     }
   }
 }
+
+
+
+  Future<void> _showAddPersonDialog(_PersonInParty person) async {
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final idController = TextEditingController();
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إضافة شخص جديد'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'الاسم الكامل *'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: phoneController,
+              decoration: const InputDecoration(labelText: 'رقم الهاتف'),
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: idController,
+              decoration: const InputDecoration(labelText: 'رقم الهوية'),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('يرجى إدخال الاسم'), backgroundColor: AppColors.error),
+                );
+                return;
+              }
+              Navigator.pop(ctx, true);
+            },
+            child: const Text('إضافة'),
+          ),
+        ],
+      ),
+    );
+    
+    if (result == true) {
+      // Save person to database
+      final db = ref.read(databaseProvider);
+      final personId = await db.into(db.persons).insert(
+        PersonsCompanion.insert(
+          fullName: nameController.text.trim(),
+          phone1: Value(phoneController.text.trim().isEmpty ? null : phoneController.text.trim()),
+          nationalId: Value(idController.text.trim().isEmpty ? null : idController.text.trim()),
+          type: const Value(0), // natural person
+        ),
+      );
+      
+      // Refresh persons list and select the new person
+      ref.invalidate(allPersonsProvider(null));
+      setState(() {
+        person.personId = personId;
+      });
+    }
+  }
+
+
+  Future<void> _showAddSubcategoryDialog() async {
+    final nameController = TextEditingController();
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إضافة تصنيف فرعي جديد'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(labelText: 'اسم التصنيف الفرعي *'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('يرجى إدخال اسم التصنيف'), backgroundColor: AppColors.error),
+                );
+                return;
+              }
+              Navigator.pop(ctx, nameController.text.trim());
+            },
+            child: const Text('إضافة'),
+          ),
+        ],
+      ),
+    );
+    
+    if (result != null && result.isNotEmpty) {
+      // For now, just set it as the selected subcategory
+      // In a full implementation, you would save it to the database
+      setState(() {
+        _legalSubcategory = result;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تم إضافة التصنيف: $result'), backgroundColor: AppColors.success),
+      );
+    }
+  }
 
 // =============================================================================
 // Helper Classes
