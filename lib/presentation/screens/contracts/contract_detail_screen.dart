@@ -1,7 +1,7 @@
 import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'dart:io';
-import 'package:drift/drift.dart' show Value, Variable, TypedResult;
+import 'package:drift/drift.dart' show Value, Variable, QueryRow;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
