@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:path/path.dart' as path;
 import 'package:file_picker/file_picker.dart' as file_picker;
+import 'contract_detail_screen.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/enums/app_enums.dart';
