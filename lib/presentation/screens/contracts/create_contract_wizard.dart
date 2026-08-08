@@ -1762,7 +1762,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             backgroundColor: AppColors.success,
           ),
         );
-        context.pop();  // Return to contracts list instead of detail screen
+        if (mounted && contractId != null) { Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ContractDetailScreen(contractId: contractId))); }
       }
     } catch (e) {
       if (mounted) {
