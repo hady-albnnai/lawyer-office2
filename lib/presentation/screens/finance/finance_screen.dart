@@ -78,9 +78,6 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
           case 'procedure':
             filterType = FinanceEntityType.adminProcedure;
             break;
-          case 'poa':
-            filterType = FinanceEntityType.powerOfAttorney;
-            break;
         }
         if (filterType != null) {
           ref.read(financeProvider.notifier).setEntityFilter(filterType);

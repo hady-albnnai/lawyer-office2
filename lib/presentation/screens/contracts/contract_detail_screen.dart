@@ -1,15 +1,41 @@
 import '../../theme/app_colors.dart';
 import '../../theme/glassmorphism_helpers.dart';
 import 'dart:io';
+import 'package:drift/drift.dart' show Value, Variable, TypedResult;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:go_router/go_router.dart';
 import 'package:open_filex/open_filex.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/enums/app_enums.dart';
 import '../../../data/database/database.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/auth_providers.dart';
+
+/// Provider لجلب المستندات المرتبطة بكيان معين
+final documentsByEntityProvider = StreamProvider.family<List<Document>, (EntityType, int)>((ref, params) {
+  final db = ref.watch(databaseProvider);
+  return db.customSelect(
+    'SELECT * FROM documents WHERE entity_type = ? AND entity_id = ?',
+    variables: [Variable.withInt(params.$1.index), Variable.withInt(params.$2)],
+  ).watch().map((rows) => rows.map((row) {
+    final data = row.data;
+    return Document(
+      id: data['id'] as int,
+      docName: data['doc_name'] as String,
+      docType: data['doc_type'] as String?,
+      filePath: data['file_path'] as String,
+      entityType: data['entity_type'] as int?,
+      entityId: data['entity_id'] as int?,
+      summary: data['summary'] as String?,
+      uploadDate: data['upload_date'] as DateTime,
+      uploadedBy: data['uploaded_by'] as String?,
+      fileSize: data['file_size'] as int?,
+      fileType: data['file_type'] as String?,
+    );
+  }).toList());
+});
 
 /// شاشة تفاصيل العقد الموحد بتبويباته السبعة ومحرر Word (ContractDetailScreen V6.2)
 class ContractDetailScreen extends ConsumerStatefulWidget {
@@ -827,7 +853,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                             children: [
                               Text('المبلغ: ${data?['amount'] ?? 0} ${data?['currency'] ?? "ل.س"}'),
                               Text('التاريخ: ${data?['payment_date']?.toString().substring(0, 10) ?? "---"}'),
-                              if (data?['notes'] != null && data?['notes'].toString().isNotEmpty)
+                              if ((data?['notes'] != null) == true && data?['notes'].toString().isNotEmpty)
                                 Text('ملاحظة: ${data?['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
                             ],
                           ),
@@ -851,7 +877,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
                             children: [
                               Text('المبلغ: ${data?['amount'] ?? 0} ${data?['currency'] ?? "ل.س"}'),
                               Text('التاريخ: ${data?['expense_date']?.toString().substring(0, 10) ?? "---"}'),
-                              if (data?['notes'] != null && data?['notes'].toString().isNotEmpty)
+                              if ((data?['notes'] != null) == true && data?['notes'].toString().isNotEmpty)
                                 Text('ملاحظة: ${data?['notes']}', maxLines: 2, overflow: TextOverflow.ellipsis),
                             ],
                           ),
