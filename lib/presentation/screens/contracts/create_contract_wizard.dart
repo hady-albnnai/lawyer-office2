@@ -75,16 +75,12 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   
   // --- الأقساط (عند اختيار تقسيط) ---
   final List<_InstallmentEntry> _installments = [];
-  int _installmentCount = 0;
-  final _installmentValueController = TextEditingController();
   String _installmentPeriod = 'شهري'; // شهري، كل شهرين، كل 3 أشهر، كل 6 أشهر، سنوي، مخصص
   int _customDays = 30; // عدد الأيام المخصص
-  final _customDaysController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _customDaysController.text = _customDays.toString();
   }
 
   // --- التذكيرات الزمنية ---
@@ -115,10 +111,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     _locationController.dispose();
     _notesController.dispose();
     _notarizationNumberController.dispose();
-    _installmentValueController.dispose();
     _feeAmountController.dispose();
     _templateNameController.dispose();
-    _customDaysController.dispose();
     for (final doc in _attachedDocuments) {
       doc.nameController.dispose();
     }
@@ -747,7 +741,9 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         ),
         if (_paymentMethod == 'تقسيط') ...[
           const SizedBox(height: 16),
-          _buildInstallmentsSection(baseDecoration),
+          // زر واحد يفتح حواراً منفصلاً لإدخال الأقساط — معزول تماماً
+          // عن الصفحة الطويلة فيضمن ظهوره دون مشاكل layout.
+          _buildInstallmentsEntryButton(baseDecoration),
         ],
         if (_paymentMethod == 'تحويل بنكي' || _paymentMethod == 'شيك') ...[
           const SizedBox(height: 16),
@@ -815,111 +811,33 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     );
   }
 
-  Widget _buildInstallmentsSection(InputDecoration baseDecoration) {
-    return GlassmorphicCard(
-      color: AppColors.primaryNavy.withOpacity(0.05),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('الأقساط', style: TextStyle(fontSize: 18, color: AppColors.primaryNavy, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            value: _installmentPeriod,
-            decoration: baseDecoration.copyWith(labelText: 'الفترة بين الأقساط'),
-            items: const [
-              DropdownMenuItem(value: 'شهري', child: Text('شهري (30 يوم)')),
-              DropdownMenuItem(value: 'كل شهرين', child: Text('كل شهرين (60 يوم)')),
-              DropdownMenuItem(value: 'كل 3 أشهر', child: Text('كل 3 أشهر (90 يوم)')),
-              DropdownMenuItem(value: 'كل 6 أشهر', child: Text('كل 6 أشهر (180 يوم)')),
-              DropdownMenuItem(value: 'سنوي', child: Text('سنوي (365 يوم)')),
-              DropdownMenuItem(value: 'مخصص', child: Text('مخصص (بالأيام)')),
-            ],
-            onChanged: (v) => setState(() => _installmentPeriod = v ?? 'شهري'),
-          ),
-          Visibility(
-            visible: _installmentPeriod == 'مخصص',
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _customDaysController,
-                  keyboardType: TextInputType.number,
-                  decoration: baseDecoration.copyWith(
-                    labelText: 'عدد الأيام بين الأقساط',
-                    hintText: 'مثال: 45',
-                  ),
-                  onChanged: (v) {
-                    _customDays = int.tryParse(v) ?? 30;
-                    setState(() {});
-                  },
-                ),
-              ],
-            ),
-          ),
+  /// زر فتح حوار إدخال الأقساط + عرض الأقساط المُضافة في بطاقة بسيطة.
+  Widget _buildInstallmentsEntryButton(InputDecoration baseDecoration) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_installments.isNotEmpty) ...[
+          Text('الأقساط المضافة: ${_installments.length}',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
+          const SizedBox(height: 8),
+          ..._installments.asMap().entries.map((entry) => _buildInstallmentRow(entry.key, entry.value)),
           const SizedBox(height: 12),
-          Row(children: [
-            Expanded(
-              child: TextFormField(
-                keyboardType: TextInputType.number,
-                decoration: baseDecoration.copyWith(labelText: 'عدد الأقساط'),
-                onChanged: (v) => setState(() => _installmentCount = int.tryParse(v) ?? 0),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                controller: _installmentValueController,
-                keyboardType: TextInputType.number,
-                decoration: baseDecoration.copyWith(labelText: 'قيمة القسط'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            ElevatedButton.icon(
-              onPressed: _generateInstallments,
-              icon: const Icon(Icons.add),
-              label: const Text('توليد'),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryNavy),
-            ),
-          ]),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Checkbox(
-                value: _autoGenerateInstallmentReminders,
-                onChanged: (v) => setState(() => _autoGenerateInstallmentReminders = v ?? false),
-                activeColor: AppColors.primaryNavy,
-              ),
-              const Expanded(
-                child: Text('إنشاء تذكيرات تلقائية للأقساط'),
-              ),
-              if (_autoGenerateInstallmentReminders) ...[
-                DropdownButtonFormField<int>(
-                  value: _reminderDaysBefore,
-                  decoration: baseDecoration.copyWith(labelText: 'قبل'),
-                  isDense: true,
-                  items: const [
-                    DropdownMenuItem(value: 1, child: Text('يوم')),
-                    DropdownMenuItem(value: 3, child: Text('3 أيام')),
-                    DropdownMenuItem(value: 7, child: Text('أسبوع')),
-                  ],
-                  onChanged: (v) => setState(() => _reminderDaysBefore = v ?? 3),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (_installments.isNotEmpty) ...[
-            const Divider(),
-            const SizedBox(height: 8),
-            ..._installments.asMap().entries.map((entry) => _buildInstallmentRow(entry.key, entry.value, baseDecoration)),
-          ],
         ],
-      ),
+        OutlinedButton.icon(
+          onPressed: _showInstallmentsDialog,
+          icon: const Icon(Icons.calendar_month, color: AppColors.primaryNavy),
+          label: Text(_installments.isNotEmpty ? 'تعديل الأقساط' : 'إضافة الأقساط'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primaryNavy,
+            side: const BorderSide(color: AppColors.primaryNavy),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildInstallmentRow(int index, _InstallmentEntry installment, InputDecoration baseDecoration) {
+  Widget _buildInstallmentRow(int index, _InstallmentEntry installment) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -957,56 +875,174 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     );
   }
 
-  void _generateInstallments() {
-    final amount = double.tryParse(_installmentValueController.text);
-    if (_installmentCount <= 0 || amount == null) {
-      _showError('يرجى إدخال عدد الأقساط وقيمة القسط');
-      return;
-    }
-    setState(() {
-      _installments.clear();
-      final startDate = _dateStart ?? DateTime.now();
-      
-      // Calculate days to add based on period
-      int daysToAdd = 30;
-      switch (_installmentPeriod) {
-        case 'شهري':
-          daysToAdd = 30;
-          break;
-        case 'كل شهرين':
-          daysToAdd = 60;
-          break;
-        case 'كل 3 أشهر':
-          daysToAdd = 90;
-          break;
-        case 'كل 6 أشهر':
-          daysToAdd = 180;
-          break;
-        case 'سنوي':
-          daysToAdd = 365;
-          break;
-        case 'مخصص':
-          daysToAdd = _customDays;
-          break;
-      }
-      
-      for (int i = 0; i < _installmentCount; i++) {
-        final dueDate = startDate.add(Duration(days: (i + 1) * daysToAdd));
-        _installments.add(_InstallmentEntry(
-          amount: amount,
-          dueDate: dueDate,
-        ));
-        
-        // Auto-generate reminder for this installment
-        if (_autoGenerateInstallmentReminders) {
-          _reminders.add(_ReminderEntry(
-            type: 'manual',
-            date: dueDate.subtract(Duration(days: _reminderDaysBefore)),
-            note: 'تذكير: القسط ${i + 1} بقيمة $amount $_currency يستحق في ${dueDate.day}/${dueDate.month}/${dueDate.year}',
-          ));
-        }
-      }
-    });
+  /// حوار منفصل معزول لإدخال وتوليد الأقساط.
+  /// يضمن ظهوره تماماً لأنه خارج الصفحة الطويلة المتشابكة.
+  Future<void> _showInstallmentsDialog() async {
+    final countController = TextEditingController();
+    final valueController = TextEditingController();
+    String period = _installmentPeriod;
+    int customDays = _customDays;
+    bool autoReminders = _autoGenerateInstallmentReminders;
+    int reminderDays = _reminderDaysBefore;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          final input = InputDecoration(
+            filled: true,
+            fillColor: AppColors.cardBackground,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primaryNavy, width: 2),
+            ),
+          );
+
+          return AlertDialog(
+            title: const Text('إضافة الأقساط'),
+            content: SizedBox(
+              width: 480,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: period,
+                      decoration: input.copyWith(labelText: 'الفترة بين الأقساط'),
+                      items: const [
+                        DropdownMenuItem(value: 'شهري', child: Text('شهري (30 يوم)')),
+                        DropdownMenuItem(value: 'كل شهرين', child: Text('كل شهرين (60 يوم)')),
+                        DropdownMenuItem(value: 'كل 3 أشهر', child: Text('كل 3 أشهر (90 يوم)')),
+                        DropdownMenuItem(value: 'كل 6 أشهر', child: Text('كل 6 أشهر (180 يوم)')),
+                        DropdownMenuItem(value: 'سنوي', child: Text('سنوي (365 يوم)')),
+                        DropdownMenuItem(value: 'مخصص', child: Text('مخصص (بالأيام)')),
+                      ],
+                      onChanged: (v) => setDialogState(() => period = v ?? 'شهري'),
+                    ),
+                    if (period == 'مخصص') ...[
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        initialValue: customDays.toString(),
+                        keyboardType: TextInputType.number,
+                        decoration: input.copyWith(
+                          labelText: 'عدد الأيام بين الأقساط',
+                          hintText: 'مثال: 45',
+                        ),
+                        onChanged: (v) => customDays = int.tryParse(v) ?? 30,
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Row(children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: countController,
+                          keyboardType: TextInputType.number,
+                          decoration: input.copyWith(labelText: 'عدد الأقساط'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: valueController,
+                          keyboardType: TextInputType.number,
+                          decoration: input.copyWith(labelText: 'قيمة القسط'),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: autoReminders,
+                          onChanged: (v) => setDialogState(() => autoReminders = v ?? false),
+                          activeColor: AppColors.primaryNavy,
+                        ),
+                        const Expanded(child: Text('إنشاء تذكيرات تلقائية للأقساط')),
+                        if (autoReminders)
+                          DropdownButtonFormField<int>(
+                            value: reminderDays,
+                            decoration: input.copyWith(labelText: 'قبل', isDense: true),
+                            items: const [
+                              DropdownMenuItem(value: 1, child: Text('يوم')),
+                              DropdownMenuItem(value: 3, child: Text('3 أيام')),
+                              DropdownMenuItem(value: 7, child: Text('أسبوع')),
+                            ],
+                            onChanged: (v) => setDialogState(() => reminderDays = v ?? 3),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('إلغاء'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  final count = int.tryParse(countController.text) ?? 0;
+                  final amount = double.tryParse(valueController.text);
+                  if (count <= 0 || amount == null) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text('يرجى إدخال عدد الأقساط وقيمة القسط'), backgroundColor: AppColors.error),
+                    );
+                    return;
+                  }
+                  // توليد الأقساط
+                  final generated = <_InstallmentEntry>[];
+                  final startDate = _dateStart ?? DateTime.now();
+                  int daysToAdd = 30;
+                  switch (period) {
+                    case 'شهري': daysToAdd = 30; break;
+                    case 'كل شهرين': daysToAdd = 60; break;
+                    case 'كل 3 أشهر': daysToAdd = 90; break;
+                    case 'كل 6 أشهر': daysToAdd = 180; break;
+                    case 'سنوي': daysToAdd = 365; break;
+                    case 'مخصص': daysToAdd = customDays; break;
+                  }
+                  final newReminders = <_ReminderEntry>[];
+                  for (int i = 0; i < count; i++) {
+                    final dueDate = startDate.add(Duration(days: (i + 1) * daysToAdd));
+                    generated.add(_InstallmentEntry(amount: amount, dueDate: dueDate));
+                    if (autoReminders) {
+                      newReminders.add(_ReminderEntry(
+                        type: 'manual',
+                        date: dueDate.subtract(Duration(days: reminderDays)),
+                        note: 'تذكير: القسط ${i + 1} بقيمة $amount $_currency يستحق في ${dueDate.day}/${dueDate.month}/${dueDate.year}',
+                      ));
+                    }
+                  }
+                  // حفظ النتيجة في الويزارد
+                  setState(() {
+                    _installments.clear();
+                    _installments.addAll(generated);
+                    _installmentPeriod = period;
+                    _customDays = customDays;
+                    _autoGenerateInstallmentReminders = autoReminders;
+                    _reminderDaysBefore = reminderDays;
+                    if (autoReminders) {
+                      _reminders.addAll(newReminders);
+                    }
+                  });
+                  Navigator.pop(dialogContext);
+                },
+                icon: const Icon(Icons.check),
+                label: const Text('توليد الأقساط'),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryNavy),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   // -------------------------------------------------------------------------
