@@ -85,31 +85,6 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   void initState() {
     super.initState();
     _customDaysController.text = _customDays.toString();
-    _loadAttachedFromDb();
-  }
-
-  Future<void> _loadAttachedFromDb() async {
-    if (contractId == null) return;
-    try {
-      final db = ref.read(databaseProvider);
-      final links = await db.select(db.documentLinks).get();
-      final docs = await db.select(db.documents).get();
-      setState(() {
-        _attachedDocuments.clear();
-        for (final link in links) {
-          if (link.entityId == contractId && link.entityType == EntityType.contract.index) {
-            final doc = docs.firstWhere((d) => d.id == link.documentId, orElse: () => null);
-            if (doc != null) {
-              _attachedDocuments.add(_DocumentEntry(
-                nameController: TextEditingController(text: doc.docName ?? 'مستند'),
-                type: doc.docType ?? 'مستند عقد',
-                file: doc.filePath != null ? File(doc.filePath!) : null,
-              ));
-            }
-          }
-        }
-      });
-    } catch (_) {}
   }
 
   // --- التذكيرات الزمنية ---
