@@ -907,10 +907,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         ],
       ),
     );
-  }
-
-)
-  }
+  });
+}
 
   Widget _buildInstallmentRow(int index, _InstallmentEntry installment, InputDecoration baseDecoration) {
     return Padding(
