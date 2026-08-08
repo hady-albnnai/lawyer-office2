@@ -912,18 +912,24 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    DropdownButtonFormField<String>(
-                      value: period,
-                      decoration: input.copyWith(labelText: 'الفترة بين الأقساط'),
-                      items: const [
-                        DropdownMenuItem(value: 'شهري', child: Text('شهري (30 يوم)')),
-                        DropdownMenuItem(value: 'كل شهرين', child: Text('كل شهرين (60 يوم)')),
-                        DropdownMenuItem(value: 'كل 3 أشهر', child: Text('كل 3 أشهر (90 يوم)')),
-                        DropdownMenuItem(value: 'كل 6 أشهر', child: Text('كل 6 أشهر (180 يوم)')),
-                        DropdownMenuItem(value: 'سنوي', child: Text('سنوي (365 يوم)')),
-                        DropdownMenuItem(value: 'مخصص', child: Text('مخصص (بالأيام)')),
-                      ],
-                      onChanged: (v) => setDialogState(() => period = v ?? 'شهري'),
+                    const Text('الفترة بين الأقساط', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    // ChoiceChips أخف بكثير من DropdownButtonFormField ولا
+                    // تفتح نافذة منسدلة ثقيلة، فلا تسبب تجمّداً داخل الحوار.
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: ['شهري', 'كل شهرين', 'كل 3 أشهر', 'كل 6 أشهر', 'سنوي', 'مخصص']
+                          .map((p) => ChoiceChip(
+                                label: Text(p),
+                                selected: period == p,
+                                selectedColor: AppColors.primaryNavy,
+                                labelStyle: TextStyle(
+                                  color: period == p ? Colors.white : AppColors.textPrimary,
+                                ),
+                                onSelected: (_) => setDialogState(() => period = p),
+                              ))
+                          .toList(),
                     ),
                     if (period == 'مخصص') ...[
                       const SizedBox(height: 12),
@@ -965,15 +971,15 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                         ),
                         const Expanded(child: Text('إنشاء تذكيرات تلقائية للأقساط')),
                         if (autoReminders)
-                          DropdownButtonFormField<int>(
-                            value: reminderDays,
-                            decoration: input.copyWith(labelText: 'قبل', isDense: true),
-                            items: const [
-                              DropdownMenuItem(value: 1, child: Text('يوم')),
-                              DropdownMenuItem(value: 3, child: Text('3 أيام')),
-                              DropdownMenuItem(value: 7, child: Text('أسبوع')),
+                          SegmentedButton<int>(
+                            segments: const [
+                              ButtonSegment(value: 1, label: Text('يوم')),
+                              ButtonSegment(value: 3, label: Text('3 أيام')),
+                              ButtonSegment(value: 7, label: Text('أسبوع')),
                             ],
-                            onChanged: (v) => setDialogState(() => reminderDays = v ?? 3),
+                            selected: {reminderDays},
+                            onSelectionChanged: (s) => setDialogState(() => reminderDays = s.first),
+                            style: const ButtonStyle(visualDensity: VisualDensity.compact),
                           ),
                       ],
                     ),
