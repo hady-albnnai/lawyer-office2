@@ -745,14 +745,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           ],
         ),
         Visibility(
-          visible: _paymentMethod == 'تقسيط',
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 24),
-              _buildInstallmentsSection(baseDecoration),
-            ],
-          ),
+          visible: false,
+          child: _buildInstallmentsSection(baseDecoration),
         ),
         if (_paymentMethod == 'تحويل بنكي' || _paymentMethod == 'شيك') ...[
           const SizedBox(height: 16),
