@@ -545,7 +545,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                 }
                 
                 return DropdownButtonFormField<int>(
-                  value: (personsAsync.hasData && personsAsync.value != null && personsAsync.value!.any((p) => p.id == person.personId)) ? person.personId : null,
+                  value: (personsAsync.hasValue && personsAsync.valueOrNull != null && personsAsync.valueOrNull!.any((p) => p.id == person.personId)) ? person.personId : null,
                   decoration: baseDecoration.copyWith(labelText: 'اختر الشخص *'),
                   isExpanded: true,
                   items: persons.map((p) {
