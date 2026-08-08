@@ -1166,7 +1166,11 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     final nameController = TextEditingController();
     String docType = 'مستند عقد';
     File? selectedFile;
-    
+    // التقاط setState الخاص بالويزارد: لأن StatefulBuilder يعرّف setState
+    // محلياً يظلّل setState الخاص بالشاشة، وبدون ذلك لا تُعاد بناء الواجهة
+    // بعد إغلاق الحوار فلا تظهر بطاقة المرفق الجديد.
+    final wizardSetState = setState;
+
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -1219,7 +1223,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                   );
                   return;
                 }
-                setState(() {
+                wizardSetState(() {
                   _attachedDocuments.add(_DocumentEntry(
                     nameController: nameController,
                     type: docType,
@@ -1309,7 +1313,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   
   Widget _buildTemplateStep() {
     final templatesAsync = ref.watch(contractRepositoryProvider)
-        .watchContractTemplates(type: _legalSubcategory);
+        .watchContractTemplates(type: 'عقد');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1393,7 +1397,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               children: [
                 const Icon(Icons.library_books_outlined, size: 48, color: AppColors.textSecondary),
                 const SizedBox(height: 12),
-                Text('لا توجد قوالب متاحة لتصنيف "${_legalSubcategory ?? ""}"', style: AppTextStyles.bodyMediumSecondary, textAlign: TextAlign.center),
+                Text('لا توجد قوالب عقود متاحة حالياً', style: AppTextStyles.bodyMediumSecondary, textAlign: TextAlign.center),
                 const SizedBox(height: 8),
                 Text('يمكنك استيراد نموذج من جهازك أو البدء من ورقة فارغة', style: AppTextStyles.bodySmallSecondary, textAlign: TextAlign.center),
               ],
@@ -1681,6 +1685,24 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               linkType: const Value('general'),
             ),
           );
+
+          // تسجيل المرفق أيضاً كقالب في مكتبة قوالب العقود (فئة 'عقد') ليكون
+          // قابلاً لإعادة الاستخدام ويظهر ضمن "النماذج القانونية > قوالب العقود".
+          if (doc.file != null) {
+            final templatePath = await storageService.saveTemplate(
+              doc.file!,
+              doc.nameController.text.trim(),
+            );
+            await db.contractDao.insertContractTemplate(
+              ContractTemplatesCompanion.insert(
+                contractType: 'عقد',
+                templateName: doc.nameController.text.trim(),
+                filePath: templatePath,
+                isDefault: const Value(false),
+                templateSource: const Value('imported'),
+              ),
+            );
+          }
         }
 
         // حفظ مستند الدفع (شيك أو تحويل بنكي) إن وُجد
@@ -1722,7 +1744,9 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
 
         await db.contractDao.insertContractTemplate(
           ContractTemplatesCompanion.insert(
-            contractType: _legalSubcategory ?? _legalCategory ?? 'عقد',
+            // يُصنَّف النموذج المستورد ضمن فئة "عقد" ليظهر في "قوالب العقود"
+            // (كان يُحفظ بالتصنيف الفرعي فلا يظهر تحت فلتر قوالب العقود).
+            contractType: 'عقد',
             templateName: _templateNameController.text.trim(),
             filePath: templatePath,
             isDefault: const Value(false),

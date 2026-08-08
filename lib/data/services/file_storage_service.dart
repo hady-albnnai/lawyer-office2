@@ -101,17 +101,22 @@ class FileStorageService {
     return false;
   }
 
-  /// حفظ قالب Word مخصص للنماذج والعقود (بدون تشفير ليسهل تحريره)
-  Future<String> saveTemplate(File docxFile, String templateName) async {
+  /// حفظ قالب مخصص للنماذج والعقود (بدون تشفير ليسهل تحريره)
+  ///
+  /// يحافظ على الامتداد الأصلي للملف (docx/doc/pdf/…). سابقاً كان يُلصَق
+  /// `.docx` دائماً فتُحفظ ملفات PDF أو الصور بامتداد خاطئ لا يفتح صحیحاً.
+  Future<String> saveTemplate(File sourceFile, String templateName) async {
     final rootDir = await getRootStorageDir();
     final targetDir = Directory(p.join(rootDir.path, AppConstants.templatesFolder));
     if (!await targetDir.exists()) {
       await targetDir.create(recursive: true);
     }
 
-    final String fileName = '${DateTime.now().millisecondsSinceEpoch}_$templateName.docx';
+    final ext = p.extension(sourceFile.path);
+    final safeExt = ext.isNotEmpty && ext.length <= 10 ? ext : '.docx';
+    final String fileName = '${DateTime.now().millisecondsSinceEpoch}_$templateName$safeExt';
     final String fullPath = p.join(targetDir.path, fileName);
-    await docxFile.copy(fullPath);
+    await sourceFile.copy(fullPath);
 
     return p.join(AppConstants.templatesFolder, fileName);
   }
