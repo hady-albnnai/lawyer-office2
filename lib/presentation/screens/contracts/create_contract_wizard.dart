@@ -70,7 +70,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   final List<_InstallmentEntry> _installments = [];
   int _installmentCount = 0;
   final _installmentValueController = TextEditingController();
-  String _installmentPeriod = 'شهري'; // شهري، كل شهرين، كل 3 أشهر، كل 6 أشهر، سنوي
+  String _installmentPeriod = 'شهري'; // شهري، كل شهرين، كل 3 أشهر، كل 6 أشهر، سنوي، مخصص
+  int _customDays = 30; // عدد الأيام المخصص
 
   // --- التذكيرات الزمنية ---
   final List<_ReminderEntry> _reminders = [];
@@ -877,28 +878,31 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       _installments.clear();
       final startDate = _dateStart ?? DateTime.now();
       
-      // Calculate months to add based on period
-      int monthsToAdd = 1;
+      // Calculate days to add based on period
+      int daysToAdd = 30;
       switch (_installmentPeriod) {
         case 'شهري':
-          monthsToAdd = 1;
+          daysToAdd = 30;
           break;
         case 'كل شهرين':
-          monthsToAdd = 2;
+          daysToAdd = 60;
           break;
         case 'كل 3 أشهر':
-          monthsToAdd = 3;
+          daysToAdd = 90;
           break;
         case 'كل 6 أشهر':
-          monthsToAdd = 6;
+          daysToAdd = 180;
           break;
         case 'سنوي':
-          monthsToAdd = 12;
+          daysToAdd = 365;
+          break;
+        case 'مخصص':
+          daysToAdd = _customDays;
           break;
       }
       
       for (int i = 0; i < _installmentCount; i++) {
-        final dueDate = DateTime(startDate.year, startDate.month + (i * monthsToAdd) + monthsToAdd, startDate.day);
+        final dueDate = startDate.add(Duration(days: (i + 1) * daysToAdd));
         _installments.add(_InstallmentEntry(
           amount: amount,
           dueDate: dueDate,
