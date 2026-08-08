@@ -746,7 +746,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
           ],
         ),
         Visibility(
-          visible: false,
+          visible: _paymentMethod == 'تقسيط',
+          maintainState: true,
           child: _buildInstallmentsSection(baseDecoration),
         ),
         if (_paymentMethod == 'تحويل بنكي' || _paymentMethod == 'شيك') ...[
@@ -1635,9 +1636,19 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       }
 
       // 6. إعداد ملف Word
+      // ملاحظة: filePath المخزّن للقالب مسار نسبي (templates/...)، لذا
+      // يحوَّل إلى المسار المطلق قبل فتحه، وإلا فشل فتح الملف بخطأ
+      // «ملف غير موجود» لأن File(path نسبي) لا يجد الملف في القرص.
       File? wordFile;
       if (_creationMethod == 'from_template' && _selectedTemplate != null) {
-        wordFile = File(_selectedTemplate!.filePath);
+        final storageService = ref.read(fileStorageServiceProvider);
+        final absPath = await storageService.getAbsolutePath(_selectedTemplate!.filePath);
+        final f = File(absPath);
+        if (await f.exists()) {
+          wordFile = f;
+        } else {
+          wordFile = File(_selectedTemplate!.filePath);
+        }
       } else if (_creationMethod == 'uploaded' && _uploadedFile != null) {
         wordFile = _uploadedFile;
       }
