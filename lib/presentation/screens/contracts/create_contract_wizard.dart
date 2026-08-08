@@ -884,9 +884,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             ),
           ],
         ),
-        ),
-      ),
-      actions: [
+        actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
           ElevatedButton(
             onPressed: () {
@@ -961,65 +959,65 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
+      builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-        title: const Text('إرفاق مستند جديد'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: nameController,
-              decoration: baseDecoration.copyWith(labelText: 'اسم المستند *'),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: docType,
-              decoration: baseDecoration.copyWith(labelText: 'نوع المستند'),
-              items: const [
-                DropdownMenuItem(value: 'مستند عقد', child: Text('مستند عقد')),
-                DropdownMenuItem(value: 'هوية', child: Text('هوية')),
-                DropdownMenuItem(value: 'سند توكيل', child: Text('سند توكيل')),
-                DropdownMenuItem(value: 'إخراج قيد', child: Text('إخراج قيد')),
-                DropdownMenuItem(value: 'أخرى', child: Text('أخرى')),
-              ],
-              onChanged: (v) => docType = v ?? 'مستند عقد',
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final result = await file_picker.FilePicker.pickFiles();
-                if (result != null) {
-                  selectedFile = File(result.files.single.path!);
-                  setState(() {});  // Update dialog without closing
+          title: const Text('إرفاق مستند جديد'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: baseDecoration.copyWith(labelText: 'اسم المستند *'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: docType,
+                decoration: baseDecoration.copyWith(labelText: 'نوع المستند'),
+                items: const [
+                  DropdownMenuItem(value: 'مستند عقد', child: Text('مستند عقد')),
+                  DropdownMenuItem(value: 'هوية', child: Text('هوية')),
+                  DropdownMenuItem(value: 'سند توكيل', child: Text('سند توكيل')),
+                  DropdownMenuItem(value: 'إخراج قيد', child: Text('إخراج قيد')),
+                  DropdownMenuItem(value: 'أخرى', child: Text('أخرى')),
+                ],
+                onChanged: (v) => docType = v ?? 'مستند عقد',
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final result = await file_picker.FilePicker.pickFiles();
+                  if (result != null) {
+                    selectedFile = File(result.files.single.path!);
+                    setState(() {});  // Update dialog without closing
+                  }
+                },
+                icon: const Icon(Icons.upload_file),
+                label: Text(selectedFile != null ? path.basename(selectedFile!.path) : 'اختيار ملف'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('يرجى إدخال اسم المستند'), backgroundColor: AppColors.error),
+                  );
+                  return;
                 }
+                setState(() {
+                  _attachedDocuments.add(_DocumentEntry(
+                    nameController: nameController,
+                    type: docType,
+                    file: selectedFile,
+                  ));
+                });
+                Navigator.pop(dialogContext);
               },
-              icon: const Icon(Icons.upload_file),
-              label: Text(selectedFile != null ? path.basename(selectedFile!.path) : 'اختيار ملف'),
+              child: const Text('إضافة'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('يرجى إدخال اسم المستند'), backgroundColor: AppColors.error),
-                );
-                return;
-              }
-              setState(() {
-                _attachedDocuments.add(_DocumentEntry(
-                  nameController: nameController,
-                  type: docType,
-                  file: selectedFile,
-                ));
-              });
-              Navigator.pop(ctx);
-            },
-            child: const Text('إضافة'),
-          ),
-        ],
         ),
       ),
     );
