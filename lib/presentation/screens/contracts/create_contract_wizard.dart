@@ -33,10 +33,6 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   int _currentStep = 0;
   bool _isSaving = false;
 
-  // للتمرير التلقائي إلى قسم الأقساط عند اختيار "تقسيط".
-  final ScrollController _scrollController = ScrollController();
-  final GlobalKey _installmentsKey = GlobalKey();
-
   // =========================================================================
   // الخطوة 1: المعلومات الأساسية
   // =========================================================================
@@ -123,7 +119,6 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     _feeAmountController.dispose();
     _templateNameController.dispose();
     _customDaysController.dispose();
-    _scrollController.dispose();
     for (final doc in _attachedDocuments) {
       doc.nameController.dispose();
     }
@@ -302,7 +297,6 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     );
 
     return SingleChildScrollView(
-      controller: _scrollController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -817,25 +811,12 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
               _paymentMethod = method;
               _installments.clear();
             });
-            // عند اختيار "تقسيط" نمرّر تلقائياً إلى قسم الأقساط حتى يظهر
-            // فوراً للمستخدم (قد يكون خارج منطقة الشاشة بسبب طول الصفحة).
-            if (method == 'تقسيط') {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                final ctx = _installmentsKey.currentContext;
-                if (ctx != null) {
-                  Scrollable.ensureVisible(ctx,
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.easeOut);
-                }
-              });
-            }
           },
     );
   }
 
   Widget _buildInstallmentsSection(InputDecoration baseDecoration) {
     return GlassmorphicCard(
-      key: _installmentsKey,
       color: AppColors.primaryNavy.withOpacity(0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
