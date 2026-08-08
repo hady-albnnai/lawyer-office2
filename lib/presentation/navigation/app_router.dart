@@ -82,7 +82,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/persons', name: 'persons', builder: (_, state) => PersonsScreen(initialRole: state.uri.queryParameters['role'])),
           GoRoute(path: '/poa', name: 'poa', builder: (_, state) => PoaListScreen(archiveContext: ArchiveEntryContext.fromQuery(state.uri.queryParameters))),
           GoRoute(path: '/work-orders', name: 'work-orders', builder: (_, __) => const WorkOrdersScreen()),
-          GoRoute(path: '/finance', name: 'finance', builder: (_, state) => FinanceScreen(initialTab: state.uri.queryParameters['tab'])),
+          GoRoute(path: '/finance', name: 'finance', builder: (_, state) => FinanceScreen(
+            initialTab: state.uri.queryParameters['tab'],
+            entityType: state.uri.queryParameters['entityType'],
+            entityId: state.uri.queryParameters['entityId'] != null ? int.tryParse(state.uri.queryParameters['entityId']!) : null,
+          )),
           GoRoute(path: '/documents', name: 'documents', builder: (_, __) => const DocumentsScreen()),
           GoRoute(path: '/documents/:documentId', name: 'document-viewer', builder: (_, state) => DocumentViewerScreen(documentId: state.pathParameters['documentId'] ?? '')),
           GoRoute(path: '/legal-library', name: 'legal-library', builder: (_, state) => LegalLibraryScreen(initialSection: state.uri.queryParameters['section'])),

@@ -27,7 +27,12 @@ import 'finance_models.dart';
 class FinanceScreen extends ConsumerStatefulWidget {
   /// التبويب الابتدائي (من السايدبار: ?tab=agreements, payments, expenses, cashbox)
   final String? initialTab;
-  const FinanceScreen({super.key, this.initialTab});
+  /// فلترة تلقائية حسب نوع الكيان (من شاشة تفاصيل العقد: ?entityType=contract)
+  final String? entityType;
+  /// معرف الكيان للفلترة (من شاشة تفاصيل العقد: ?entityId=123)
+  final int? entityId;
+  
+  const FinanceScreen({super.key, this.initialTab, this.entityType, this.entityId});
 
   @override
   ConsumerState<FinanceScreen> createState() => _FinanceScreenState();
@@ -55,6 +60,33 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 8, vsync: this, initialIndex: _tabIndex());
+    
+    // تطبيق الفلتر التلقائي إذا تم تمرير entityType
+    if (widget.entityType != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        FinanceEntityType? filterType;
+        switch (widget.entityType) {
+          case 'contract':
+            filterType = FinanceEntityType.contract;
+            break;
+          case 'case':
+            filterType = FinanceEntityType.caseFile;
+            break;
+          case 'company':
+            filterType = FinanceEntityType.company;
+            break;
+          case 'procedure':
+            filterType = FinanceEntityType.adminProcedure;
+            break;
+          case 'poa':
+            filterType = FinanceEntityType.powerOfAttorney;
+            break;
+        }
+        if (filterType != null) {
+          ref.read(financeProvider.notifier).setEntityFilter(filterType);
+        }
+      });
+    }
   }
 
   @override
