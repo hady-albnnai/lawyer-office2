@@ -111,7 +111,6 @@ class FileStorageService {
       throw StateError('تعذّر فك تشفير النسخة المصدرية: $relativeSource');
     }
     final workingPath = await getWorkingCopyPath(contractId, relativeSource);
-    final workingFile = File(workingPath);
     await decrypted.copy(workingPath);
     return workingPath;
   }
