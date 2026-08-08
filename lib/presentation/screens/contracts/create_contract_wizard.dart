@@ -890,9 +890,10 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                 onChanged: (v) => setState(() => _autoGenerateInstallmentReminders = v ?? false),
                 activeColor: AppColors.primaryNavy,
               ),
-              const Text('إنشاء تذكيرات تلقائية للأقساط'),
-              const SizedBox(width: 12),
-              if (_autoGenerateInstallmentReminders)
+              const Expanded(
+                child: Text('إنشاء تذكيرات تلقائية للأقساط'),
+              ),
+              if (_autoGenerateInstallmentReminders) ...[
                 DropdownButtonFormField<int>(
                   value: _reminderDaysBefore,
                   decoration: baseDecoration.copyWith(labelText: 'قبل'),
@@ -904,6 +905,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                   ],
                   onChanged: (v) => setState(() => _reminderDaysBefore = v ?? 3),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 16),
