@@ -1286,7 +1286,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   Future<void> _pickUploadFile() async {
-    final result = await file_picker.FilePicker.platform.pickFiles(
+    final result = await file_picker.FilePicker.pickFiles(
       type: file_picker.FileType.custom,
       allowedExtensions: const ['docx', 'doc', 'pdf', 'rtf'],
     );
