@@ -225,6 +225,21 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         }
       }
     }
+    
+    // Check for duplicate persons across parties
+    final allPersonIds = <int>[];
+    for (final party in _parties) {
+      for (final person in party.persons) {
+        if (person.personId != null) {
+          if (allPersonIds.contains(person.personId)) {
+            _showError('لا يمكن اختيار نفس الشخص في أكثر من طرف');
+            return false;
+          }
+          allPersonIds.add(person.personId!);
+        }
+      }
+    }
+    
     if (_titleController.text.trim().isEmpty) {
       _showError('يرجى إدخال عنوان للعقد');
       return false;
@@ -869,7 +884,9 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             ),
           ],
         ),
-        actions: [
+        ),
+      ),
+      actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
           ElevatedButton(
             onPressed: () {
@@ -944,7 +961,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
         title: const Text('إرفاق مستند جديد'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -972,8 +990,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
                 final result = await file_picker.FilePicker.pickFiles();
                 if (result != null) {
                   selectedFile = File(result.files.single.path!);
-                  Navigator.pop(ctx);
-                  _showAttachDocumentDialog(baseDecoration);
+                  setState(() {});  // Update dialog without closing
                 }
               },
               icon: const Icon(Icons.upload_file),
@@ -1003,6 +1020,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             child: const Text('إضافة'),
           ),
         ],
+        ),
       ),
     );
   }
@@ -1043,20 +1061,31 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   Widget _buildFeePartyPicker(InputDecoration baseDecoration) {
+    final uniquePartyIds = <int>{};
     final clientParties = <DropdownMenuItem<int>>[];
+    
     for (final party in _parties) {
       for (final person in party.persons) {
-        if (person.personId != null) {
+        if (person.personId != null && uniquePartyIds.add(person.personId!)) {
+          // Get person name from the persons list
+          final personsAsync = ref.read(allPersonsProvider(null));
+          final persons = personsAsync.valueOrNull ?? [];
+          final personEntity = persons.where((p) => p.id == person.personId).firstOrNull;
+          final personName = personEntity?.fullName ?? 'شخص #${person.personId}';
+          
           clientParties.add(DropdownMenuItem(
             value: person.personId,
-            child: Text('${party.role} (ID: ${person.personId})'),
+            child: Text('$personName (${party.role})'),
           ));
         }
       }
     }
     
+    // Validate that _feePartyId exists in the list
+    final isValidValue = clientParties.any((item) => item.value == _feePartyId);
+    
     return DropdownButtonFormField<int>(
-      value: _feePartyId,
+      value: isValidValue ? _feePartyId : null,
       decoration: baseDecoration.copyWith(labelText: 'الموكل (دافع الأتعاب)'),
       items: clientParties,
       onChanged: (v) => setState(() => _feePartyId = v),
@@ -1467,7 +1496,14 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
 
       // 10. فتح Word مباشرة!
       if (wordFile != null && await wordFile.exists()) {
-        // TODO: Open in Word - DesktopIntegrationService.openInWord(wordFile.path);
+        // Open in Word using Process.start
+        if (Platform.isWindows) {
+          await Process.start('explorer', [wordFile.path], runInShell: true);
+        } else if (Platform.isMacOS) {
+          await Process.start('open', [wordFile.path]);
+        } else {
+          await Process.start('xdg-open', [wordFile.path]);
+        }
       }
 
       // 11. Audit log - TODO: Implement later
@@ -1478,11 +1514,11 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
         ref.invalidate(allPersonsProvider(null));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم إنشاء العقد بنجاح! وفُتح في Word'),
+            content: Text('تم إنشاء العقد بنجاح! وفُتح في Word. يمكنك الوصول إليه لاحقاً من قائمة العقود.'),
             backgroundColor: AppColors.success,
           ),
         );
-        context.go('/contracts/$contractId');
+        context.pop();  // Return to contracts list instead of detail screen
       }
     } catch (e) {
       if (mounted) {
