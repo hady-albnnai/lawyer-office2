@@ -969,7 +969,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: () async {
-                final result = await file_picker.FilePicker.platform.pickFiles();
+                final result = await file_picker.FilePicker.pickFiles();
                 if (result != null) {
                   selectedFile = File(result.files.single.path!);
                   Navigator.pop(ctx);
