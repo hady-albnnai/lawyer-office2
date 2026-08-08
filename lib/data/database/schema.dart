@@ -67,6 +67,7 @@ class Persons extends Table {
   TextColumn get fullName => text()();
   TextColumn get fatherName => text().nullable()();
   TextColumn get motherName => text().nullable()();
+  TextColumn get residence => text().nullable()(); // الموطن المختار
   TextColumn get nationalId => text().nullable()();
   TextColumn get registryPlace => text().nullable()();
   TextColumn get registryNumber => text().nullable()();

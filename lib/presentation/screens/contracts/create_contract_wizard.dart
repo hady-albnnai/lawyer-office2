@@ -1764,70 +1764,95 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final idController = TextEditingController();
-    
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('إضافة شخص جديد'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'الاسم الكامل *'),
+    final residenceController = TextEditingController(); // الموطن
+
+    try {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('إضافة شخص جديد'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'الاسم الكامل *'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(labelText: 'رقم الهاتف'),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: idController,
+                decoration: const InputDecoration(labelText: 'رقم الهوية'),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: residenceController,
+                decoration: const InputDecoration(labelText: 'الموطن / الدائرة المختارة'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء'),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: phoneController,
-              decoration: const InputDecoration(labelText: 'رقم الهاتف'),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: idController,
-              decoration: const InputDecoration(labelText: 'رقم الهوية'),
-              keyboardType: TextInputType.number,
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('يرجى إدخال الاسم'), backgroundColor: AppColors.error),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              child: const Text('إضافة'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('يرجى إدخال الاسم'), backgroundColor: AppColors.error),
-                );
-                return;
-              }
-              Navigator.pop(ctx, true);
-            },
-            child: const Text('إضافة'),
-          ),
-        ],
-      ),
-    );
-    
-    if (result == true) {
-      // Save person to database
-      final db = ref.read(databaseProvider);
-      final personId = await db.into(db.persons).insert(
-        PersonsCompanion.insert(
-          fullName: nameController.text.trim(),
-          phone1: Value(phoneController.text.trim().isEmpty ? null : phoneController.text.trim()),
-          nationalId: Value(idController.text.trim().isEmpty ? null : idController.text.trim()),
-          type: const Value(0), // natural person
-        ),
       );
-      
-      // Refresh persons list and select the new person
-      ref.invalidate(allPersonsProvider(null));
-      setState(() {
-        person.personId = personId;
-      });
+
+      if (result == true) {
+        final db = ref.read(databaseProvider);
+        final name = nameController.text.trim();
+
+        // ===== منع التكرار =====
+        final existing = await db.select(db.persons)
+          .where((p) => p.fullName.equals(name))
+          .getSingleOrNull();
+        if (existing != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('هذا الاسم موجود مسبقاً')),
+          );
+          return;
+        }
+
+        final personId = await db.into(db.persons).insert(
+          PersonsCompanion.insert(
+            fullName: name,
+            phone1: Value(phoneController.text.trim().isEmpty ? null : phoneController.text.trim()),
+            nationalId: Value(idController.text.trim().isEmpty ? null : idController.text.trim()),
+            residence: Value(residenceController.text.trim().isEmpty ? null : residenceController.text.trim()),
+            type: const Value(0),
+          ),
+        );
+
+        ref.invalidate(allPersonsProvider(null));
+        setState(() {
+          person.personId = personId;
+        });
+      }
+    } catch (e, st) {
+      debugPrint('AddPersonDialogError: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطأ في الحفظ: $e'), duration: const Duration(seconds: 5)),
+      );
     }
   }
 
