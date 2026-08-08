@@ -1066,7 +1066,7 @@ class _ContractDetailScreenState extends ConsumerState<ContractDetailScreen> wit
             children: [
               // قسم الأقساط
               if (installments.isNotEmpty) ...[
-                Text('متابعة الأقساط', style: AppTextStyles.titleMedium.copyWith(color: AppColors.primaryNavy, fontWeight: FontWeight.bold)),
+                Text('متابعة الأقساط', style: TextStyle(fontSize: 18, color: AppColors.primaryNavy, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 ...installments.map((inst) => _buildInstallmentCard(inst, contractId)),
                 const SizedBox(height: 24),

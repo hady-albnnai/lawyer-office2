@@ -969,7 +969,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
             const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: () async {
-                final result = await FilePicker.platform.pickFiles();
+                final result = await file_picker.FilePicker.platform.pickFiles();
                 if (result != null) {
                   selectedFile = File(result.files.single.path!);
                   Navigator.pop(ctx);
@@ -1286,7 +1286,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
   }
 
   Future<void> _pickUploadFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await file_picker.FilePicker.platform.pickFiles(
       type: file_picker.FileType.custom,
       allowedExtensions: const ['docx', 'doc', 'pdf', 'rtf'],
     );
@@ -1487,11 +1487,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
     } catch (e) {
       if (mounted) {
         _showError('خطأ أثناء حفظ العقد: $e');
-        // TODO: Audit log
-      // await ref.read(auditServiceProvider).log(
-          action: 'error', category: 'contracts', entityType: 'contract',
-          description: 'فشل إنشاء العقد: $e', severity: 'error',
-        );
+        // TODO: Audit log for error
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
