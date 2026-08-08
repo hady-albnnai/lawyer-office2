@@ -1652,7 +1652,7 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       if (mounted) setState(() => _isSaving = false);
     }
   }
-}
+
 
 
 
@@ -1773,6 +1773,8 @@ class _CreateContractWizardState extends ConsumerState<CreateContractWizard> {
       );
     }
   }
+
+}
 
 // =============================================================================
 // Helper Classes
